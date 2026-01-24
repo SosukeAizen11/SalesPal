@@ -1,28 +1,34 @@
 import React, { useState } from 'react';
-import { Wand2, Send, CheckCircle2 } from 'lucide-react';
+import { Wand2, Send, CheckCircle2, Trash2, Calendar, Image as ImageIcon } from 'lucide-react';
+import { useMarketing } from '../../context/MarketingContext'; // Fixed import path
 import PostTypeSelector from './components/social/PostTypeSelector';
 import SocialPreview from './components/social/SocialPreview';
 import ScheduleSelector from './components/social/ScheduleSelector';
 import EngagementMetrics from './components/social/EngagementMetrics';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
 
 const Social = () => {
+    const { addSocialPost, socialPosts, deleteSocialPost } = useMarketing();
     const [postType, setPostType] = useState('image');
     const [content, setContent] = useState("Just listed! ✨ Experience the height of luxury at our new South Mumbai residence. Sea-facing views, premium amenities, and more. DM for a private tour! 🏠 #LuxuryRealEstate #MumbaiHomes");
     const [scheduleMode, setScheduleMode] = useState('now');
-    const [isPublished, setIsPublished] = useState(false);
+    const [activeTab, setActiveTab] = useState('create');
     const [isPublishing, setIsPublishing] = useState(false);
 
     const handlePublish = () => {
         setIsPublishing(true);
         setTimeout(() => {
+            addSocialPost({
+                content,
+                type: postType,
+                scheduledFor: scheduleMode === 'now' ? 'Published Now' : 'Scheduled',
+                timestamp: new Date().toISOString()
+            });
             setIsPublishing(false);
-            setIsPublished(true);
+            setActiveTab('history');
+            setContent("");
         }, 1500);
-    };
-
-    const handleNewPost = () => {
-        setIsPublished(false);
-        setContent("");
     };
 
     return (
@@ -33,26 +39,32 @@ const Social = () => {
                     <h2 className="text-2xl font-bold text-gray-900">Social Studio</h2>
                     <p className="text-gray-500 mt-1">Create, schedule, and optimize your social content</p>
                 </div>
-                {isPublished && (
+                <div className="flex bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
                     <button
-                        onClick={handleNewPost}
-                        className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-light transition-colors"
+                        onClick={() => setActiveTab('create')}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'create' ? 'bg-primary text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
                     >
-                        Create Another Post
+                        Create Post
                     </button>
-                )}
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'history' ? 'bg-primary text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                    >
+                        History ({socialPosts.length})
+                    </button>
+                </div>
             </div>
 
-            <div className="grid lg:grid-cols-12 gap-8">
-                {/* Left Column: Creator (7 cols) */}
-                <div className="lg:col-span-7 space-y-6">
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-semibold text-gray-900">Create New Post</h3>
-                            <PostTypeSelector selectedType={postType} onSelect={setPostType} />
-                        </div>
+            {activeTab === 'create' ? (
+                <div className="grid lg:grid-cols-12 gap-8">
+                    {/* Left Column: Creator (7 cols) */}
+                    <div className="lg:col-span-7 space-y-6">
+                        <Card className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="font-semibold text-gray-900">Create New Post</h3>
+                                <PostTypeSelector selectedType={postType} onSelect={setPostType} />
+                            </div>
 
-                        {!isPublished ? (
                             <div className="space-y-6">
                                 {/* Content Input */}
                                 <div className="space-y-2">
@@ -66,7 +78,7 @@ const Social = () => {
                                     <textarea
                                         value={content}
                                         onChange={(e) => setContent(e.target.value)}
-                                        className="w-full h-32 p-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary resize-none"
+                                        className="w-full h-32 p-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none transition-colors"
                                         placeholder="Write your caption here..."
                                     />
                                     <div className="flex gap-2">
@@ -85,53 +97,80 @@ const Social = () => {
 
                                 {/* Action Buttons */}
                                 <div className="pt-6 flex items-center gap-4">
-                                    <button
+                                    <Button
                                         onClick={handlePublish}
-                                        disabled={isPublishing}
-                                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-light transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                                        isLoading={isPublishing}
+                                        className="flex-1"
                                     >
-                                        {isPublishing ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                <span>Publishing...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Send className="w-4 h-4" />
-                                                <span>{scheduleMode === 'now' ? 'Publish Now' : 'Schedule Post'}</span>
-                                            </>
-                                        )}
-                                    </button>
-                                    <button className="px-6 py-3 text-gray-600 font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                                        <Send className="w-4 h-4 mr-2" />
+                                        {scheduleMode === 'now' ? 'Publish Now' : 'Schedule Post'}
+                                    </Button>
+                                    <Button variant="secondary">
                                         Save Draft
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
-                        ) : (
-                            <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 animate-fade-in-up">
-                                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-2">
-                                    <CheckCircle2 className="w-8 h-8" />
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900">Post Published!</h3>
-                                <p className="text-gray-500 max-w-sm">
-                                    Your post is live on Instagram. We'll start tracking engagement metrics immediately.
-                                </p>
-                                <div className="w-full max-w-md pt-6">
-                                    <EngagementMetrics />
-                                </div>
-                            </div>
-                        )}
+                        </Card>
                     </div>
-                </div>
 
-                {/* Right Column: Preview (5 cols) */}
-                <div className="lg:col-span-5">
-                    <div className="sticky top-8 space-y-4">
-                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider pl-1">Preview</h3>
-                        <SocialPreview content={content} />
+                    {/* Right Column: Preview (5 cols) */}
+                    <div className="lg:col-span-5">
+                        <div className="sticky top-8 space-y-4">
+                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider pl-1">Preview</h3>
+                            <SocialPreview content={content} />
+                        </div>
                     </div>
                 </div>
-            </div>
+            ) : (
+                <div className="space-y-6">
+                    {socialPosts.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {socialPosts.map(post => (
+                                <Card key={post.id} className="p-6">
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center text-primary">
+                                                {post.type === 'video' ? '🎥' : <ImageIcon className="w-5 h-5" />}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900">
+                                                    {post.scheduledFor === 'Published Now' ? 'Published' : 'Scheduled'}
+                                                </p>
+                                                <p className="text-xs text-gray-500">{new Date(post.timestamp).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                if (window.confirm('Delete this post?')) deleteSocialPost(post.id);
+                                            }}
+                                            className="text-gray-400 hover:text-red-500 transition-colors p-2"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <p className="text-sm text-gray-600 line-clamp-3 mb-4">{post.content}</p>
+                                    {post.scheduledFor === 'Published Now' && (
+                                        <div className="pt-4 border-t border-gray-100">
+                                            <EngagementMetrics />
+                                        </div>
+                                    )}
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <Card className="p-12 text-center flex flex-col items-center justify-center">
+                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 mb-4">
+                                <Send className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No posts yet</h3>
+                            <p className="text-gray-500 max-w-sm mb-6">Create and publish your first social media post to see it here.</p>
+                            <Button onClick={() => setActiveTab('create')}>
+                                Create First Post
+                            </Button>
+                        </Card>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

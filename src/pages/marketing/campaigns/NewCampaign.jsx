@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { LogOut, X, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { useMarketing } from '../../../context/MarketingContext';
 
 // Components
 import StepHeader from './components/StepHeader';
 import StepIndicator from './components/StepIndicator';
 import StepNavigation from './components/StepNavigation';
+import Button from '../../../components/ui/Button';
 
 // Steps
 import StepBusinessInput from './steps/StepBusinessInput';
@@ -24,17 +26,27 @@ const STEPS = [
 ];
 
 const NewCampaign = () => {
+    const { projectId } = useParams();
     const [currentStep, setCurrentStep] = useState(0);
     const { logout } = useAuth();
+    const { createCampaign } = useMarketing();
     const navigate = useNavigate();
 
     const handleNext = () => {
         if (currentStep < STEPS.length - 1) {
             setCurrentStep(prev => prev + 1);
         } else {
-            // Launch logic would go here
-            console.log("Launching campaign...");
-            navigate('/marketing/campaigns');
+            // Launch logic
+            createCampaign({
+                name: "Q1 Growth - SaaS",
+                platforms: ["Google Ads", "LinkedIn"],
+                dailyBudget: "₹12,400",
+                totalSpend: "₹0",
+                leads: "0",
+                cpl: "₹0",
+                projectId: projectId
+            });
+            navigate(`/marketing/projects/${projectId}`);
         }
     };
 
@@ -46,7 +58,7 @@ const NewCampaign = () => {
 
     const handleExit = () => {
         if (window.confirm('Are you sure you want to exit? Process will be lost.')) {
-            navigate('/marketing/campaigns');
+            navigate(`/marketing/projects/${projectId}`);
         }
     };
 
@@ -56,7 +68,7 @@ const NewCampaign = () => {
             case 1: return <StepAIAnalysis />;
             case 2: return <StepAdCreation />;
             case 3: return <StepPlatformBudget />;
-            case 4: return <StepReviewLaunch />;
+            case 4: return <StepReviewLaunch onLaunch={handleNext} />;
             default: return null;
         }
     };
@@ -68,17 +80,17 @@ const NewCampaign = () => {
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Link to="/marketing" className="hover:text-gray-900 transition-colors">Marketing</Link>
                     <ChevronRight className="w-4 h-4 text-gray-400" />
-                    <Link to="/marketing/campaigns" className="hover:text-gray-900 transition-colors">Campaigns</Link>
+                    <Link to="/marketing/projects" className="hover:text-gray-900 transition-colors">Projects</Link>
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                     <span className="font-medium text-gray-900">New Campaign</span>
                 </div>
-                <button
+                <Button
+                    variant="secondary"
                     onClick={handleExit}
-                    className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-red-600 transition-colors bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm hover:shadow active:scale-95"
                 >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4 mr-2" />
                     Exit
-                </button>
+                </Button>
             </div>
 
             {/* Wizard Container */}

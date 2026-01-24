@@ -3,9 +3,12 @@ import { Globe, FileText, Image as ImageIcon, Briefcase } from 'lucide-react';
 import FileUploadBox from '../components/FileUploadBox';
 import ImageUploadGrid from '../components/ImageUploadGrid';
 import LogoToggle from '../components/LogoToggle';
+import Card from '../../../../components/ui/Card';
+import Input from '../../../../components/ui/Input';
+import Textarea from '../../../../components/ui/Textarea';
 
 const Section = ({ title, icon: Icon, children, className = "" }) => (
-    <div className={`p-6 md:p-8 border border-gray-100 rounded-2xl bg-white shadow-sm ${className}`}>
+    <Card className={className}>
         <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-500">
                 <Icon className="w-4 h-4" />
@@ -13,7 +16,7 @@ const Section = ({ title, icon: Icon, children, className = "" }) => (
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         </div>
         {children}
-    </div>
+    </Card>
 );
 
 const StepBusinessInput = () => {
@@ -29,30 +32,23 @@ const StepBusinessInput = () => {
         <div className="space-y-6 animate-fade-in-up">
             {/* Website URL */}
             <Section title="Website URL" icon={Globe}>
-                <div className="space-y-2">
-                    <input
-                        type="url"
-                        value={websiteUrl}
-                        onChange={(e) => setWebsiteUrl(e.target.value)}
-                        placeholder="https://example.com"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all placeholder:text-gray-400"
-                    />
-                    <p className="text-sm text-gray-500">
-                        We’ll analyze your website to understand your business and products automatically.
-                    </p>
-                </div>
+                <Input
+                    type="url"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    placeholder="https://example.com"
+                    helperText="We’ll analyze your website to understand your business and products automatically."
+                />
             </Section>
 
             {/* Business Description */}
             <Section title="Business Description" icon={Briefcase}>
-                <div className="space-y-2">
-                    <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="We sell premium real estate properties in South Mumbai..."
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all placeholder:text-gray-400 min-h-[120px] resize-y"
-                    />
-                </div>
+                <Textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="We sell premium real estate properties in South Mumbai..."
+                    className="min-h-[120px] resize-y"
+                />
             </Section>
 
             <div className="grid md:grid-cols-2 gap-6">

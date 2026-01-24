@@ -9,10 +9,29 @@
 
 @layer base {
   body {
-    background-color: var(--color-primary);
-    color: var(--color-surface);
+    background-color: #F9FAFB;
+    /* gray-50 */
+    color: #111827;
+    /* gray-900 */
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #111827;
+    /* gray-900 */
+    font-weight: 600;
+  }
+
+  input,
+  select,
+  textarea {
+    font-family: var(--font-sans);
   }
 }
 

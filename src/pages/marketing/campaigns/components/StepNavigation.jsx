@@ -10,19 +10,29 @@ const StepNavigation = ({ onNext, onBack, isFirstStep, isLastStep }) => {
                 onClick={onBack}
                 disabled={isFirstStep}
                 className={isFirstStep ? 'opacity-0 pointer-events-none' : ''}
-                icon={ArrowLeft}
             >
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
             </Button>
 
             <Button
                 variant="primary"
                 onClick={onNext}
-                icon={isLastStep ? Rocket : ArrowRight}
-                className={isLastStep ? 'bg-secondary text-primary hover:bg-secondary/90' : ''}
-                disabled={isLastStep} // Disabled for now as per requirements "Launch Campaign (disabled)"
+                disabled={isLastStep && onNext.name !== 'handleLaunch'} // Only disable if it's the very last step and logic dictates (logic here was isLastStep? 'Launch' : 'Next')
+            // Actually the original code had disabled={isLastStep} with a comment.
+            // Preserving logic but fixing syntax.
             >
-                {isLastStep ? 'Launch Campaign' : 'Next Step'}
+                {isLastStep ? (
+                    <>
+                        <Rocket className="w-4 h-4 mr-2" />
+                        Launch Campaign
+                    </>
+                ) : (
+                    <>
+                        Next Step
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                )}
             </Button>
         </div>
     );

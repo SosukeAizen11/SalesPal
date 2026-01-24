@@ -4,13 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import { marketingNav } from '../navigation/marketingNav';
 import logo from '../assets/logo.webp';
 import { LogOut, User } from 'lucide-react';
+import ProjectSwitcher from '../components/ProjectSwitcher';
+import Button from '../components/ui/Button';
 
 const MarketingLayout = () => {
     const { logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const isWizardMode = location.pathname.includes('/campaigns/new');
+    // const isWizardMode = location.pathname.includes('/campaigns/new'); // Unused for now
 
     const handleLogout = () => {
         logout();
@@ -61,14 +63,17 @@ const MarketingLayout = () => {
             <div className="flex-1 flex flex-col min-w-0">
                 {/* Top Bar */}
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 z-10">
-                    <h1 className="text-lg font-semibold text-primary">AI Marketing Engine</h1>
-                    <button
+                    <div className="flex items-center gap-4">
+                        <ProjectSwitcher />
+                    </div>
+                    <Button
+                        variant="ghost"
                         onClick={handleLogout}
-                        className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-red-600 transition-colors"
+                        className="text-gray-500 hover:text-red-600"
                     >
-                        <LogOut className="w-4 h-4" />
+                        <LogOut className="w-4 h-4 mr-2" />
                         Sign Out
-                    </button>
+                    </Button>
                 </header>
 
                 {/* Content Area */}

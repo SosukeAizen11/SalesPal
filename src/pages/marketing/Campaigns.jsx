@@ -5,15 +5,11 @@ import CampaignListPlaceholder from './components/CampaignListPlaceholder';
 import CampaignCard from './components/CampaignCard';
 import RunningCampaignNotice from './components/RunningCampaignNotice';
 
+import { useMarketing } from '../../context/MarketingContext';
+
 const Campaigns = () => {
     const navigate = useNavigate();
-    const [hasActiveCampaign, setHasActiveCampaign] = useState(false);
-
-    useEffect(() => {
-        // Check for mock campaign state
-        const isLaunched = localStorage.getItem('salespal_campaign_launched') === 'true';
-        setHasActiveCampaign(isLaunched);
-    }, []);
+    const { campaigns } = useMarketing();
 
     const handleCreateCampaign = () => {
         navigate('/marketing/campaigns/new');
@@ -32,10 +28,12 @@ const Campaigns = () => {
                 </button>
             </div>
 
-            {hasActiveCampaign ? (
+            {campaigns.length > 0 ? (
                 <div className="space-y-6">
                     <RunningCampaignNotice />
-                    <CampaignCard />
+                    {campaigns.map(campaign => (
+                        <CampaignCard key={campaign.id} campaign={campaign} />
+                    ))}
                 </div>
             ) : (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 min-h-[400px] flex flex-col items-center justify-center p-8 text-center">

@@ -5,7 +5,7 @@ import ReviewSection from '../components/review/ReviewSection';
 import ReviewRow from '../components/review/ReviewRow';
 import LaunchConfirmation from '../components/review/LaunchConfirmation';
 
-const StepReviewLaunch = () => {
+const StepReviewLaunch = ({ onLaunch }) => {
     const navigate = useNavigate();
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [isLaunching, setIsLaunching] = useState(false);
@@ -17,9 +17,9 @@ const StepReviewLaunch = () => {
 
         // Simulate API call
         setTimeout(() => {
-            // Mock backend state change
-            localStorage.setItem('salespal_campaign_launched', 'true');
-            navigate('/marketing/campaigns');
+            if (onLaunch) {
+                onLaunch();
+            }
         }, 1500);
     };
 

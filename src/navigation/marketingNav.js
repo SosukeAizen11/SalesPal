@@ -7,8 +7,8 @@ export const marketingNav = [
         icon: LayoutDashboard
     },
     {
-        name: 'Campaigns',
-        path: '/marketing/campaigns',
+        name: 'Projects',
+        path: '/marketing/projects',
         icon: Megaphone
     },
     {

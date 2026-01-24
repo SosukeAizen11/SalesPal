@@ -17,7 +17,12 @@ import Campaigns from '../pages/marketing/Campaigns';
 import Analytics from '../pages/marketing/Analytics';
 import Settings from '../pages/marketing/Settings';
 import NewCampaign from '../pages/marketing/campaigns/NewCampaign';
+import CampaignDetails from '../pages/marketing/campaigns/CampaignDetails';
 import Social from '../pages/marketing/Social';
+import { MarketingProvider } from '../context/MarketingContext';
+import Projects from '../pages/marketing/projects/Projects';
+import CreateProject from '../pages/marketing/projects/CreateProject';
+import ProjectDetails from '../pages/marketing/projects/ProjectDetails';
 
 export const router = createBrowserRouter([
     {
@@ -37,7 +42,9 @@ export const router = createBrowserRouter([
                 path: "/marketing",
                 element: (
                     <ProtectedRoute>
-                        <MarketingLayout />
+                        <MarketingProvider>
+                            <MarketingLayout />
+                        </MarketingProvider>
                     </ProtectedRoute>
                 ),
                 children: [
@@ -46,12 +53,24 @@ export const router = createBrowserRouter([
                         element: <MarketingDashboard />
                     },
                     {
-                        path: "campaigns",
-                        element: <Campaigns />
+                        path: "projects",
+                        element: <Projects />
                     },
                     {
-                        path: "campaigns/new",
+                        path: "projects/new",
+                        element: <CreateProject />
+                    },
+                    {
+                        path: "projects/:projectId",
+                        element: <ProjectDetails />
+                    },
+                    {
+                        path: "projects/:projectId/campaigns/new",
                         element: <NewCampaign />
+                    },
+                    {
+                        path: "projects/:projectId/campaigns/:campaignId",
+                        element: <CampaignDetails />
                     },
                     {
                         path: "social",
