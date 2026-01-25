@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import ProjectLayout from '../layout/ProjectLayout';
 import App from './App';
 import Dashboard from '../pages/dashboard/Dashboard';
@@ -32,6 +32,28 @@ import SocialCreate from '../pages/marketing/social/SocialCreate';
 import SocialList from '../pages/marketing/social/SocialList';
 import SocialAnalytics from '../pages/marketing/social/SocialAnalytics';
 import SocialPostDetails from '../pages/marketing/social/SocialPostDetails';
+
+// Settings Pages
+import SettingsLayout from '../pages/settings/SettingsLayout';
+import SettingsIntegrations from '../pages/settings/SettingsIntegrations';
+import {
+    SettingsAccount,
+    SettingsBilling,
+    SettingsTeam,
+    SettingsMarketing,
+    SettingsNotifications,
+    SettingsSecurity
+} from '../pages/settings/SettingsPages';
+
+import MarketingSettingsLayout from '../pages/marketing/settings/MarketingSettingsLayout';
+import MarketingSettingsOverview from '../pages/marketing/settings/MarketingSettingsOverview';
+import MarketingSettingsIntegrations from '../pages/marketing/settings/MarketingSettingsIntegrations';
+import MetaIntegration from '../pages/marketing/settings/MetaIntegration';
+import {
+    MarketingSettingsDefaults,
+    MarketingSettingsTracking,
+    MarketingSettingsNotifications
+} from '../pages/marketing/settings/MarketingSettingsPlaceholders';
 
 export const router = createBrowserRouter([
     {
@@ -99,13 +121,46 @@ export const router = createBrowserRouter([
                         ]
                     },
                     {
+                        path: "settings",
+                        element: <MarketingSettingsLayout />,
+                        children: [
+                            { index: true, element: <Navigate to="integrations" replace /> },
+                            { path: "integrations", element: <MarketingSettingsIntegrations /> },
+                            { path: "defaults", element: <MarketingSettingsDefaults /> },
+                            { path: "tracking", element: <MarketingSettingsTracking /> },
+                            { path: "notifications", element: <MarketingSettingsNotifications /> }
+                        ]
+                    },
+                    {
+                        path: "settings/integrations/meta",
+                        element: <MetaIntegration />
+                    },
+                    {
                         path: "analytics",
                         element: <Analytics />
                     },
-                    {
-                        path: "settings",
-                        element: <Settings />
-                    }
+
+
+                ]
+            },
+
+            {
+                path: "/settings",
+                element: (
+                    <ProtectedRoute>
+                        <MarketingProvider>
+                            <SettingsLayout />
+                        </MarketingProvider>
+                    </ProtectedRoute>
+                ),
+                children: [
+                    { index: true, element: <SettingsAccount /> },
+                    { path: "billing", element: <SettingsBilling /> },
+                    { path: "team", element: <SettingsTeam /> },
+                    { path: "integrations", element: <SettingsIntegrations /> },
+                    { path: "marketing", element: <SettingsMarketing /> },
+                    { path: "notifications", element: <SettingsNotifications /> },
+                    { path: "security", element: <SettingsSecurity /> }
                 ]
             },
 

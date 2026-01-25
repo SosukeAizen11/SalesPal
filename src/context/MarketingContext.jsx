@@ -6,7 +6,6 @@ const MarketingContext = createContext();
 export const MarketingProvider = ({ children }) => {
     const [campaigns, setCampaigns] = useState([]);
     const [projects, setProjects] = useState([]);
-
     const [selectedProjectId, setSelectedProjectId] = useState(null);
 
     // Load campaigns and projects on init
@@ -234,15 +233,18 @@ export const MarketingProvider = ({ children }) => {
     };
 
     const launchCampaign = () => {
-        if (!activeDraft) return;
+        if (!activeDraft) return { success: false, error: 'No active draft' };
+
+        // Note: Integration validation is now handled by the frontend guard (canLaunchCampaign)
+        // The StepReviewLaunch component ensures integrations are connected before calling this
 
         const finalizedCampaign = addCampaign({
             ...activeDraft.data,
-            id: `cmp_${Date.now()}`, // Real ID
+            id: `cmp_${Date.now()}`,
             projectId: activeDraft.projectId,
             status: 'running',
             createdAt: new Date().toISOString(),
-            metrics: { // Init empty metrics
+            metrics: {
                 spend: '₹0',
                 impressions: '0',
                 clicks: '0',
@@ -253,8 +255,8 @@ export const MarketingProvider = ({ children }) => {
         });
 
         setCampaigns(prev => [finalizedCampaign, ...prev]);
-        setActiveDraft(null); // Clear draft
-        return finalizedCampaign;
+        setActiveDraft(null);
+        return { success: true, campaign: finalizedCampaign };
     };
 
     const cancelDraft = () => {
@@ -266,13 +268,13 @@ export const MarketingProvider = ({ children }) => {
         projects,
         socialPosts,
         selectedProjectId,
-        activeDraft, // EXPORTED STATE
-        startNewDraft, // EXPORTED ACTION
-        updateDraftStep, // EXPORTED ACTION
-        setDraftStepIndex, // EXPORTED ACTION
-        canAccessStep, // EXPORTED GUARD
-        launchCampaign, // EXPORTED ACTION
-        cancelDraft, // EXPORTED ACTION
+        activeDraft,
+        startNewDraft,
+        updateDraftStep,
+        setDraftStepIndex,
+        canAccessStep,
+        launchCampaign,
+        cancelDraft,
         selectProject,
         createCampaign,
         updateCampaign,

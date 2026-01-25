@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Pause, Play, Rocket, Edit, BarChart3, TrendingUp, Users, MousePointerClick, Calendar, DollarSign, Facebook, Chrome, Linkedin } from 'lucide-react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Pause, Play, Rocket, Edit, BarChart3, TrendingUp, Users, MousePointerClick, Calendar, DollarSign, Facebook, Chrome, Linkedin, AlertCircle, ArrowRight } from 'lucide-react';
 import { useMarketing } from '../../../context/MarketingContext';
+import { useIntegrations } from '../../../context/IntegrationContext';
+import { canLaunchCampaign } from '../../../utils/campaignGuard';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import Card from '../../../components/ui/Card';
@@ -25,10 +27,12 @@ export default function CampaignDetails() {
     const { projectId, campaignId } = useParams();
     const navigate = useNavigate();
     const { getCampaignById, updateCampaign } = useMarketing();
+    const { integrations } = useIntegrations();
 
-    // Local State for specific analytics that might not be in the main object
+    // Local State
     const [campaign, setCampaign] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [launchError, setLaunchError] = useState(null);
 
     useEffect(() => {
         const data = getCampaignById(campaignId);
@@ -54,15 +58,40 @@ export default function CampaignDetails() {
     const isPaused = status === 'paused';
     const isDraft = status === 'draft';
 
+    // Build campaign object for guard check
+    const campaignForGuard = {
+        platforms: platforms || ['facebook', 'google']
+    };
+    const launchCheck = canLaunchCampaign(campaignForGuard, integrations);
+
     const handleAction = (action) => {
+        // Only pause doesn't need guard
+        if (action === 'pause') {
+            updateCampaign(campaignId, { status: 'paused' });
+            setCampaign(prev => ({ ...prev, status: 'paused' }));
+            return;
+        }
+
+        // STRICT GUARD: Resume and Launch require integration check
+        if (action === 'resume' || action === 'launch') {
+            const check = canLaunchCampaign(campaignForGuard, integrations);
+
+            if (!check.allowed) {
+                setLaunchError({
+                    message: `Connect ${check.missing.join(', ')} in Settings to ${action} this campaign`,
+                    missing: check.missing
+                });
+                return;
+            }
+        }
+
+        // Clear error and proceed
+        setLaunchError(null);
         let newStatus = status;
-        if (action === 'pause') newStatus = 'paused';
         if (action === 'resume') newStatus = 'active';
         if (action === 'launch') newStatus = 'active';
 
         updateCampaign(campaignId, { status: newStatus });
-        // Refresh local state immediately (though Context update should trigger re-render if we consumed it directly, 
-        // since we setCampaign in useEffect on dependency, it might need a re-fetch or internal update)
         setCampaign(prev => ({ ...prev, status: newStatus }));
     };
 
@@ -79,7 +108,7 @@ export default function CampaignDetails() {
 
     // Formatted Data (Mocked if missing)
     const totalSpend = metrics?.spend || '₹12,450';
-    const todaySpend = '₹1,500'; // Mocked 'Live' data
+    const todaySpend = '₹1,500';
     const leads = metrics?.conversions || 45;
     const ctr = metrics?.ctr || '1.8%';
     const impressions = metrics?.impressions || '12.5k';
@@ -130,12 +159,21 @@ export default function CampaignDetails() {
                             </Button>
                         )}
                         {isPaused && (
-                            <Button variant="secondary" onClick={() => handleAction('resume')}>
+                            <Button
+                                variant="secondary"
+                                onClick={() => handleAction('resume')}
+                                disabled={!launchCheck.allowed}
+                                className={!launchCheck.allowed ? 'opacity-50 cursor-not-allowed' : ''}
+                            >
                                 <Play className="w-4 h-4 mr-2" /> Resume
                             </Button>
                         )}
                         {isDraft && (
-                            <Button onClick={() => handleAction('launch')}>
+                            <Button
+                                onClick={() => handleAction('launch')}
+                                disabled={!launchCheck.allowed}
+                                className={!launchCheck.allowed ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none pointer-events-none' : ''}
+                            >
                                 <Rocket className="w-4 h-4 mr-2" /> Launch
                             </Button>
                         )}
@@ -146,6 +184,52 @@ export default function CampaignDetails() {
                     </div>
                 </div>
             </div>
+
+            {/* Integration Warning for paused/draft campaigns */}
+            {(isPaused || isDraft) && !launchCheck.allowed && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-red-800 mb-2">
+                                Missing Required Integrations
+                            </h4>
+                            <p className="text-sm text-red-700 mb-3">
+                                Connect {launchCheck.missing.join(', ')} in Settings to {isDraft ? 'launch' : 'resume'} this campaign.
+                            </p>
+                            <Link
+                                to="/marketing/settings/integrations"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                                Go to Marketing Settings → Integrations <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Launch Error (if user tries to launch/resume) */}
+            {launchError && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-5">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                            <h4 className="text-sm font-semibold text-amber-800 mb-2">
+                                Cannot {launchError.message.includes('resume') ? 'Resume' : 'Launch'} Campaign
+                            </h4>
+                            <p className="text-sm text-amber-700 mb-4">
+                                {launchError.message}
+                            </p>
+                            <Link
+                                to="/marketing/settings/integrations"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
+                            >
+                                Go to Integrations <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Analytics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -18,6 +18,15 @@ export const saveCampaigns = (campaigns) => {
     }
 };
 
+// Clear all campaigns (for resetting demo data)
+export const clearCampaigns = () => {
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+        console.error('Error clearing campaigns from storage:', error);
+    }
+};
+
 export const addCampaign = (campaign) => {
     const campaigns = getCampaigns();
     const newCampaign = {

@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, ExternalLink, Facebook, Chrome, Linkedin, Pause, Play, Trash, Copy, Edit, Rocket } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Facebook, Chrome, Linkedin, Pause, Play, Trash, Copy, Edit, Rocket, AlertCircle } from 'lucide-react';
+import { useIntegrations } from '../../../context/IntegrationContext';
+import { canLaunchCampaign } from '../../../utils/campaignGuard';
 import CampaignStatusBadge from './CampaignStatusBadge';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
@@ -7,7 +9,14 @@ import Dropdown from '../../../components/ui/Dropdown';
 
 const CampaignCard = ({ campaign = {}, onToggleStatus, onEdit, onDelete }) => {
     const navigate = useNavigate();
+    const { integrations } = useIntegrations();
     const { id, name, status = 'draft', platforms = [], dailyBudget, leads, projectId } = campaign;
+
+    // Build campaign object for guard check
+    const campaignForGuard = {
+        platforms: platforms.length > 0 ? platforms : ['facebook', 'google']
+    };
+    const launchCheck = canLaunchCampaign(campaignForGuard, integrations);
 
     const getPlatformIcon = (p) => {
         if (p.includes('Facebook') || p.includes('Meta')) return <Facebook key={p} className="w-4 h-4 text-[#1877F2]" />;
@@ -18,6 +27,18 @@ const CampaignCard = ({ campaign = {}, onToggleStatus, onEdit, onDelete }) => {
 
     const handleViewDetails = () => {
         navigate(`/marketing/projects/${projectId}/campaigns/${id}`);
+    };
+
+    const handleToggleWithGuard = () => {
+        // STRICT GUARD: Check before allowing transition to running
+        if (status === 'paused' || status === 'draft') {
+            if (!launchCheck.allowed) {
+                // Don't proceed - show alert
+                alert(`Cannot ${status === 'draft' ? 'launch' : 'resume'}: Connect ${launchCheck.missing.join(', ')} in Marketing Settings → Integrations first.`);
+                return;
+            }
+        }
+        onToggleStatus(campaign);
     };
 
     const renderActions = () => {
@@ -44,8 +65,9 @@ const CampaignCard = ({ campaign = {}, onToggleStatus, onEdit, onDelete }) => {
                     <>
                         <Button
                             variant="secondary"
-                            onClick={() => onToggleStatus(campaign)}
-                            className="text-green-600 bg-green-50 hover:bg-green-100 border-none"
+                            onClick={handleToggleWithGuard}
+                            disabled={!launchCheck.allowed}
+                            className={`text-green-600 bg-green-50 hover:bg-green-100 border-none ${!launchCheck.allowed ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <Play className="w-4 h-4 mr-2" />
                             Resume
@@ -63,7 +85,11 @@ const CampaignCard = ({ campaign = {}, onToggleStatus, onEdit, onDelete }) => {
                             <Edit className="w-4 h-4 mr-2" />
                             Edit
                         </Button>
-                        <Button onClick={() => onToggleStatus(campaign)}>
+                        <Button
+                            onClick={handleToggleWithGuard}
+                            disabled={!launchCheck.allowed}
+                            className={!launchCheck.allowed ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' : ''}
+                        >
                             <Rocket className="w-4 h-4 mr-2" />
                             Launch
                         </Button>
@@ -130,6 +156,22 @@ const CampaignCard = ({ campaign = {}, onToggleStatus, onEdit, onDelete }) => {
                     </Dropdown>
                 </div>
             </div>
+
+            {/* Integration Warning for paused/draft */}
+            {(status === 'paused' || status === 'draft') && !launchCheck.allowed && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-start gap-2" onClick={(e) => e.stopPropagation()}>
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                    <div className="text-xs text-red-700">
+                        <span className="font-medium">Missing integrations:</span> {launchCheck.missing.join(', ')}.
+                        <button
+                            onClick={() => navigate('/marketing/settings/integrations')}
+                            className="ml-1 underline hover:no-underline font-medium"
+                        >
+                            Connect now
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-6">
                 <div>

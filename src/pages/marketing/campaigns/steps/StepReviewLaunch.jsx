@@ -1,25 +1,93 @@
 import React, { useState } from 'react';
-import { Rocket, ArrowLeft, Building2, Users2, Layout, Wallet, Edit2, ShieldCheck, CheckSquare, Square, CheckCircle2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { Rocket, ArrowLeft, Building2, Layout, Edit2, CheckSquare, Square, AlertCircle, ArrowRight } from 'lucide-react';
+import { useIntegrations } from '../../../../context/IntegrationContext';
+import { canLaunchCampaign, getIntegrationErrors } from '../../../../utils/campaignGuard';
 
 const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
     const [isConfirmed, setIsConfirmed] = useState(true);
     const [isLaunching, setIsLaunching] = useState(false);
+    const { integrations } = useIntegrations();
+
+    // Derive platforms from budget split data
+    // StepPlatformBudget stores: budget.split.meta (%) and budget.split.google (%)
+    const derivePlatforms = () => {
+        const platforms = [];
+        const budgetSplit = data?.budget?.split;
+
+        if (budgetSplit?.meta > 0) {
+            platforms.push('facebook'); // Meta Ads = Facebook/Instagram
+        }
+        if (budgetSplit?.google > 0) {
+            platforms.push('google');
+        }
+
+        // If no budget data yet, default to both platforms
+        if (platforms.length === 0) {
+            return ['facebook', 'google'];
+        }
+
+        return platforms;
+    };
+
+    // Build campaign object for validation
+    // Use data.platforms if it has values, otherwise derive from budget split
+    const detectedPlatforms = (data?.platforms?.length > 0)
+        ? data.platforms
+        : derivePlatforms();
+
+    const campaign = {
+        platforms: detectedPlatforms
+    };
+
+    // Use the SINGLE AUTHORITY guard function
+    const launchCheck = canLaunchCampaign(campaign, integrations);
+    const integrationErrors = getIntegrationErrors(campaign, integrations);
+    const hasIntegrationErrors = integrationErrors.length > 0;
+    const canLaunch = isConfirmed && launchCheck.allowed;
+    const [launchError, setLaunchError] = useState(null);
+
+    // DEBUG: Remove after testing
+    console.log('[StepReviewLaunch] Guard Debug:', {
+        platforms: campaign.platforms,
+        integrations: {
+            meta: integrations?.meta?.connected,
+            google: integrations?.google?.connected,
+            linkedin: integrations?.linkedin?.connected
+        },
+        launchCheck,
+        canLaunch
+    });
 
     const handleLaunch = () => {
-        if (!isConfirmed) return;
+        // STRICT GUARD: Re-check at launch time
+        const check = canLaunchCampaign(campaign, integrations);
 
+        if (!check.allowed) {
+            // DO NOT navigate, DO NOT change status
+            setLaunchError({
+                message: `Connect ${check.missing.join(', ')} in Settings to launch this campaign`,
+                missing: check.missing
+            });
+            return;
+        }
+
+        if (!isConfirmed) {
+            return;
+        }
+
+        // Clear any previous error
+        setLaunchError(null);
         setIsLaunching(true);
-        // Mock API delay
+
         setTimeout(() => {
             if (onLaunch) {
-                onLaunch();
+                onLaunch(); // This sets campaign.status = 'running' in parent
             }
         }, 1500);
     };
 
-    // Helper for sections
-    const SectionHeader = ({ title, stepIndex }) => (
+    const SectionHeader = ({ title }) => (
         <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                 {title}
@@ -109,6 +177,62 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
                 </div>
             </div>
 
+            {/* Integration Warning */}
+            {hasIntegrationErrors && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-red-800 mb-2">
+                                Missing Required Integrations
+                            </h4>
+                            <ul className="space-y-2 mb-3">
+                                {integrationErrors.map((error) => (
+                                    <li key={error.id} className="flex items-center justify-between gap-4">
+                                        <span className="text-sm text-red-700">{error.message}</span>
+                                        <Link
+                                            to={`/marketing/settings/integrations/${error.id}`}
+                                            className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-800 whitespace-nowrap"
+                                        >
+                                            Connect <ArrowRight className="w-3 h-3" />
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                            <p className="text-xs text-red-600">
+                                <Link to="/marketing/settings/integrations" className="underline hover:no-underline font-medium">
+                                    Go to Marketing → Settings → Integrations
+                                </Link>{' '}
+                                to connect required platforms before launching.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Launch Error (shown when user clicks launch without integrations) */}
+            {launchError && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-5">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                            <h4 className="text-sm font-semibold text-amber-800 mb-2">
+                                Cannot Launch Campaign
+                            </h4>
+                            <p className="text-sm text-amber-700 mb-4">
+                                {launchError.message}
+                            </p>
+                            <Link
+                                to="/marketing/settings/integrations"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
+                            >
+                                Go to Integrations <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 5. Final Confirmation & Actions */}
             <div className="mt-8 pt-8 border-t border-gray-100">
                 <div className="bg-green-50/50 rounded-xl p-4 border border-green-100 mb-8 cursor-pointer" onClick={() => setIsConfirmed(!isConfirmed)}>
@@ -137,12 +261,12 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
 
                     <button
                         onClick={handleLaunch}
-                        disabled={!isConfirmed || isLaunching}
+                        disabled={!launchCheck.allowed || !isConfirmed || isLaunching}
                         className={`
-                            group flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all
-                            ${isConfirmed && !isLaunching
-                                ? 'bg-primary text-white hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5'
-                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            group flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-lg shadow-lg transition-all
+                            ${launchCheck.allowed && isConfirmed && !isLaunching
+                                ? 'bg-primary text-white hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5 shadow-primary/20'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none pointer-events-none'
                             }
                         `}
                     >
@@ -153,7 +277,7 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
                             </>
                         ) : (
                             <>
-                                <Rocket className="w-5 h-5 group-hover:animate-pulse" />
+                                <Rocket className="w-5 h-5" />
                                 <span>Launch Campaign</span>
                             </>
                         )}

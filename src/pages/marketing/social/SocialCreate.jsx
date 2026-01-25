@@ -1,16 +1,45 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Wand2, Image as ImageIcon, Send } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Wand2, Image as ImageIcon, Send, AlertCircle, ArrowRight } from 'lucide-react';
 import { useMarketing } from '../../../context/MarketingContext';
+import { useIntegrations } from '../../../context/IntegrationContext';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import PostTypeSelector from '../components/social/PostTypeSelector';
 import ScheduleSelector from '../components/social/ScheduleSelector';
 import SocialPreview from '../components/social/SocialPreview';
 
+/**
+ * Guard function for social publishing
+ * Uses the same logic as campaign launch guard
+ */
+const canPublishToSocial = (platforms, integrationState) => {
+    const missing = [];
+
+    // Facebook/Instagram require Meta integration
+    if (platforms.includes('Facebook') || platforms.includes('Instagram')) {
+        if (!integrationState?.meta?.connected) {
+            missing.push('Meta Ads (Facebook/Instagram)');
+        }
+    }
+
+    // LinkedIn requires LinkedIn integration
+    if (platforms.includes('LinkedIn')) {
+        if (!integrationState?.linkedin?.connected) {
+            missing.push('LinkedIn');
+        }
+    }
+
+    return {
+        allowed: missing.length === 0,
+        missing
+    };
+};
+
 const SocialCreate = () => {
     const navigate = useNavigate();
     const { addSocialPost } = useMarketing();
+    const { integrations } = useIntegrations();
 
     // Editor State
     const [content, setContent] = useState("");
@@ -18,6 +47,14 @@ const SocialCreate = () => {
     const [scheduleMode, setScheduleMode] = useState('now');
     const [isSaving, setIsSaving] = useState(false);
     const [media, setMedia] = useState([]);
+    const [publishError, setPublishError] = useState(null);
+
+    // Selected platforms for this post
+    const selectedPlatforms = ['Facebook', 'Instagram'];
+
+    // Check if we can publish
+    const publishCheck = canPublishToSocial(selectedPlatforms, integrations);
+    const canPublish = publishCheck.allowed && content.length > 0;
 
     const handleDrop = (e) => {
         e.preventDefault();
@@ -34,7 +71,7 @@ const SocialCreate = () => {
             type: postType,
             status: 'draft',
             timestamp: new Date().toISOString(),
-            platforms: ['Facebook', 'Instagram']
+            platforms: selectedPlatforms
         };
 
         addSocialPost(newPost);
@@ -43,6 +80,22 @@ const SocialCreate = () => {
     };
 
     const handlePublish = async () => {
+        // STRICT GUARD: Re-check at publish time
+        const check = canPublishToSocial(selectedPlatforms, integrations);
+
+        if (!check.allowed) {
+            setPublishError({
+                message: `Connect ${check.missing.join(', ')} in Settings to publish posts`,
+                missing: check.missing
+            });
+            return;
+        }
+
+        if (!content) {
+            return;
+        }
+
+        setPublishError(null);
         setIsSaving(true);
         await new Promise(resolve => setTimeout(resolve, 1500));
 
@@ -54,7 +107,7 @@ const SocialCreate = () => {
             status: status,
             scheduledFor: scheduleMode === 'now' ? 'Published Now' : 'Scheduled',
             timestamp: new Date().toISOString(),
-            platforms: ['Facebook', 'Instagram']
+            platforms: selectedPlatforms
         };
 
         addSocialPost(newPost);
@@ -72,6 +125,52 @@ const SocialCreate = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 {/* Left Column: Editor (2 cols) */}
                 <div className="lg:col-span-2 space-y-6">
+                    {/* Integration Warning */}
+                    {!publishCheck.allowed && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-semibold text-red-800 mb-2">
+                                        Missing Required Integrations
+                                    </h4>
+                                    <p className="text-sm text-red-700 mb-3">
+                                        Connect {publishCheck.missing.join(', ')} in Settings to publish posts.
+                                    </p>
+                                    <Link
+                                        to="/marketing/settings/integrations"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                                    >
+                                        Go to Marketing Settings → Integrations <ArrowRight className="w-4 h-4" />
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Publish Error (if user tries to publish without integrations) */}
+                    {publishError && (
+                        <div className="bg-amber-50 border border-amber-300 rounded-xl p-5">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-semibold text-amber-800 mb-2">
+                                        Cannot Publish Post
+                                    </h4>
+                                    <p className="text-sm text-amber-700 mb-4">
+                                        {publishError.message}
+                                    </p>
+                                    <Link
+                                        to="/marketing/settings/integrations"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
+                                    >
+                                        Go to Integrations <ArrowRight className="w-4 h-4" />
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* 1. Content Composition */}
                     <Card className="overflow-hidden">
                         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -134,7 +233,12 @@ const SocialCreate = () => {
                                 <Button variant="secondary" onClick={handleSaveDraft} disabled={isSaving}>
                                     Save as Draft
                                 </Button>
-                                <Button onClick={handlePublish} isLoading={isSaving} disabled={!content}>
+                                <Button
+                                    onClick={handlePublish}
+                                    isLoading={isSaving}
+                                    disabled={!canPublish || isSaving}
+                                    className={!canPublish ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none pointer-events-none' : ''}
+                                >
                                     <Send className="w-4 h-4 mr-2" />
                                     {scheduleMode === 'now' ? 'Publish Now' : 'Schedule Post'}
                                 </Button>

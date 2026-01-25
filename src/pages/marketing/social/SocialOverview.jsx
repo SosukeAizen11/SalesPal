@@ -1,18 +1,53 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Plus, Facebook, Instagram, Linkedin, ArrowRight } from 'lucide-react';
 import { useMarketing } from '../../../context/MarketingContext';
+import { useIntegrations } from '../../../context/IntegrationContext';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 
 const SocialOverview = () => {
     const navigate = useNavigate();
     const { socialPosts } = useMarketing();
+    const { integrations } = useIntegrations();
 
     // Mock calculations
     const scheduledCount = socialPosts.filter(p => p.status === 'scheduled').length;
     const draftsCount = socialPosts.filter(p => p.status === 'draft').length;
     const publishedCount = socialPosts.filter(p => p.status === 'published').length;
+
+    // Social channels with real connection status from IntegrationContext
+    const channels = [
+        {
+            id: 'facebook',
+            name: 'Facebook Page',
+            accountName: integrations.meta?.accountName || 'Not connected',
+            icon: Facebook,
+            iconBg: 'bg-[#1877F2]',
+            connected: integrations.meta?.connected,
+            integrationId: 'meta'
+        },
+        {
+            id: 'instagram',
+            name: 'Instagram Business',
+            accountName: integrations.meta?.connected ? '@salespal_tech' : 'Not connected',
+            icon: Instagram,
+            iconBg: 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500',
+            connected: integrations.meta?.connected, // Instagram uses Meta integration
+            integrationId: 'meta'
+        },
+        {
+            id: 'linkedin',
+            name: 'LinkedIn Company',
+            accountName: integrations.linkedin?.accountName || 'Not connected',
+            icon: Linkedin,
+            iconBg: 'bg-[#0077B5]',
+            connected: integrations.linkedin?.connected,
+            integrationId: 'linkedin'
+        }
+    ];
+
+    const connectedCount = channels.filter(c => c.connected).length;
 
     return (
         <div className="space-y-8 animate-fade-in-up">
@@ -74,39 +109,48 @@ const SocialOverview = () => {
 
             {/* Connected Accounts */}
             <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Connected Channels</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Card className="flex items-center p-4 gap-4">
-                        <div className="w-10 h-10 bg-[#1877F2] text-white rounded-lg flex items-center justify-center">
-                            <Facebook className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h4 className="font-medium text-gray-900">Facebook Page</h4>
-                            <p className="text-sm text-gray-500">SalesPal Official</p>
-                        </div>
-                        <div className="ml-auto w-2 h-2 bg-green-500 rounded-full" title="Connected"></div>
-                    </Card>
-                    <Card className="flex items-center p-4 gap-4">
-                        <div className="w-10 h-10 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 text-white rounded-lg flex items-center justify-center">
-                            <Instagram className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h4 className="font-medium text-gray-900">Instagram Business</h4>
-                            <p className="text-sm text-gray-500">@salespal_tech</p>
-                        </div>
-                        <div className="ml-auto w-2 h-2 bg-green-500 rounded-full" title="Connected"></div>
-                    </Card>
-                    <Card className="flex items-center p-4 gap-4">
-                        <div className="w-10 h-10 bg-[#0077B5] text-white rounded-lg flex items-center justify-center">
-                            <Linkedin className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h4 className="font-medium text-gray-900">LinkedIn Company</h4>
-                            <p className="text-sm text-gray-500">SalesPal Inc.</p>
-                        </div>
-                        <div className="ml-auto w-2 h-2 bg-green-500 rounded-full" title="Connected"></div>
-                    </Card>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Connected Channels</h3>
+                    <span className="text-sm text-gray-500">{connectedCount} of {channels.length} connected</span>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {channels.map(channel => (
+                        <Card
+                            key={channel.id}
+                            className={`flex items-center p-4 gap-4 ${!channel.connected ? 'opacity-60' : ''}`}
+                        >
+                            <div className={`w-10 h-10 ${channel.iconBg} text-white rounded-lg flex items-center justify-center`}>
+                                <channel.icon className="w-6 h-6" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-gray-900">{channel.name}</h4>
+                                <p className="text-sm text-gray-500 truncate">{channel.accountName}</p>
+                            </div>
+                            {channel.connected ? (
+                                <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" title="Connected"></div>
+                            ) : (
+                                <Link
+                                    to={`/marketing/settings/integrations/${channel.integrationId}`}
+                                    className="text-xs font-medium text-blue-600 hover:text-blue-800 whitespace-nowrap"
+                                >
+                                    Connect
+                                </Link>
+                            )}
+                        </Card>
+                    ))}
+                </div>
+
+                {connectedCount === 0 && (
+                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                        <p className="font-medium">No channels connected</p>
+                        <p className="text-amber-700 mt-1">
+                            <Link to="/marketing/settings/integrations" className="underline hover:no-underline">
+                                Connect your social accounts
+                            </Link>{' '}
+                            to publish posts directly from SalesPal.
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* Upcoming Queue Preview */}
