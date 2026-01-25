@@ -14,7 +14,7 @@ import Select from '../../../components/ui/Select';
 export default function ProjectDetails() {
     const { projectId } = useParams();
     const navigate = useNavigate();
-    const { getProjectById, getCampaignsByProject, updateProject, deleteProject } = useMarketing();
+    const { getProjectById, getCampaignsByProject, updateProject, deleteProject, updateCampaign, deleteCampaign } = useMarketing();
 
     // Modals state
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -53,12 +53,7 @@ export default function ProjectDetails() {
     };
 
     const handleCampaignEditClick = (campaign) => {
-        setSelectedCampaign(campaign);
-        setCampaignEditData({
-            dailyBudget: campaign.dailyBudget || '',
-            status: campaign.status || 'active'
-        });
-        setIsCampaignEditModalOpen(true);
+        navigate(`/marketing/projects/${projectId}/campaigns/${campaign.id}/edit`);
     };
 
     const handleCampaignDeleteClick = (campaign) => {
@@ -67,17 +62,13 @@ export default function ProjectDetails() {
     };
 
     const handleCampaignToggleStatus = (campaign) => {
-        const newStatus = campaign.status === 'active' ? 'paused' : 'active';
-        updateCampaign(campaign.id, { status: newStatus });
-    };
-
-    const handleUpdateCampaign = (e) => {
-        e.preventDefault();
-        if (selectedCampaign) {
-            updateCampaign(selectedCampaign.id, campaignEditData);
-            setIsCampaignEditModalOpen(false);
-            setSelectedCampaign(null);
+        let newStatus = 'active';
+        if (campaign.status === 'active') {
+            newStatus = 'paused';
+        } else if (campaign.status === 'paused' || campaign.status === 'draft') {
+            newStatus = 'active';
         }
+        updateCampaign(campaign.id, { status: newStatus });
     };
 
     const handleDeleteCampaignConfirm = () => {
@@ -246,42 +237,6 @@ export default function ProjectDetails() {
                     </Card>
                 )}
             </div>
-
-            {/* Edit Campaign Modal */}
-            <Modal
-                isOpen={isCampaignEditModalOpen}
-                onClose={() => setIsCampaignEditModalOpen(false)}
-                title="Edit Campaign"
-            >
-                <form onSubmit={handleUpdateCampaign} className="space-y-4">
-                    <Input
-                        label="Name"
-                        value={selectedCampaign?.name || ''}
-                        disabled
-                        helperText="Campaign name cannot be changed."
-                    />
-                    <Input
-                        label="Daily Budget"
-                        value={campaignEditData.dailyBudget}
-                        onChange={(e) => setCampaignEditData({ ...campaignEditData, dailyBudget: e.target.value })}
-                        placeholder="e.g. ₹5,000"
-                    />
-                    <Select
-                        label="Status"
-                        value={campaignEditData.status}
-                        onChange={(e) => setCampaignEditData({ ...campaignEditData, status: e.target.value })}
-                    >
-                        <option value="active">Active</option>
-                        <option value="paused">Paused</option>
-                        <option value="draft">Draft</option>
-                        <option value="ended">Ended</option>
-                    </Select>
-                    <div className="flex justify-end gap-2 mt-6">
-                        <Button type="button" variant="secondary" onClick={() => setIsCampaignEditModalOpen(false)}>Cancel</Button>
-                        <Button type="submit">Save Changes</Button>
-                    </div>
-                </form>
-            </Modal>
 
             {/* Delete Campaign Modal */}
             <ConfirmationModal

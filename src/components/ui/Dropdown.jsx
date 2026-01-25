@@ -26,14 +26,17 @@ const Dropdown = ({ trigger, children, align = 'right' }) => {
                     className={`absolute z-10 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none animate-fade-in ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}`}
                 >
                     <div className="py-1" role="menu" aria-orientation="vertical">
-                        {React.Children.map(children, (child) =>
-                            React.cloneElement(child, {
-                                onClick: (e) => {
-                                    child.props.onClick?.(e);
-                                    setIsOpen(false);
-                                }
-                            })
-                        )}
+                        {React.Children.map(children, (child) => {
+                            if (React.isValidElement(child)) {
+                                return React.cloneElement(child, {
+                                    onClick: (e) => {
+                                        child.props.onClick?.(e);
+                                        setIsOpen(false);
+                                    }
+                                });
+                            }
+                            return child;
+                        })}
                     </div>
                 </div>
             )}

@@ -1,83 +1,244 @@
 import React, { useState } from 'react';
-import { Globe, FileText, Image as ImageIcon, Briefcase } from 'lucide-react';
+import { Globe, FileText, AlignLeft, Check, Upload, Image as ImageIcon } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
 import FileUploadBox from '../components/FileUploadBox';
-import ImageUploadGrid from '../components/ImageUploadGrid';
-import LogoToggle from '../components/LogoToggle';
-import Card from '../../../../components/ui/Card';
 import Input from '../../../../components/ui/Input';
 import Textarea from '../../../../components/ui/Textarea';
+import Button from '../../../../components/ui/Button';
 
-const Section = ({ title, icon: Icon, children, className = "" }) => (
-    <Card className={className}>
-        <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-500">
-                <Icon className="w-4 h-4" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        </div>
-        {children}
-    </Card>
-);
+const StepBusinessInput = ({ onComplete, data }) => {
+    const [activeTab, setActiveTab] = useState('description');
 
-const StepBusinessInput = () => {
-    // Local state for the step
-    const [websiteUrl, setWebsiteUrl] = useState('');
-    const [description, setDescription] = useState('');
+    // Form Data
+    const [description, setDescription] = useState(data?.description || '');
+    const [websiteUrl, setWebsiteUrl] = useState(data?.websiteUrl || '');
     const [pdfFile, setPdfFile] = useState(null);
-    const [productImages, setProductImages] = useState([]);
-    const [useLogo, setUseLogo] = useState(false);
     const [logoFile, setLogoFile] = useState(null);
 
+    // Logo Dropzone Logic
+    const onLogoDrop = (acceptedFiles) => {
+        if (acceptedFiles?.length) {
+            const file = Object.assign(acceptedFiles[0], {
+                preview: URL.createObjectURL(acceptedFiles[0])
+            });
+            setLogoFile(file);
+        }
+    };
+
+    const { getRootProps: getLogoRootProps, getInputProps: getLogoInputProps, isDragActive: isLogoDragActive } = useDropzone({
+        onDrop: onLogoDrop,
+        accept: { 'image/*': ['.png', '.jpg', '.jpeg'] },
+        maxFiles: 1,
+        maxSize: 2097152 // 2MB
+    });
+
+    // Validation
+    const isTabValid = () => {
+        switch (activeTab) {
+            case 'description': return description.length > 10;
+            case 'url': return Boolean(websiteUrl);
+            case 'pdf': return Boolean(pdfFile);
+            default: return false;
+        }
+    };
+
+    const handleNext = () => {
+        if (onComplete) {
+            onComplete({
+                inputMode: activeTab,
+                description,
+                websiteUrl,
+                pdfFile,
+                logoFile
+            });
+        }
+    };
+
+    const tabs = [
+        { id: 'description', label: 'Text Description', icon: AlignLeft },
+        { id: 'url', label: 'Website URL', icon: Globe },
+        { id: 'pdf', label: 'Upload PDF', icon: FileText },
+    ];
+
     return (
-        <div className="space-y-6 animate-fade-in-up">
-            {/* Website URL */}
-            <Section title="Website URL" icon={Globe}>
-                <Input
-                    type="url"
-                    value={websiteUrl}
-                    onChange={(e) => setWebsiteUrl(e.target.value)}
-                    placeholder="https://example.com"
-                    helperText="We’ll analyze your website to understand your business and products automatically."
-                />
-            </Section>
-
-            {/* Business Description */}
-            <Section title="Business Description" icon={Briefcase}>
-                <Textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="We sell premium real estate properties in South Mumbai..."
-                    className="min-h-[120px] resize-y"
-                />
-            </Section>
-
-            <div className="grid md:grid-cols-2 gap-6">
-                {/* PDF Upload */}
-                <Section title="Upload Brochure/PDF" icon={FileText}>
-                    <FileUploadBox
-                        selectedFile={pdfFile}
-                        onFileSelect={setPdfFile}
-                    />
-                </Section>
-
-                {/* Logo Toggle */}
-                <Section title="Brand Identity" icon={Briefcase}>
-                    <LogoToggle
-                        useLogo={useLogo}
-                        onToggle={setUseLogo}
-                        logoFile={logoFile}
-                        onLogoChange={setLogoFile}
-                    />
-                </Section>
+        <div className="animate-fade-in-up">
+            {/* Tabs Header */}
+            <div className="flex border-b border-gray-100 bg-gray-50/50 rounded-lg overflow-hidden mb-8">
+                {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`
+                                flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium transition-all
+                                ${isActive
+                                    ? 'bg-white text-primary border-t-2 border-t-primary shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
+                                }
+                            `}
+                        >
+                            <Icon className={`w-4 h-4 ${isActive ? 'text-primary' : 'text-gray-400'}`} />
+                            {tab.label}
+                        </button>
+                    );
+                })}
             </div>
 
-            {/* Product Images */}
-            <Section title="Product / Service Images" icon={ImageIcon}>
-                <ImageUploadGrid
-                    images={productImages}
-                    onImagesChange={setProductImages}
-                />
-            </Section>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: Input Content (Span 2) */}
+                <div className="lg:col-span-2 space-y-6">
+
+                    {/* Tab 1: Text Description */}
+                    {activeTab === 'description' && (
+                        <div className="animate-fade-in space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-900 mb-2">Business Description</label>
+                                <Textarea
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    placeholder="We are a premium coffee subscription service based in Mumbai, India, targeting busy professionals who want fresh, ethically sourced beans delivered monthly at ₹999/month..."
+                                    className="min-h-[220px] text-base leading-relaxed resize-none p-4"
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <Globe className="w-4 h-4 text-blue-500" />
+                                <p>Include your city/country for automatic currency & timezone detection</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Tab 2: Website URL */}
+                    {activeTab === 'url' && (
+                        <div className="animate-fade-in space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-900 mb-2">Your Business Website</label>
+                                <Input
+                                    type="url"
+                                    value={websiteUrl}
+                                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                                    placeholder="https://yourbusiness.com"
+                                    className="text-lg py-3"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="bg-blue-50/50 rounded-xl p-5 border border-blue-100">
+                                <h4 className="font-semibold text-blue-900 text-sm mb-3 flex items-center gap-2">
+                                    <Globe className="w-4 h-4" />
+                                    What SalesPal AI will extract:
+                                </h4>
+                                <ul className="space-y-2">
+                                    {[
+                                        'Business description & services',
+                                        'Product offerings & pricing',
+                                        'Target audience insights',
+                                        'Location & currency detection',
+                                        'Brand assets & images'
+                                    ].map((item, i) => (
+                                        <li key={i} className="flex items-start gap-2 text-sm text-blue-800">
+                                            <Check className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <p className="text-sm text-gray-500">
+                                SalesPal AI will analyze your website to understand your business, products, and target audience.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Tab 3: Upload PDF */}
+                    {activeTab === 'pdf' && (
+                        <div className="animate-fade-in space-y-6">
+                            <label className="block text-sm font-medium text-gray-900">Upload Business Document (PDF)</label>
+
+                            <FileUploadBox
+                                selectedFile={pdfFile}
+                                onFileSelect={setPdfFile}
+                                className="min-h-[200px]"
+                                title="Click to upload PDF"
+                                subtitle="Business plan, brochure, or product catalog"
+                                accept={{ 'application/pdf': ['.pdf'] }}
+                            />
+
+                            <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                                <h4 className="font-semibold text-gray-900 text-sm mb-3">Supported documents:</h4>
+                                <ul className="grid grid-cols-2 gap-2">
+                                    {[
+                                        'Business plans & proposals',
+                                        'Product catalogs & brochures',
+                                        'Marketing materials',
+                                        'Company profiles'
+                                    ].map((item, i) => (
+                                        <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Right Column: Logo Upload (Always Visible) */}
+                <div className="lg:col-span-1">
+                    <div className="sticky top-6">
+                        <label className="block text-sm font-medium text-gray-900 mb-2">Upload brand logo</label>
+
+                        <div
+                            {...getLogoRootProps()}
+                            className={`
+                                aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-4 text-center transition-all cursor-pointer bg-gray-50/50
+                                ${isLogoDragActive ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-100/50'}
+                            `}
+                        >
+                            <input {...getLogoInputProps()} />
+
+                            {logoFile ? (
+                                <div className="relative w-full h-full flex items-center justify-center group">
+                                    <img
+                                        src={logoFile.preview}
+                                        alt="Logo Preview"
+                                        className="max-w-full max-h-full object-contain"
+                                    />
+                                    <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">
+                                        Click to change
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center mb-3">
+                                        <ImageIcon className="w-5 h-5 text-gray-400" />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-900 mb-1">Upload Logo</span>
+                                    <span className="text-xs text-gray-500">PNG or JPG, max 2MB</span>
+                                </>
+                            )}
+                        </div>
+
+                        <p className="mt-3 text-xs text-gray-500 leading-relaxed text-center px-2">
+                            Your logo will appear on all ad creatives by default
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="mt-10 pt-6 border-t border-gray-100">
+                <Button
+                    size="lg"
+                    className="w-full text-base font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-shadow"
+                    onClick={handleNext}
+                >
+                    ✨ Let SalesPal AI Understand My Business
+                </Button>
+            </div>
         </div>
     );
 };

@@ -18,11 +18,20 @@ import Analytics from '../pages/marketing/Analytics';
 import Settings from '../pages/marketing/Settings';
 import NewCampaign from '../pages/marketing/campaigns/NewCampaign';
 import CampaignDetails from '../pages/marketing/campaigns/CampaignDetails';
+import EditCampaign from '../pages/marketing/campaigns/EditCampaign';
 import Social from '../pages/marketing/Social';
 import { MarketingProvider } from '../context/MarketingContext';
 import Projects from '../pages/marketing/projects/Projects';
 import CreateProject from '../pages/marketing/projects/CreateProject';
 import ProjectDetails from '../pages/marketing/projects/ProjectDetails';
+
+// Social Pages
+import SocialLayout from '../pages/marketing/social/SocialLayout';
+import SocialOverview from '../pages/marketing/social/SocialOverview';
+import SocialCreate from '../pages/marketing/social/SocialCreate';
+import SocialList from '../pages/marketing/social/SocialList';
+import SocialAnalytics from '../pages/marketing/social/SocialAnalytics';
+import SocialPostDetails from '../pages/marketing/social/SocialPostDetails';
 
 export const router = createBrowserRouter([
     {
@@ -73,8 +82,21 @@ export const router = createBrowserRouter([
                         element: <CampaignDetails />
                     },
                     {
+                        path: "projects/:projectId/campaigns/:campaignId/edit",
+                        element: <EditCampaign />
+                    },
+                    {
                         path: "social",
-                        element: <Social />
+                        element: <SocialLayout />,
+                        children: [
+                            { index: true, element: <SocialOverview /> },
+                            { path: "create", element: <SocialCreate /> },
+                            { path: "drafts", element: <SocialList status="drafts" /> },
+                            { path: "scheduled", element: <SocialList status="scheduled" /> },
+                            { path: "published", element: <SocialList status="published" /> },
+                            { path: "analytics", element: <SocialAnalytics /> },
+                            { path: "posts/:id", element: <SocialPostDetails /> }
+                        ]
                     },
                     {
                         path: "analytics",

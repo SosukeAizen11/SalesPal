@@ -18,57 +18,104 @@ import StepPlatformBudget from './steps/StepPlatformBudget';
 import StepReviewLaunch from './steps/StepReviewLaunch';
 
 const STEPS = [
-    { label: 'Business', title: 'Business & Goals', subtitle: 'Tell us about your business so our AI can understand your goals.' },
-    { label: 'Analysis', title: 'AI Market Analysis', subtitle: 'Review AI insights on your target audience and competitors.' },
-    { label: 'Ads', title: 'Ad Creative', subtitle: 'Select from AI-generated ad copy and visual concepts.' },
-    { label: 'Budget', title: 'Platform & Budget', subtitle: 'Allocate budget across recommended platforms.' },
-    { label: 'Review', title: 'Review & Launch', subtitle: 'Finalize your campaign settings and go live.' },
+    {
+        label: 'Business',
+        title: 'Tell SalesPal AI About Your Business',
+        subtitle: 'Share your business details via text, website, or PDF. Include your location for automatic currency detection.'
+    },
+    { label: 'Analysis', title: 'AI Business Analysis', subtitle: 'Here’s what SalesPal AI understood about your business.' },
+    { label: 'Ads', title: 'Ad Creation', subtitle: 'SalesPal prepares optimized ads based on your business analysis.' },
+    { label: 'Budget', title: 'Budget & Spend', subtitle: 'Review and adjust how much you want to spend on your campaign.' },
+    { label: 'Review', title: 'Review & Launch', subtitle: 'Review your campaign details before going live.' },
 ];
 
 const NewCampaign = () => {
     const { projectId } = useParams();
-    const [currentStep, setCurrentStep] = useState(0);
-    const { logout } = useAuth();
-    const { createCampaign } = useMarketing();
+    const {
+        activeDraft,
+        startNewDraft,
+        updateDraftStep,
+        setDraftStepIndex,
+        canAccessStep,
+        launchCampaign,
+        cancelDraft
+    } = useMarketing();
+
+    // Derived state directly from context
+    const currentStep = activeDraft?.currentStepIndex || 0;
+
     const navigate = useNavigate();
+
+    // Guards: Initialize draft or redirect
+    React.useEffect(() => {
+        if (!activeDraft) {
+            startNewDraft(projectId);
+        }
+    }, [projectId]);
+
+    // Guard: Prevent deep linking to locked steps
+    React.useEffect(() => {
+        if (activeDraft && !canAccessStep(currentStep)) {
+            // Find highest accessible step? For now just go to 0 or previous
+            // Simple logic: if restricted, go to 0
+            if (currentStep > 0) {
+                // Try to go back until we find an accessible step
+                let safeStep = currentStep - 1;
+                while (safeStep >= 0 && !canAccessStep(safeStep)) {
+                    safeStep--;
+                }
+                setDraftStepIndex(Math.max(0, safeStep));
+            }
+        }
+    }, [currentStep, activeDraft]);
+
+    if (!activeDraft) return null; // or loading spinner
 
     const handleNext = () => {
         if (currentStep < STEPS.length - 1) {
-            setCurrentStep(prev => prev + 1);
+            setDraftStepIndex(currentStep + 1);
         } else {
-            // Launch logic
-            createCampaign({
-                name: "Q1 Growth - SaaS",
-                platforms: ["Google Ads", "LinkedIn"],
-                dailyBudget: "₹12,400",
-                totalSpend: "₹0",
-                leads: "0",
-                cpl: "₹0",
-                projectId: projectId
-            });
+            launchCampaign();
             navigate(`/marketing/projects/${projectId}`);
         }
     };
 
     const handleBack = () => {
         if (currentStep > 0) {
-            setCurrentStep(prev => prev - 1);
+            setDraftStepIndex(currentStep - 1);
         }
     };
 
     const handleExit = () => {
         if (window.confirm('Are you sure you want to exit? Process will be lost.')) {
+            cancelDraft();
             navigate(`/marketing/projects/${projectId}`);
         }
     };
 
+    // Inject handleNext/save logic into steps
+    const onStepComplete = (stepKey, data) => {
+        updateDraftStep(stepKey, data);
+        if (currentStep < STEPS.length - 1) {
+            setDraftStepIndex(currentStep + 1);
+        }
+    };
+
     const renderStepContent = () => {
+        const commonProps = {
+            data: activeDraft.data,
+            onBack: handleBack // Pass the handleBack function we already defined
+        };
+
         switch (currentStep) {
-            case 0: return <StepBusinessInput />;
-            case 1: return <StepAIAnalysis />;
-            case 2: return <StepAdCreation />;
-            case 3: return <StepPlatformBudget />;
-            case 4: return <StepReviewLaunch onLaunch={handleNext} />;
+            case 0: return <StepBusinessInput onComplete={(data) => onStepComplete('business', data)} {...commonProps} />;
+            case 1: return <StepAIAnalysis onComplete={(data) => onStepComplete('analysis', data)} ai={activeDraft.ai} {...commonProps} />;
+            case 2: return <StepAdCreation onComplete={(data) => onStepComplete('ads', data)} {...commonProps} />;
+            case 3: return <StepPlatformBudget onComplete={(data) => onStepComplete('budget', data)} {...commonProps} />;
+            case 4: return <StepReviewLaunch onLaunch={() => {
+                const campaign = launchCampaign();
+                navigate(`/marketing/projects/${projectId}`);
+            }} {...commonProps} />;
             default: return null;
         }
     };
@@ -93,13 +140,13 @@ const NewCampaign = () => {
                 </Button>
             </div>
 
-            {/* Wizard Container */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* Progress Bar Area */}
-                <div className="bg-gray-50/50 border-b border-gray-100 px-8 pt-8 pb-0">
-                    <StepIndicator steps={STEPS} currentStep={currentStep} />
-                </div>
+            {/* Step Indicator - OUTSIDE CARD */}
+            <div className="mb-8 px-2">
+                <StepIndicator steps={STEPS} currentStep={currentStep} />
+            </div>
 
+            {/* Wizard Main Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Step Content */}
                 <div className="p-8 md:p-12">
                     <StepHeader
@@ -107,18 +154,9 @@ const NewCampaign = () => {
                         subtitle={STEPS[currentStep].subtitle}
                     />
 
-                    <div className="min-h-[400px]">
+                    <div className="mt-8 min-h-[400px]">
                         {renderStepContent()}
                     </div>
-
-                    {currentStep < STEPS.length - 1 && (
-                        <StepNavigation
-                            onNext={handleNext}
-                            onBack={handleBack}
-                            isFirstStep={currentStep === 0}
-                            isLastStep={currentStep === STEPS.length - 1}
-                        />
-                    )}
                 </div>
             </div>
         </div>

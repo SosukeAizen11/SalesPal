@@ -1,174 +1,251 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Pause, Play, Rocket, Edit, BarChart3, TrendingUp, Users, MousePointerClick, Calendar, DollarSign, Facebook, Chrome, Linkedin } from 'lucide-react';
 import { useMarketing } from '../../../context/MarketingContext';
-import CampaignHeader from './components/CampaignHeader';
-import CampaignOverview from './components/CampaignOverview';
-import CampaignInsights from './components/CampaignInsights';
-import { Minimize2, RefreshCw, TrendingUp } from 'lucide-react';
-import AIActionList from '../components/AIActionList';
-import ActionResultBanner from '../components/ActionResultBanner';
 import Button from '../../../components/ui/Button';
-import Modal from '../../../components/ui/Modal';
-import ConfirmationModal from '../../../components/ui/ConfirmationModal';
-import Input from '../../../components/ui/Input';
-import Select from '../../../components/ui/Select';
+import Badge from '../../../components/ui/Badge';
+import Card from '../../../components/ui/Card';
+
+// Mock Chart Component (Visual only)
+const MockChart = ({ color = "blue" }) => (
+    <div className="flex items-end gap-1 h-32 w-full mt-4">
+        {[40, 65, 45, 70, 55, 80, 60, 85, 95, 75, 60, 90].map((h, i) => (
+            <div
+                key={i}
+                className={`flex-1 rounded-t-sm opacity-80 hover:opacity-100 transition-opacity ${color === 'blue' ? 'bg-blue-100' : 'bg-green-100'}`}
+                style={{ height: `${h}%` }}
+            >
+                <div className={`h-full w-full opacity-60 ${color === 'blue' ? 'bg-blue-500' : 'bg-green-500'}`} style={{ height: `${h * 0.6}%` }}></div>
+            </div>
+        ))}
+    </div>
+);
 
 export default function CampaignDetails() {
-    const { campaignId } = useParams();
+    const { projectId, campaignId } = useParams();
     const navigate = useNavigate();
-    const { getCampaignById, applyAIAction } = useMarketing();
+    const { getCampaignById, updateCampaign } = useMarketing();
+
+    // Local State for specific analytics that might not be in the main object
     const [campaign, setCampaign] = useState(null);
-    const [actionResult, setActionResult] = useState(null);
-    const [appliedActions, setAppliedActions] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const foundCampaign = getCampaignById(campaignId);
-        if (foundCampaign) {
-            setCampaign(foundCampaign);
-        }
-    }, [campaignId, getCampaignById, appliedActions]); // Re-fetch when actions applied
+        const data = getCampaignById(campaignId);
+        setCampaign(data);
+        setIsLoading(false);
+    }, [campaignId, getCampaignById]);
 
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [editData, setEditData] = useState({ dailyBudget: '', status: 'active' });
-    const { updateCampaign, deleteCampaign } = useMarketing();
-
-    useEffect(() => {
-        if (campaign) {
-            setEditData({
-                dailyBudget: campaign.dailyBudget || '',
-                status: campaign.status || 'active'
-            });
-        }
-    }, [campaign]);
-
-    const handleUpdateCampaign = (e) => {
-        e.preventDefault();
-        updateCampaign(campaignId, editData);
-        setIsEditModalOpen(false);
-        setCampaign(prev => ({ ...prev, ...editData }));
-    };
-
-    const handleDeleteCampaign = () => {
-        deleteCampaign(campaignId);
-        navigate(`/marketing/projects/${campaign.projectId}`);
-    };
-
-    const handleApplyAction = (actionType) => {
-        if (window.confirm("Are you sure you want to apply this AI optimization?")) {
-            applyAIAction(campaignId, actionType);
-            setAppliedActions(prev => [...prev, actionType]);
-
-            let message = "Optimization applied successfully.";
-            if (actionType === 'SCALE_CAMPAIGN') message = "Budget scaled by 20% successfully.";
-            if (actionType === 'OPTIMIZE_BUDGET') message = "Budget reallocated to top platforms.";
-            if (actionType === 'ROTATE_CREATIVES') message = "Creative rotation scheduled.";
-
-            setActionResult(message);
-        }
-    };
+    if (isLoading) return <div className="p-8 text-center text-gray-500">Loading campaign details...</div>;
 
     if (!campaign) {
-        return <div className="p-8 text-center text-gray-500">Loading campaign...</div>;
+        return (
+            <div className="p-8 text-center">
+                <div className="bg-red-50 text-red-600 p-4 rounded-lg inline-block mb-4">
+                    Campaign not found
+                </div>
+                <Button onClick={() => navigate(`/marketing/projects/${projectId}`)}>Back to Project</Button>
+            </div>
+        );
     }
 
-    const ACTIONS = [
-        {
-            type: 'OPTIMIZE_BUDGET',
-            title: 'Optimize Budget',
-            description: 'Automatically reallocate budget to high-performing ad sets',
-            impact: '+15% Efficiency'
-        },
-        {
-            type: 'ROTATE_CREATIVES',
-            title: 'Rotate Creatives',
-            description: 'Switch underperforming creatives with new AI-generated variants',
-            impact: 'Freshness Boost'
-        },
-        {
-            type: 'SCALE_CAMPAIGN',
-            title: 'Scale Campaign',
-            description: 'Increase reach by expanding to lookalike audiences (increases budget)',
-            impact: '+20% Reach'
-        }
-    ];
+    const { status, name, dailyBudget, platforms, metrics } = campaign;
+    const isRunning = status === 'active';
+    const isPaused = status === 'paused';
+    const isDraft = status === 'draft';
+
+    const handleAction = (action) => {
+        let newStatus = status;
+        if (action === 'pause') newStatus = 'paused';
+        if (action === 'resume') newStatus = 'active';
+        if (action === 'launch') newStatus = 'active';
+
+        updateCampaign(campaignId, { status: newStatus });
+        // Refresh local state immediately (though Context update should trigger re-render if we consumed it directly, 
+        // since we setCampaign in useEffect on dependency, it might need a re-fetch or internal update)
+        setCampaign(prev => ({ ...prev, status: newStatus }));
+    };
+
+    const handleEdit = () => {
+        navigate(`/marketing/projects/${projectId}/campaigns/${campaignId}/edit`);
+    };
+
+    const getPlatformIcon = (p) => {
+        if (p.includes('Facebook') || p.includes('Meta')) return <Facebook className="w-4 h-4 text-[#1877F2]" />;
+        if (p.includes('Google')) return <Chrome className="w-4 h-4 text-[#EA4335]" />;
+        if (p.includes('LinkedIn')) return <Linkedin className="w-4 h-4 text-[#0077B5]" />;
+        return null;
+    };
+
+    // Formatted Data (Mocked if missing)
+    const totalSpend = metrics?.spend || '₹12,450';
+    const todaySpend = '₹1,500'; // Mocked 'Live' data
+    const leads = metrics?.conversions || 45;
+    const ctr = metrics?.ctr || '1.8%';
+    const impressions = metrics?.impressions || '12.5k';
 
     return (
-        <div className="py-8 animate-fade-in-up">
-            <ActionResultBanner message={actionResult} onClose={() => setActionResult(null)} />
-
-            <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <CampaignHeader campaign={campaign} />
-                <div className="flex gap-2 shrink-0">
-                    <Button
-                        variant="secondary"
-                        onClick={() => setIsEditModalOpen(true)}
-                    >
-                        Edit Campaign
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        onClick={() => setIsDeleteModalOpen(true)}
-                    >
-                        Delete
-                    </Button>
-                </div>
-            </div>
-
-            <CampaignOverview campaign={campaign} />
-            <CampaignInsights />
-
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-6">
-                <div className="mb-6">
-                    <h2 className="text-lg font-semibold text-slate-900">Recommended Actions</h2>
-                    <p className="text-sm text-slate-500">AI-driven suggestions to improve campaign performance</p>
-                </div>
-                <AIActionList
-                    actions={ACTIONS}
-                    onApplyAction={handleApplyAction}
-                    appliedActions={appliedActions}
-                />
-            </div>
-
-            {/* Edit Modal */}
-            <Modal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                title="Edit Campaign"
-            >
-                <form onSubmit={handleUpdateCampaign} className="space-y-4">
-                    <Input
-                        label="Daily Budget"
-                        value={editData.dailyBudget}
-                        onChange={(e) => setEditData({ ...editData, dailyBudget: e.target.value })}
-                        placeholder="e.g. ₹5,000"
-                    />
-                    <Select
-                        label="Status"
-                        value={editData.status}
-                        onChange={(e) => setEditData({ ...editData, status: e.target.value })}
-                    >
-                        <option value="active">Active</option>
-                        <option value="paused">Paused</option>
-                        <option value="draft">Draft</option>
-                        <option value="ended">Ended</option>
-                    </Select>
-                    <div className="flex justify-end gap-2 mt-6">
-                        <Button type="button" variant="secondary" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
-                        <Button type="submit">Save Changes</Button>
+        <div className="animate-fade-in-up space-y-6">
+            {/* Header */}
+            <div>
+                <button
+                    onClick={() => navigate(`/marketing/projects/${projectId}`)}
+                    className="flex items-center text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    Back to Project
+                </button>
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
+                            <Badge variant={isRunning ? 'success' : isPaused ? 'warning' : 'default'} className="capitalize">
+                                {status === 'active' ? 'Running' : status}
+                            </Badge>
+                        </div>
+                        <div className="flex items-center gap-6 text-sm text-gray-500">
+                            <span className="flex items-center gap-2">
+                                <DollarSign className="w-4 h-4" />
+                                Daily Budget: <span className="font-medium text-gray-900">{dailyBudget}</span>
+                            </span>
+                            <span className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                Created: Oct 24, 2024
+                            </span>
+                            <span className="flex items-center gap-2">
+                                {platforms && platforms.map(p => (
+                                    <span key={p} className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded text-xs">
+                                        {getPlatformIcon(p)} {p}
+                                    </span>
+                                ))}
+                            </span>
+                        </div>
                     </div>
-                </form>
-            </Modal>
 
-            {/* Delete Modal */}
-            <ConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleDeleteCampaign}
-                title="Delete Campaign"
-                message="Are you sure you want to delete this campaign? This action cannot be undone."
-                confirmText="Delete Campaign"
-            />
+                    {/* Actions */}
+                    <div className="flex items-center gap-3">
+                        {isRunning && (
+                            <Button variant="secondary" onClick={() => handleAction('pause')}>
+                                <Pause className="w-4 h-4 mr-2" /> Pause
+                            </Button>
+                        )}
+                        {isPaused && (
+                            <Button variant="secondary" onClick={() => handleAction('resume')}>
+                                <Play className="w-4 h-4 mr-2" /> Resume
+                            </Button>
+                        )}
+                        {isDraft && (
+                            <Button onClick={() => handleAction('launch')}>
+                                <Rocket className="w-4 h-4 mr-2" /> Launch
+                            </Button>
+                        )}
+
+                        <Button variant="outline" onClick={handleEdit}>
+                            <Edit className="w-4 h-4 mr-2" /> Edit
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Analytics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                    <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+                        <DollarSign className="w-4 h-4" /> Total Spend
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{totalSpend}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        <span className="text-emerald-600 font-medium">+15%</span> vs last week
+                    </div>
+                </Card>
+                <Card>
+                    <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+                        <Users className="w-4 h-4" /> Leads Generated
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{leads}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        Cost per Lead: <span className="font-medium">₹250</span>
+                    </div>
+                </Card>
+                <Card>
+                    <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+                        <MousePointerClick className="w-4 h-4" /> Click-Through Rate
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{ctr}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        {impressions} Impressions
+                    </div>
+                </Card>
+                <Card>
+                    <div className="flex items-center gap-2 mb-2 text-gray-500 text-sm font-medium">
+                        <TrendingUp className="w-4 h-4" /> Today's Pacing
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{todaySpend}</div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+                        <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: '45%' }}></div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        45% of daily budget
+                    </div>
+                </Card>
+            </div>
+
+            {/* Performance Chart & Breakdown */}
+            <div className="grid lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <BarChart3 className="w-5 h-5 text-gray-500" />
+                            Performance Trends
+                        </h3>
+                        <select className="bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-1.5 outline-none">
+                            <option>Last 7 Days</option>
+                            <option>Last 30 Days</option>
+                        </select>
+                    </div>
+                    <MockChart color="blue" />
+                    <div className="grid grid-cols-6 gap-2 mt-4 text-xs text-gray-400 text-center uppercase font-medium">
+                        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                    </div>
+                </Card>
+
+                <Card>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Platform Split</h3>
+                    <div className="space-y-6">
+                        <div>
+                            <div className="flex justify-between text-sm mb-1.5">
+                                <span className="flex items-center gap-2 text-gray-700">
+                                    <Facebook className="w-4 h-4 text-[#1877F2]" /> Meta Ads
+                                </span>
+                                <span className="font-semibold text-gray-900">₹7,450</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2">
+                                <div className="bg-[#1877F2] h-2 rounded-full ring-1 ring-white" style={{ width: '60%' }}></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-sm mb-1.5">
+                                <span className="flex items-center gap-2 text-gray-700">
+                                    <Chrome className="w-4 h-4 text-[#EA4335]" /> Google Ads
+                                </span>
+                                <span className="font-semibold text-gray-900">₹5,000</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2">
+                                <div className="bg-[#EA4335] h-2 rounded-full ring-1 ring-white" style={{ width: '40%' }}></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t border-gray-100">
+                        <h4 className="font-medium text-gray-900 mb-3 text-sm">AI Insights</h4>
+                        <div className="space-y-3">
+                            <div className="p-3 bg-green-50 rounded-lg text-xs leading-relaxed text-green-800 border border-green-100">
+                                <strong>🚀 Opportunity:</strong> Meta Ads are driving 20% cheaper leads than average. Consider increasing budget allocation.
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+            </div>
         </div>
     );
 }

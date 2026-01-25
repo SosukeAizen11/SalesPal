@@ -134,8 +134,131 @@ export const MarketingProvider = ({ children }) => {
         setSocialPosts(prev => prev.filter(p => p.id !== postId));
     };
 
+    const updateSocialPost = (postId, updates) => {
+        setSocialPosts(prev => prev.map(p => p.id === postId ? { ...p, ...updates } : p));
+    };
+
     const getCampaignsByProject = (projectId) => {
         return campaigns.filter(c => c.projectId === projectId);
+    };
+
+    // --- STATE MACHINE LOGIC ---
+
+    const [activeDraft, setActiveDraft] = useState(null);
+
+    const startNewDraft = (projectId) => {
+        setActiveDraft({
+            projectId,
+            id: `draft_${Date.now()}`,
+            status: 'draft',
+            currentStepIndex: 0,
+            data: {
+                name: '',
+                goals: [],
+                audiences: [],
+                platforms: [],
+                budget: { daily: 0, type: 'daily' },
+                ads: []
+            },
+            steps: {
+                business: 'pending',
+                analysis: 'pending',
+                ads: 'pending',
+                budget: 'pending',
+                review: 'pending'
+            },
+            ai: {
+                analysisDone: false,
+                recommendationsReady: false
+            }
+        });
+    };
+
+    const updateDraftStep = (step, stepData = {}) => {
+        if (!activeDraft) return;
+
+        setActiveDraft(prev => {
+            const newSteps = { ...prev.steps };
+            // Mark current step as completed
+            if (step) newSteps[step] = 'completed';
+
+            // Special Transition Logic
+            let newStatus = prev.status;
+            let newAI = { ...prev.ai };
+
+            if (step === 'business') {
+                newStatus = 'analyzing';
+                // Reset AI flags if business changes? Maybe not for now to keep simple
+            }
+
+            if (step === 'analysis') {
+                newStatus = 'draft';
+                newAI.analysisDone = true;
+            }
+
+            return {
+                ...prev,
+                status: newStatus,
+                steps: newSteps,
+                ai: newAI,
+                data: { ...prev.data, ...stepData }
+            };
+        });
+    };
+
+    const setDraftStepIndex = (index) => {
+        if (!activeDraft) return;
+        setActiveDraft(prev => ({ ...prev, currentStepIndex: index }));
+    };
+
+    const canAccessStep = (stepIndex) => {
+        if (!activeDraft) return false;
+
+        // Linear dependencies
+        // 0: Business -> Always Open
+        // 1: Analysis -> Rewuires Business Complete
+        // 2: Ads -> Requires Analysis Complete
+        // 3: Budget -> Requires Ads Complete
+        // 4: Review -> Requires Budget Complete
+
+        const s = activeDraft.steps;
+
+        switch (stepIndex) {
+            case 0: return true;
+            case 1: return s.business === 'completed';
+            case 2: return s.analysis === 'completed' && activeDraft.ai.analysisDone;
+            case 3: return s.ads === 'completed';
+            case 4: return s.budget === 'completed';
+            default: return false;
+        }
+    };
+
+    const launchCampaign = () => {
+        if (!activeDraft) return;
+
+        const finalizedCampaign = addCampaign({
+            ...activeDraft.data,
+            id: `cmp_${Date.now()}`, // Real ID
+            projectId: activeDraft.projectId,
+            status: 'running',
+            createdAt: new Date().toISOString(),
+            metrics: { // Init empty metrics
+                spend: '₹0',
+                impressions: '0',
+                clicks: '0',
+                ctr: '0%',
+                conversions: '0',
+                roas: '0x'
+            }
+        });
+
+        setCampaigns(prev => [finalizedCampaign, ...prev]);
+        setActiveDraft(null); // Clear draft
+        return finalizedCampaign;
+    };
+
+    const cancelDraft = () => {
+        setActiveDraft(null);
     };
 
     const value = {
@@ -143,6 +266,13 @@ export const MarketingProvider = ({ children }) => {
         projects,
         socialPosts,
         selectedProjectId,
+        activeDraft, // EXPORTED STATE
+        startNewDraft, // EXPORTED ACTION
+        updateDraftStep, // EXPORTED ACTION
+        setDraftStepIndex, // EXPORTED ACTION
+        canAccessStep, // EXPORTED GUARD
+        launchCampaign, // EXPORTED ACTION
+        cancelDraft, // EXPORTED ACTION
         selectProject,
         createCampaign,
         updateCampaign,
@@ -155,6 +285,7 @@ export const MarketingProvider = ({ children }) => {
         getProjectById,
         getCampaignsByProject,
         addSocialPost,
+        updateSocialPost,
         deleteSocialPost
     };
 

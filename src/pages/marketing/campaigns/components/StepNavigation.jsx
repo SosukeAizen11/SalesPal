@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowLeft, ArrowRight, Rocket } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 
-const StepNavigation = ({ onNext, onBack, isFirstStep, isLastStep }) => {
+const StepNavigation = ({ onNext, onBack, isFirstStep, isLastStep, nextDisabled, nextLabel }) => {
     return (
         <div className="flex items-center justify-between mt-12 pt-8 border-t border-gray-200">
             <Button
@@ -18,9 +18,7 @@ const StepNavigation = ({ onNext, onBack, isFirstStep, isLastStep }) => {
             <Button
                 variant="primary"
                 onClick={onNext}
-                disabled={isLastStep && onNext.name !== 'handleLaunch'} // Only disable if it's the very last step and logic dictates (logic here was isLastStep? 'Launch' : 'Next')
-            // Actually the original code had disabled={isLastStep} with a comment.
-            // Preserving logic but fixing syntax.
+                disabled={(isLastStep && onNext.name !== 'handleLaunch' && !isLastStep) || nextDisabled} // Simplified logic: if nextDisabled is true, disable. Also keep existing logic if any (none really)
             >
                 {isLastStep ? (
                     <>
@@ -29,7 +27,7 @@ const StepNavigation = ({ onNext, onBack, isFirstStep, isLastStep }) => {
                     </>
                 ) : (
                     <>
-                        Next Step
+                        {nextLabel || 'Next Step'}
                         <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                 )}
