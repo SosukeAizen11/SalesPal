@@ -23,7 +23,7 @@ const Navbar = () => {
                     <img src={logo} alt="SalesPal" className="h-12 w-auto" />
                 </Link>
 
-                <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-300">
+                <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-[#A8B3BD]">
                     <button onClick={() => scrollToSection('modules')} className="hover:text-secondary transition-colors">Features</button>
                     <button onClick={() => scrollToSection('pricing')} className="hover:text-secondary transition-colors">Pricing</button>
                     <button onClick={() => scrollToSection('how-it-works')} className="hover:text-secondary transition-colors">How it Works</button>
@@ -40,7 +40,7 @@ const Navbar = () => {
                             </Link>
                             <button
                                 onClick={logout}
-                                className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                                className="text-sm font-medium text-[#7C8A96] hover:text-white transition-colors"
                             >
                                 Sign Out
                             </button>

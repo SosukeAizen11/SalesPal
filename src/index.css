@@ -9,10 +9,8 @@
 
 @layer base {
   body {
-    background-color: #F9FAFB;
-    /* gray-50 */
-    color: #111827;
-    /* gray-900 */
+    background-color: #0D1F2D;
+    color: #A8B3BD;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
@@ -23,8 +21,7 @@
   h4,
   h5,
   h6 {
-    color: #111827;
-    /* gray-900 */
+    color: #FFFFFF;
     font-weight: 600;
   }
 

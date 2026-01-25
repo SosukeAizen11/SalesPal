@@ -104,7 +104,7 @@ export default function ProjectDetails() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-up">
+        <div className="space-y-8 animate-fade-in-up">
             {/* Header ... */}
             <div>
                 <button

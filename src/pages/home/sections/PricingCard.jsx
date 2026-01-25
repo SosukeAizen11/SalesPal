@@ -27,14 +27,14 @@ const PricingCard = ({
                 </h3>
                 <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-bold text-white">₹{price.toLocaleString('en-IN')}</span>
-                    <span className="text-sm text-gray-400">/ month</span>
+                    <span className="text-sm text-[#A8B3BD]">/ month</span>
                 </div>
             </div>
 
             <ul className="space-y-4 mb-8 flex-1">
                 {features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-gray-300 text-sm">
-                        <Check className={`w-5 h-5 shrink-0 ${isMint || isPopular ? 'text-secondary' : 'text-gray-500'}`} />
+                    <li key={idx} className="flex items-start gap-3 text-[#A8B3BD] text-sm">
+                        <Check className={`w-5 h-5 shrink-0 ${isMint || isPopular ? 'text-secondary' : 'text-[#7C8A96]'}`} />
                         <span>{feature}</span>
                     </li>
                 ))}

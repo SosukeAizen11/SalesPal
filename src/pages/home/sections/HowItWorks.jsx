@@ -9,7 +9,7 @@ const HowItWorks = () => {
             <div className="text-center mb-16">
                 <span className="text-secondary font-medium tracking-wide uppercase text-sm">Workflow</span>
                 <h2 className="text-3xl md:text-4xl font-bold mt-2">How SalesPal Works</h2>
-                <p className="text-gray-400 mt-4 max-w-2xl mx-auto">
+                <p className="text-[#A8B3BD] mt-4 max-w-2xl mx-auto">
                     A simple, modular approach to supercharge your growth.
                 </p>
             </div>

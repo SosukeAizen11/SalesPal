@@ -22,7 +22,7 @@ const ModulesSection = () => {
                                     <Icon className="w-6 h-6" />
                                 </div>
                                 <h3 className="text-2xl font-bold mb-4">{module.title}</h3>
-                                <ul className="space-y-3 text-gray-400">
+                                <ul className="space-y-3 text-[#A8B3BD]">
                                     {module.features.map((feature, idx) => (
                                         <li key={idx} className="flex items-start gap-2">
                                             <CheckCircle2 className="w-5 h-5 text-secondary shrink-0" />

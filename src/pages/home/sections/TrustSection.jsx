@@ -8,7 +8,7 @@ const TrustSection = () => {
         <SectionWrapper>
             <div className="text-center mb-12">
                 <h2 className="text-2xl md:text-3xl font-bold mb-4">Trusted by Modern Enterprises</h2>
-                <p className="text-gray-400">Secure, scalable, and built for high-performance teams.</p>
+                <p className="text-[#A8B3BD]">Secure, scalable, and built for high-performance teams.</p>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
@@ -23,17 +23,17 @@ const TrustSection = () => {
                 <div>
                     <Shield className="w-10 h-10 text-secondary mx-auto mb-4" />
                     <h3 className="font-semibold text-lg mb-2">Enterprise Security</h3>
-                    <p className="text-sm text-gray-400">SOC2 Type II ready & data encryption</p>
+                    <p className="text-sm text-[#7C8A96]">SOC2 Type II ready & data encryption</p>
                 </div>
                 <div>
                     <Cpu className="w-10 h-10 text-secondary mx-auto mb-4" />
                     <h3 className="font-semibold text-lg mb-2">Infinite Scalability</h3>
-                    <p className="text-sm text-gray-400">Handle millions of leads effortlessly</p>
+                    <p className="text-sm text-[#7C8A96]">Handle millions of leads effortlessly</p>
                 </div>
                 <div>
                     <Users className="w-10 h-10 text-secondary mx-auto mb-4" />
                     <h3 className="font-semibold text-lg mb-2">Human + AI</h3>
-                    <p className="text-sm text-gray-400">Perfect synergy for complex sales</p>
+                    <p className="text-sm text-[#7C8A96]">Perfect synergy for complex sales</p>
                 </div>
             </div>
         </SectionWrapper>

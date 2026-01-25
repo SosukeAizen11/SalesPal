@@ -9,7 +9,7 @@ const StepCard = ({ number, title, description }) => {
             <h3 className="text-xl font-bold text-white mb-3">
                 {title}
             </h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
+            <p className="text-[#A8B3BD] text-sm leading-relaxed">
                 {description}
             </p>
 

@@ -21,7 +21,7 @@ const HeroSection = () => {
                     AI-powered <span className="text-secondary">Marketing Automation</span><br className="hidden md:block" /> for Modern Businesses
                 </h1>
 
-                <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg md:text-xl text-[#A8B3BD] mb-10 max-w-2xl mx-auto leading-relaxed">
                     Launch campaigns, optimize budgets, and generate leads automatically with your 24/7 AI workforce.
                 </p>
 

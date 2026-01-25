@@ -94,7 +94,7 @@ export default function CampaignDetails() {
     ];
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in-up">
+        <div className="py-8 animate-fade-in-up">
             <ActionResultBanner message={actionResult} onClose={() => setActionResult(null)} />
 
             <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
