@@ -28,6 +28,12 @@ const ProjectSwitcher = () => {
         setIsOpen(false);
     };
 
+    const handleAllProjects = () => {
+        selectProject(null); // Clear selection to show All Projects Overview
+        navigate('/marketing');
+        setIsOpen(false);
+    };
+
     const handleCreate = () => {
         navigate('/marketing/projects/new');
         setIsOpen(false);
@@ -45,7 +51,7 @@ const ProjectSwitcher = () => {
                         <Folder className="w-4 h-4" />
                     </div>
                     <span className="max-w-[150px] truncate">
-                        {selectedProject ? selectedProject.name : 'Select Project'}
+                        {selectedProject ? selectedProject.name : 'All Projects'}
                     </span>
                 </div>
                 <ChevronsUpDown className="w-4 h-4 text-gray-400" />
@@ -53,6 +59,17 @@ const ProjectSwitcher = () => {
 
             {isOpen && (
                 <div className="absolute left-0 top-full mt-1 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50 animate-fade-in-down origin-top-left">
+                    {/* All Projects Option */}
+                    <button
+                        onClick={handleAllProjects}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100"
+                    >
+                        <span>All Projects</span>
+                        {!selectedProjectId && (
+                            <Check className="w-4 h-4 text-blue-600" />
+                        )}
+                    </button>
+
                     <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                         Projects
                     </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Facebook, Layout, Image as ImageIcon, Video, Layers, Search, MousePointerClick, ExternalLink } from 'lucide-react';
 import Input from '../../../../components/ui/Input';
 import Textarea from '../../../../components/ui/Textarea';
@@ -11,6 +11,13 @@ const GoogleIcon = ({ className }) => (
     </svg>
 );
 
+// Constants derived from strict requirement
+const PLATFORM_CTAS = {
+    meta: ['Learn More', 'Shop Now', 'Sign Up', 'Contact Us', 'WhatsApp', 'Book Now', 'Download'],
+    google: ['Call Now', 'Visit Website', 'Get Quote', 'Buy Now', 'Apply Now', 'Sign Up'],
+    youtube: ['Learn More', 'Visit Website', 'Subscribe']
+};
+
 const StepAdCreation = ({ onComplete, onBack, data }) => {
     // State
     const [platforms, setPlatforms] = useState({ meta: true, google: true });
@@ -18,8 +25,51 @@ const StepAdCreation = ({ onComplete, onBack, data }) => {
     const [copy, setCopy] = useState({
         headline: "Luxury Living in South Mumbai | Sea Facing Apartments",
         primaryText: "Experience the pinnacle of luxury with our new sea-facing apartments. World-class amenities, prime location, and exclusive community.",
-        cta: "Request a Tour"
+        cta: "Sign Up" // Default safe for both Meta & Google
     });
+
+    const activePlatforms = useMemo(() => Object.keys(platforms).filter(key => platforms[key]), [platforms]);
+
+    // Derived CTA Options
+    const ctaOptions = useMemo(() => {
+        const allCTAs = new Set();
+
+        // 1. Collect UNION of all CTAs from active platforms
+        activePlatforms.forEach(p => {
+            const list = PLATFORM_CTAS[p] || [];
+            list.forEach(c => allCTAs.add(c));
+        });
+
+        return Array.from(allCTAs).map(cta => {
+            // 2. Determine Validity (Must be supported on ALL selected platforms)
+            const missingIn = activePlatforms.filter(p => !(PLATFORM_CTAS[p] || []).includes(cta));
+            const isValid = missingIn.length === 0;
+
+            return {
+                value: cta,
+                label: cta,
+                isValid,
+                missingIn
+            };
+        }).sort((a, b) => {
+            // Valid options first, then alphabetical
+            if (a.isValid && !b.isValid) return -1;
+            if (!a.isValid && b.isValid) return 1;
+            return a.value.localeCompare(b.value);
+        });
+    }, [activePlatforms]);
+
+    // Auto-Reset CTA if current selection becomes invalid
+    useEffect(() => {
+        const currentOption = ctaOptions.find(o => o.value === copy.cta);
+        if (!currentOption || !currentOption.isValid) {
+            // Pick first valid option if available
+            const firstValid = ctaOptions.find(o => o.isValid);
+            if (firstValid) {
+                setCopy(c => ({ ...c, cta: firstValid.value }));
+            }
+        }
+    }, [ctaOptions, copy.cta]);
 
     const handleNext = () => {
         if (onComplete) {
@@ -145,14 +195,24 @@ const StepAdCreation = ({ onComplete, onBack, data }) => {
                             <select
                                 value={copy.cta}
                                 onChange={(e) => setCopy(curr => ({ ...curr, cta: e.target.value }))}
-                                className="w-full h-11 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                disabled={activePlatforms.length === 0}
+                                className="w-full h-11 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <option>Request a Tour</option>
-                                <option>Learn More</option>
-                                <option>Book Now</option>
-                                <option>Contact Us</option>
-                                <option>Sign Up</option>
+                                {activePlatforms.length === 0 && <option>Select a platform first</option>}
+
+                                {ctaOptions.map(opt => (
+                                    <option
+                                        key={opt.value}
+                                        value={opt.value}
+                                        disabled={!opt.isValid}
+                                    >
+                                        {opt.value} {!opt.isValid ? `(Not supported on ${opt.missingIn.map(p => p === 'meta' ? 'Facebook' : p === 'google' ? 'Google' : p).join(', ')})` : ''}
+                                    </option>
+                                ))}
                             </select>
+                            <p className="mt-1.5 text-xs text-gray-500">
+                                Options are filtered based on your selected platforms.
+                            </p>
                         </div>
                     </div>
                 </div>

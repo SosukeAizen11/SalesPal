@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IndianRupee, PieChart, TrendingUp, Wallet, CheckCircle2, Facebook } from 'lucide-react';
+import { IndianRupee, PieChart, TrendingUp, Wallet, CheckCircle2, Facebook, Linkedin, Instagram, Twitter, Check, Info } from 'lucide-react';
 import StepNavigation from '../components/StepNavigation';
 
 // Mock Google Icon
@@ -9,24 +9,77 @@ const GoogleIcon = ({ className }) => (
     </svg>
 );
 
+const PLATFORMS = [
+    { id: 'meta', name: 'Meta Ads', icon: Facebook, recommended: true, reason: 'Best for visual discovery & reach' },
+    { id: 'google', name: 'Google Ads', icon: GoogleIcon, recommended: true, reason: 'High intent search traffic' },
+    { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, recommended: false },
+    { id: 'instagram', name: 'Instagram', icon: Instagram, recommended: false },
+    { id: 'twitter', name: 'X / Twitter', icon: Twitter, recommended: false }
+];
+
 const StepPlatformBudget = ({ onComplete, onBack, data }) => {
     // State
     const [dailyBudget, setDailyBudget] = useState(data?.budget?.daily || 3500);
     const [metaSplit, setMetaSplit] = useState(data?.budget?.split?.meta || 60);
 
+    // Initialize selected platforms from data or default to recommended
+    const [selectedPlatforms, setSelectedPlatforms] = useState(() => {
+        if (data?.platforms?.length > 0) return data.platforms;
+        // Fallback for legacy data or fresh start
+        if (data?.budget?.split) {
+            const legacy = [];
+            if (data.budget.split.meta > 0) legacy.push('meta');
+            if (data.budget.split.google > 0) legacy.push('google');
+            if (legacy.length > 0) return legacy;
+        }
+        return ['meta', 'google'];
+    });
+
     const googleSplit = 100 - metaSplit;
 
+    const togglePlatform = (id) => {
+        if (selectedPlatforms.includes(id)) {
+            setSelectedPlatforms(prev => prev.filter(p => p !== id));
+        } else {
+            setSelectedPlatforms(prev => [...prev, id]);
+        }
+    };
+
     const handleNext = () => {
+        if (selectedPlatforms.length === 0) {
+            alert('Please select at least one platform.');
+            return;
+        }
+
+        // Determine splits for legacy compatibility in Review step
+        let finalMetaSplit = 0;
+        let finalGoogleSplit = 0;
+
+        // If standard Meta+Google pair is active (and only them), use slider value
+        const isStandardPair = selectedPlatforms.length === 2 &&
+            selectedPlatforms.includes('meta') &&
+            selectedPlatforms.includes('google');
+
+        if (isStandardPair) {
+            finalMetaSplit = metaSplit;
+            finalGoogleSplit = 100 - metaSplit;
+        } else {
+            // Simplified logic for non-standard selections for visual bars
+            if (selectedPlatforms.includes('meta')) finalMetaSplit = Math.floor(100 / selectedPlatforms.length);
+            if (selectedPlatforms.includes('google')) finalGoogleSplit = Math.floor(100 / selectedPlatforms.length);
+        }
+
         if (onComplete) {
             onComplete({
                 budget: {
                     daily: Number(dailyBudget),
                     currency: 'INR',
                     split: {
-                        meta: metaSplit,
-                        google: googleSplit
+                        meta: finalMetaSplit,
+                        google: finalGoogleSplit
                     }
-                }
+                },
+                platforms: selectedPlatforms
             });
         }
     };
@@ -35,6 +88,11 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
     const monthlyBudget = dailyBudget * 30;
     const metaSpend = Math.round(dailyBudget * (metaSplit / 100));
     const googleSpend = Math.round(dailyBudget * (googleSplit / 100));
+
+    // Check if we show the standard split slider
+    const isStandardSplit = selectedPlatforms.length === 2 &&
+        selectedPlatforms.includes('meta') &&
+        selectedPlatforms.includes('google');
 
     return (
         <div className="animate-fade-in-up">
@@ -73,67 +131,171 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
 
                     <div className="h-px bg-gray-100" />
 
-                    {/* 2. Platform Split */}
+                    {/* 2. Platform Selection */}
                     <div>
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-2">
-                                <PieChart className="w-5 h-5 text-gray-400" />
-                                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Platform Split</h3>
-                            </div>
-                            <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-md font-medium border border-green-100">
-                                AI Recommended Split
-                            </span>
+                        <div className="flex items-center gap-2 mb-6">
+                            <PieChart className="w-5 h-5 text-gray-400" />
+                            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Platform Selection & Budget</h3>
                         </div>
 
-                        {/* Slider Control */}
-                        <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 space-y-6">
-
-                            {/* Visual Bar */}
-                            <div className="h-4 w-full bg-white rounded-full overflow-hidden flex shadow-inner border border-gray-100">
-                                <div
-                                    className="h-full bg-blue-600 transition-all duration-300"
-                                    style={{ width: `${metaSplit}%` }}
-                                />
-                                <div
-                                    className="h-full bg-orange-500 transition-all duration-300"
-                                    style={{ width: `${googleSplit}%` }}
-                                />
+                        {/* AI Recommended Platforms */}
+                        <div className="mb-6">
+                            <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-sm font-medium text-gray-700">AI Recommended Platforms</h4>
+                                <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-md font-medium border border-green-100">
+                                    Based on your business
+                                </span>
                             </div>
+                            <div className="grid grid-cols-1 gap-3">
+                                {PLATFORMS.filter(p => p.recommended).map(platform => {
+                                    const Icon = platform.icon;
+                                    const isSelected = selectedPlatforms.includes(platform.id);
+                                    return (
+                                        <div
+                                            key={platform.id}
+                                            onClick={() => togglePlatform(platform.id)}
+                                            className={`
+                                                relative p-4 rounded-xl border transition-all cursor-pointer flex items-center gap-4 group
+                                                ${isSelected
+                                                    ? 'bg-blue-50/50 border-blue-500 shadow-sm'
+                                                    : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                                }
+                                            `}
+                                        >
+                                            <div className={`
+                                                w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors
+                                                ${isSelected ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-500'}
+                                            `}>
+                                                <Icon className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <h5 className={`font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                                                        {platform.name}
+                                                    </h5>
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-green-700 bg-green-50 px-1.5 py-0.5 rounded border border-green-100">
+                                                        Recommended
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                                                    <Info className="w-3 h-3 text-green-600" />
+                                                    {platform.reason}
+                                                </p>
+                                            </div>
+                                            <div className={`
+                                                w-6 h-6 rounded-full border flex items-center justify-center transition-all
+                                                ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white group-hover:border-blue-400'}
+                                            `}>
+                                                {isSelected && <Check className="w-4 h-4 text-white" />}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
 
-                            {/* Inputs */}
-                            <div className="flex items-center justify-between gap-4">
-                                {/* Meta */}
-                                <div className="text-left">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Facebook className="w-4 h-4 text-blue-600" />
-                                        <span className="text-sm font-medium text-gray-900">Meta Ads</span>
-                                    </div>
-                                    <div className="text-2xl font-bold text-gray-900">{metaSplit}%</div>
-                                    <div className="text-xs text-gray-500">₹{metaSpend}/day</div>
-                                </div>
-
-                                {/* Slider Input */}
-                                <input
-                                    type="range"
-                                    min="20"
-                                    max="80"
-                                    value={metaSplit}
-                                    onChange={(e) => setMetaSplit(Number(e.target.value))}
-                                    className="flex-1 max-w-[120px] accent-gray-900"
-                                />
-
-                                {/* Google */}
-                                <div className="text-right">
-                                    <div className="flex items-center justify-end gap-2 mb-1">
-                                        <span className="text-sm font-medium text-gray-900">Google Search</span>
-                                        <GoogleIcon className="w-4 h-4 text-orange-500" />
-                                    </div>
-                                    <div className="text-2xl font-bold text-gray-900">{googleSplit}%</div>
-                                    <div className="text-xs text-gray-500">₹{googleSpend}/day</div>
-                                </div>
+                        {/* Other Available Platforms */}
+                        <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-3">Other Available Platforms</h4>
+                            <div className="grid grid-cols-1 gap-3">
+                                {PLATFORMS.filter(p => !p.recommended).map(platform => {
+                                    const Icon = platform.icon;
+                                    const isSelected = selectedPlatforms.includes(platform.id);
+                                    return (
+                                        <div
+                                            key={platform.id}
+                                            onClick={() => togglePlatform(platform.id)}
+                                            className={`
+                                                relative p-4 rounded-xl border transition-all cursor-pointer flex items-center gap-4 group
+                                                ${isSelected
+                                                    ? 'bg-blue-50/50 border-blue-500 shadow-sm'
+                                                    : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                                }
+                                            `}
+                                        >
+                                            <div className={`
+                                                w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors
+                                                ${isSelected ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-500'}
+                                            `}>
+                                                <Icon className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h5 className={`font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                                                    {platform.name}
+                                                </h5>
+                                                <p className="text-xs text-gray-400 mt-0.5">
+                                                    Optional additional channel
+                                                </p>
+                                            </div>
+                                            <div className={`
+                                                w-6 h-6 rounded-full border flex items-center justify-center transition-all
+                                                ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white group-hover:border-blue-400'}
+                                            `}>
+                                                {isSelected && <Check className="w-4 h-4 text-white" />}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
+
+                    {/* 3. Platform Split (Conditional) */}
+                    {isStandardSplit && (
+                        <div className="animate-fade-in-up">
+                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 space-y-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-sm font-medium text-gray-900">Budget Allocation</h4>
+                                    <span className="text-xs text-gray-500">Adjust sliding scale</span>
+                                </div>
+
+                                {/* Visual Bar */}
+                                <div className="h-4 w-full bg-white rounded-full overflow-hidden flex shadow-inner border border-gray-100">
+                                    <div
+                                        className="h-full bg-blue-600 transition-all duration-300"
+                                        style={{ width: `${metaSplit}%` }}
+                                    />
+                                    <div
+                                        className="h-full bg-orange-500 transition-all duration-300"
+                                        style={{ width: `${googleSplit}%` }}
+                                    />
+                                </div>
+
+                                {/* Inputs */}
+                                <div className="flex items-center justify-between gap-4">
+                                    {/* Meta */}
+                                    <div className="text-left">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Facebook className="w-4 h-4 text-blue-600" />
+                                            <span className="text-sm font-medium text-gray-900">Meta</span>
+                                        </div>
+                                        <div className="text-2xl font-bold text-gray-900">{metaSplit}%</div>
+                                        <div className="text-xs text-gray-500">₹{metaSpend}/day</div>
+                                    </div>
+
+                                    {/* Slider Input */}
+                                    <input
+                                        type="range"
+                                        min="20"
+                                        max="80"
+                                        value={metaSplit}
+                                        onChange={(e) => setMetaSplit(Number(e.target.value))}
+                                        className="flex-1 max-w-[120px] accent-gray-900"
+                                    />
+
+                                    {/* Google */}
+                                    <div className="text-right">
+                                        <div className="flex items-center justify-end gap-2 mb-1">
+                                            <span className="text-sm font-medium text-gray-900">Google</span>
+                                            <GoogleIcon className="w-4 h-4 text-orange-500" />
+                                        </div>
+                                        <div className="text-2xl font-bold text-gray-900">{googleSplit}%</div>
+                                        <div className="text-xs text-gray-500">₹{googleSpend}/day</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Column: Summary */}
@@ -174,7 +336,15 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                         <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3">
                             <div className="bg-white p-2 rounded-full h-fit shadow-sm text-xl">💡</div>
                             <div className="text-sm text-blue-900 leading-relaxed">
-                                <strong>AI Tip:</strong> A 60/40 split favors Meta for visual discovery (Real Estate) while keeping Google active for high-intent search traffic.
+                                {isStandardSplit ? (
+                                    <span>
+                                        <strong>AI Tip:</strong> A 60/40 split favors Meta for visual discovery (Real Estate) while keeping Google active for high-intent search traffic.
+                                    </span>
+                                ) : (
+                                    <span>
+                                        <strong>AI Optimization:</strong> SalesPal will dynamically allocate your daily budget across your {selectedPlatforms.length} selected platforms to maximize lead generation.
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>

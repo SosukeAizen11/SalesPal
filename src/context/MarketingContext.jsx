@@ -17,17 +17,19 @@ export const MarketingProvider = ({ children }) => {
 
         // Load persisted project selection
         const savedProjectId = localStorage.getItem('salespal_active_project_id');
-        if (savedProjectId && storedProjects.find(p => p.id === savedProjectId)) {
+        if (savedProjectId && savedProjectId !== 'null' && storedProjects.find(p => p.id === savedProjectId)) {
             setSelectedProjectId(savedProjectId);
-        } else if (storedProjects.length > 0) {
-            // Default to first project if none selected
-            setSelectedProjectId(storedProjects[0].id);
         }
+        // Don't auto-select first project - allow All Projects Overview
     }, []);
 
     const selectProject = (projectId) => {
         setSelectedProjectId(projectId);
-        localStorage.setItem('salespal_active_project_id', projectId);
+        if (projectId === null) {
+            localStorage.removeItem('salespal_active_project_id');
+        } else {
+            localStorage.setItem('salespal_active_project_id', projectId);
+        }
     };
 
     const createCampaign = (campaignData) => {

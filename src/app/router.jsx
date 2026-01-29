@@ -136,6 +136,10 @@ export const router = createBrowserRouter([
                         element: <MetaIntegration />
                     },
                     {
+                        path: "campaigns",
+                        element: <Campaigns />
+                    },
+                    {
                         path: "analytics",
                         element: <Analytics />
                     },
