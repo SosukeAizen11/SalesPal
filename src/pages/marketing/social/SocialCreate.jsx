@@ -36,10 +36,13 @@ const canPublishToSocial = (platforms, integrationState) => {
     };
 };
 
-const SocialCreate = () => {
+const SocialCreate = ({ onNavigate }) => {
     const navigate = useNavigate();
     const { addSocialPost } = useMarketing();
     const { integrations } = useIntegrations();
+
+    // Use onNavigate prop if provided (state-based), otherwise use router
+    const goTo = (tab) => onNavigate ? onNavigate(tab) : null;
 
     // Editor State
     const [content, setContent] = useState("");
@@ -76,7 +79,10 @@ const SocialCreate = () => {
 
         addSocialPost(newPost);
         setIsSaving(false);
-        navigate('/marketing/social/drafts');
+        // Reset form after save
+        setContent('');
+        setMedia([]);
+        if (onNavigate) onNavigate('drafts');
     };
 
     const handlePublish = async () => {
@@ -112,7 +118,10 @@ const SocialCreate = () => {
 
         addSocialPost(newPost);
         setIsSaving(false);
-        navigate(status === 'published' ? '/marketing/social/published' : '/marketing/social/scheduled');
+        // Reset form after publish
+        setContent('');
+        setMedia([]);
+        if (onNavigate) onNavigate(status === 'published' ? 'published' : 'scheduled');
     };
 
     return (
