@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router-dom';
 import { useWalkthrough } from './WalkthroughProvider';
 import { X, ArrowRight, ArrowLeft, Play, CheckCircle } from 'lucide-react';
 
 /**
  * WALKTHROUGH OVERLAY
  * Production-grade highlight + tooltip system
+ * Only renders on Marketing Dashboard routes
  */
 
 const WalkthroughOverlay = () => {
+    const location = useLocation();
+
     const {
         isActive,
         isInitialized,
@@ -22,6 +26,9 @@ const WalkthroughOverlay = () => {
         prevStep,
         skipWalkthrough
     } = useWalkthrough();
+
+    // --- ROUTE CHECK: Only show on /marketing routes ---
+    const isOnMarketingDashboard = location.pathname.startsWith('/marketing');
 
     // --- LOCAL UI STATE ---
     const [targetRect, setTargetRect] = useState(null);
@@ -222,7 +229,8 @@ const WalkthroughOverlay = () => {
     }, [isActive, currentStep?.targetSelector, isIntro, isFinal, updatePosition]);
 
     // --- RENDER NOTHING IF NOT APPLICABLE ---
-    if (!isActive || !isInitialized || !currentStep) return null;
+    // Only show on Marketing Dashboard routes
+    if (!isOnMarketingDashboard || !isActive || !isInitialized || !currentStep) return null;
 
     // --- RENDER BACKDROP WITH CUTOUT ---
     const renderBackdrop = () => {
