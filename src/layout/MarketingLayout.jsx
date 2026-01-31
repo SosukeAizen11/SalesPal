@@ -6,8 +6,10 @@ import logo from '../assets/logo.webp';
 import { LogOut, User } from 'lucide-react';
 import ProjectSwitcher from '../components/ProjectSwitcher';
 import Button from '../components/ui/Button';
+import { TourProvider } from '../context/TourContext';
+import TourOverlay from '../components/tour/TourOverlay';
 
-const MarketingLayout = () => {
+const MarketingLayoutContent = () => {
     const { logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -33,6 +35,7 @@ const MarketingLayout = () => {
                             key={item.path}
                             to={item.path}
                             end={item.path === '/marketing'}
+                            id={`sidebar-nav-${item.name.toLowerCase()}`}
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
                                     ? 'bg-secondary text-primary'
@@ -83,7 +86,18 @@ const MarketingLayout = () => {
                     </div>
                 </main>
             </div>
+
+            {/* Tour Global Overlay */}
+            <TourOverlay />
         </div>
+    );
+};
+
+const MarketingLayout = () => {
+    return (
+        <TourProvider>
+            <MarketingLayoutContent />
+        </TourProvider>
     );
 };
 

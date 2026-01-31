@@ -44,7 +44,7 @@ export default function Projects() {
                 </div>
             ) : (
                 <Card noPadding className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center">
-                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 mx-auto">
                         <Folder className="w-8 h-8 text-blue-600" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">No projects yet</h3>
