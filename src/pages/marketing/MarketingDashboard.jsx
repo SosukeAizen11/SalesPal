@@ -1,298 +1,277 @@
-import React, { useEffect } from 'react';
-import { Megaphone, Users, DollarSign, TrendingUp, Zap, ArrowRight, Activity, AlertCircle, HelpCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useRef } from 'react';
+import { Calendar, Filter, BarChart2, Globe, ChevronDown, HelpCircle } from 'lucide-react';
+import { useWalkthrough } from '../../walkthrough/WalkthroughProvider';
+import { AnalyticsProvider, useAnalytics } from '../../context/AnalyticsContext';
 import { useMarketing } from '../../context/MarketingContext';
-import { useTour } from '../../context/TourContext';
+import Modal from '../../components/ui/Modal';
 
-// --- CONSTANTS ---
-const TOUR_STEPS = [
-    // Step 0: Welcome Modal
-    {
-        id: 'welcome',
-        selector: null, // Indicates a centered modal
-        title: 'Welcome to SalesPal',
-        description: 'Let’s take a quick tour to help you understand how SalesPal works.'
-    },
-    // Steps 1-5: Sidebar
-    {
-        id: 'sidebar-dashboard',
-        selector: '#sidebar-nav-dashboard',
-        title: 'Dashboard',
-        description: 'Dashboard gives you a real-time overview of campaigns, spend, leads, and AI insights.'
-    },
-    {
-        id: 'sidebar-projects',
-        selector: '#sidebar-nav-projects',
-        title: 'Projects',
-        description: 'Projects help you manage campaigns separately for each business or brand.'
-    },
-    {
-        id: 'sidebar-social',
-        selector: '#sidebar-nav-social',
-        title: 'Social',
-        description: 'Create, schedule, and manage organic social posts across connected platforms.'
-    },
-    {
-        id: 'sidebar-analytics',
-        selector: '#sidebar-nav-analytics',
-        title: 'Analytics',
-        description: 'View detailed performance metrics, trends, and AI-driven insights.'
-    },
-    {
-        id: 'sidebar-settings',
-        selector: '#sidebar-nav-settings',
-        title: 'Settings',
-        description: 'Connect ad platforms, configure defaults, tracking, and notifications.'
-    },
-    // Steps 6-8: Content
-    {
-        id: 'metrics',
-        selector: '#metrics-grid',
-        title: 'Key Performance Metrics',
-        description: 'Track your campaigns, leads, and spend at a glance. These numbers update in real-time as your campaigns run.'
-    },
-    {
-        id: 'active-campaigns',
-        selector: '#card-active-campaigns',
-        title: 'Manage Campaigns',
-        description: 'Click this card to dive into your active projects. You can manage budgets, creatives, and AI settings from there.'
-    },
-    {
-        id: 'activity-feed',
-        selector: '#activity-feed',
-        title: 'Activity & AI Insights',
-        description: 'This feed shows live updates. Our AI analyzes your data 24/7 and will post optimization suggestions here.'
-    },
-    {
-        id: 'quick-actions',
-        selector: '#quick-actions',
-        title: 'Quick Actions',
-        description: 'Need to move fast? Use these shortcuts to launch new campaigns or create social posts instantly.'
-    }
-];
+// Sections
+import PerformanceTrends from './analytics/sections/PerformanceTrends';
+import SpendAnalysis from './analytics/sections/SpendAnalysis';
+import PlatformSplit from './analytics/sections/PlatformSplit';
+import KPISummary from './analytics/sections/KPISummary';
+import ConversionFunnel from './analytics/sections/ConversionFunnel';
+import AttributionModel from './analytics/sections/AttributionModel';
+import CampaignPerformance from './analytics/sections/CampaignPerformance';
+import CampaignDetailView from './analytics/sections/CampaignDetailView';
 
-// --- COMPONENTS ---
+// Components (AI Layer)
+import AIInsightsStream from './analytics/components/AIInsightsStream';
+import RecommendedActions from './analytics/components/RecommendedActions';
+import ActionPreviewView from './analytics/components/ActionPreviewView';
 
-const StatCard = ({ title, value, change, icon: Icon, color, onClick, delay = 0 }) => (
-    <div
-        onClick={onClick}
-        className="bg-white p-6 rounded-xl border border-gray-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-blue-200 group relative overflow-hidden"
-        style={{ animation: `fadeInUp 0.5s ease-out ${delay}s backwards` }}
-    >
-        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-            <ArrowRight className="w-4 h-4 text-gray-400" />
-        </div>
-        <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-500 text-sm font-medium">{title}</span>
-            <div className={`p-2 rounded-lg ${color} group-hover:scale-110 transition-transform`}>
-                <Icon className="w-5 h-5 text-gray-700" />
-            </div>
-        </div>
-        <div className="flex items-end justify-between">
-            <div>
-                <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-                <p className={`text-sm mt-1 font-medium ${change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                    {change} <span className="text-gray-400 font-normal">vs last month</span>
-                </p>
-            </div>
-        </div>
-    </div>
-);
+import { getMockAnalyticsData } from './analytics/utils/mockData';
 
-const ActivityFeed = ({ campaigns }) => {
-    // Mock Data Generator for Insights
-    const getMockInsights = (runningCampaigns) => {
-        if (!runningCampaigns || runningCampaigns.length === 0) return [];
+// --- MAIN CONTENT COMPONENT ---
+const DashboardContent = ({ mode = 'page' }) => {
+    const {
+        isGlobal, selectedProjectId, timeRange, channelFilter,
+        setTimeRange, setChannelFilter, setCompareMode, compareMode, setProject
+    } = useAnalytics();
+    const { projects } = useMarketing();
 
-        const insights = [
-            { type: 'AI', icon: Zap, color: 'text-amber-500 bg-amber-50', title: 'Budget Optimized', desc: 'AI shifted 15% budget to high-performing ad sets.', time: '2h ago' },
-            { type: 'Alert', icon: AlertCircle, color: 'text-red-500 bg-red-50', title: 'CTR Alert', desc: 'CTR dropped below 1% on "Summer Sale" campaign.', time: '4h ago' },
-            { type: 'Campaign', icon: Megaphone, color: 'text-blue-500 bg-blue-50', title: 'Campaign Launched', desc: 'New retargeting campaign is now live.', time: '5h ago' },
-            { type: 'AI', icon: Activity, color: 'text-green-500 bg-green-50', title: 'Performance Spike', desc: 'Conversions up 24% after headline optimization.', time: '1d ago' }
-        ];
+    // Walkthrough restart functionality
+    const { restartWalkthrough } = useWalkthrough();
 
-        // Randomly assign a campaign name to the insight for context
-        return insights.map((insight, index) => {
-            const campaign = runningCampaigns[index % runningCampaigns.length];
-            return { ...insight, campaignName: campaign.name, campaignId: campaign.id };
-        });
+    // UI State
+    const [detailModalOpen, setDetailModalOpen] = useState(false);
+    const [modalContext, setModalContext] = useState(null);
+
+    // Scroll Refs
+    const trendsRef = useRef(null);
+    const spendRef = useRef(null);
+    const funnelRef = useRef(null);
+    const campaignsRef = useRef(null);
+
+    // Generate responsive mock data
+    const dashboardData = useMemo(() =>
+        getMockAnalyticsData(timeRange, selectedProjectId, channelFilter),
+        [timeRange, selectedProjectId, channelFilter]);
+
+    // HANDLERS
+    const handleKPIClick = (metric, title) => {
+        // Map metrics to sections for smooth scrolling
+        const sectionMap = {
+            'spend': spendRef,
+            'leads': funnelRef,
+            'conversion_rate': funnelRef,
+            'cpl': spendRef,
+            'projects': campaignsRef
+        };
+
+        const targetRef = sectionMap[metric];
+        if (targetRef && targetRef.current) {
+            targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     };
 
-    const runningCampaigns = campaigns.filter(c => c.status === 'RUNNING' || c.status === 'running');
-    const displayInsights = getMockInsights(runningCampaigns);
+    const handleCampaignClick = (campaign) => {
+        setModalContext({
+            type: 'campaign',
+            data: campaign,
+            title: 'Campaign Details'
+        });
+        setDetailModalOpen(true);
+    };
 
-    if (runningCampaigns.length === 0) {
-        return (
-            <div className="bg-white p-12 rounded-xl border border-gray-200 text-center" id="activity-feed">
-                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <TrendingUp className="w-8 h-8 text-gray-300" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Active Campaigns</h3>
-                <p className="text-gray-500 max-w-sm mx-auto mb-6">
-                    Launch a campaign to see AI insights and real-time activity updates here.
-                </p>
-                <button className="text-blue-600 font-medium hover:text-blue-700 flex items-center justify-center gap-2 mx-auto">
-                    Create Campaign <ArrowRight className="w-4 h-4" />
-                </button>
-            </div>
-        );
-    }
+    const handleActionPreview = (action) => {
+        setModalContext({
+            type: 'action',
+            data: action,
+            title: 'Preview Action'
+        });
+        setDetailModalOpen(true);
+    };
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" id="activity-feed">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+        <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-12">
+            {/* HEADER & CONTROLS */}
+            <div id="tour-header" className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-2 border-b border-gray-100">
                 <div>
-                    <h3 className="font-bold text-gray-900">Activity & AI Insights</h3>
-                    <p className="text-sm text-gray-500">Real-time updates from your running campaigns</p>
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        Marketing Dashboard
+                        <button
+                            onClick={restartWalkthrough}
+                            className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
+                            title="Restart Tour"
+                        >
+                            <HelpCircle className="w-4 h-4" />
+                        </button>
+                    </h1>
+                    <p className="text-gray-500 mt-1">Real-time performance, spend, and AI intelligence</p>
                 </div>
-                <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
-                    {runningCampaigns.length} Active
-                </span>
-            </div>
-            <div className="divide-y divide-gray-50">
-                {displayInsights.map((item, idx) => (
-                    <div key={idx} className="p-4 hover:bg-gray-50 transition-colors flex items-start gap-4">
-                        <div className={`p-2 rounded-lg shrink-0 ${item.color}`}>
-                            <item.icon className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-start">
-                                <h4 className="font-medium text-gray-900 text-sm truncate">{item.title}</h4>
-                                <span className="text-xs text-gray-400 whitespace-nowrap">{item.time}</span>
-                            </div>
-                            <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">{item.desc}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                                    {item.campaignName}
-                                </span>
-                            </div>
-                        </div>
+
+                {/* CONTROLS AREA */}
+                <div className="flex flex-wrap items-center gap-3">
+
+                    {/* 1. Scope Selector */}
+                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+                        <Globe className="w-4 h-4 text-indigo-600" />
+                        <select
+                            value={selectedProjectId}
+                            onChange={(e) => setProject(e.target.value)}
+                            className="bg-transparent text-sm font-semibold text-gray-900 border-none p-0 cursor-pointer focus:ring-0 w-32 md:w-auto"
+                        >
+                            <option value="all">Global (All Projects)</option>
+                            {projects.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
                     </div>
-                ))}
+
+                    {/* 2. Channel Filter */}
+                    <div className="relative">
+                        <select
+                            value={channelFilter}
+                            onChange={(e) => setChannelFilter(e.target.value)}
+                            className="appearance-none bg-white border border-gray-200 text-gray-700 text-sm rounded-lg pl-3 pr-8 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 font-medium cursor-pointer hover:border-gray-300 transition-colors"
+                        >
+                            <option value="all">All Channels</option>
+                            <option value="meta">Meta Ads</option>
+                            <option value="google">Google Ads</option>
+                            <option value="linkedin">LinkedIn</option>
+                        </select>
+                        <Filter className="w-3 h-3 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+
+                    {/* 3. Time Range */}
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        {['today', '7d', '30d', 'custom'].map((range) => (
+                            <button
+                                key={range}
+                                onClick={() => setTimeRange(range)}
+                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${timeRange === range
+                                    ? 'bg-white text-gray-900 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                {range === '7d' ? '7D' : range === '30d' ? '30D' : range === 'today' ? 'Today' : 'Custom'}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* 4. Compare Toggle */}
+                    <button
+                        onClick={() => setCompareMode(!compareMode)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors shadow-sm ${compareMode
+                            ? 'bg-blue-50 border-blue-200 text-blue-700'
+                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                            }`}
+                    >
+                        <BarChart2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">Compare</span>
+                    </button>
+                </div>
             </div>
-            <div className="p-3 bg-gray-50 text-center border-t border-gray-100">
-                <button className="text-xs font-medium text-gray-500 hover:text-gray-700">View All Activity</button>
+
+            <div className="p-6 max-w-[1600px] mx-auto space-y-6">
+
+                {/* A. Top KPI Cards */}
+                <div id="tour-kpi">
+                    <KPISummary data={dashboardData.kpis} onDetailClick={handleKPIClick} />
+                </div>
+
+                {/* B. AI Insights Stream */}
+                <div id="tour-insights">
+                    <AIInsightsStream
+                        insights={dashboardData.insights}
+                        onAction={(insight) => console.log('View details', insight)}
+                    />
+                </div>
+
+                {/* C. Recommended Actions */}
+                <div id="tour-actions">
+                    <RecommendedActions
+                        actions={dashboardData.recommendations}
+                        onPreviewAction={handleActionPreview}
+                    />
+                </div>
+
+                {/* D. Performance Trends & E. Spend Analysis */}
+                <div id="tour-performance" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24">
+                        <PerformanceTrends data={dashboardData.trends} timeRange={timeRange} />
+                    </div>
+                    <div ref={spendRef} className="scroll-mt-24">
+                        <SpendAnalysis data={dashboardData.spendAnalysis} />
+                    </div>
+                </div>
+
+                {/* F. Conversion Funnel */}
+                <div id="tour-funnel" ref={funnelRef} className="scroll-mt-24">
+                    <ConversionFunnel data={dashboardData.funnel} />
+                </div>
+
+                {/* G. Attribution & Platform */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <AttributionModel data={dashboardData.attribution} />
+                    </div>
+                    <div>
+                        <PlatformSplit data={dashboardData.platformSplit} />
+                    </div>
+                </div>
+
+                {/* H. Campaign Performance Table */}
+                <div ref={campaignsRef} className="scroll-mt-24">
+                    <CampaignPerformance
+                        campaigns={dashboardData.campaigns}
+                        onCampaignClick={handleCampaignClick}
+                        showProject={isGlobal}
+                    />
+                </div>
             </div>
+
+            {/* DETAIL MODAL */}
+            <Modal
+                isOpen={detailModalOpen}
+                onClose={() => setDetailModalOpen(false)}
+                title={modalContext?.title || 'Details'}
+            >
+                {modalContext?.type === 'campaign' ? (
+                    <CampaignDetailView campaign={modalContext.data} />
+                ) : modalContext?.type === 'action' ? (
+                    <ActionPreviewView action={modalContext.data} />
+                ) : (
+                    <div className="p-4">Detailed view placeholder for metric.</div>
+                )}
+
+                <div className="mt-6 pt-6 border-t border-gray-100 flex justify-end gap-3">
+                    {modalContext?.type === 'action' ? (
+                        <>
+                            <button
+                                onClick={() => setDetailModalOpen(false)}
+                                className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                disabled
+                                className="px-4 py-2 bg-blue-600 opacity-50 cursor-not-allowed text-white rounded-lg text-sm font-medium flex items-center gap-2"
+                            >
+                                Apply Action
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => setDetailModalOpen(false)}
+                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-medium transition-colors"
+                        >
+                            Close
+                        </button>
+                    )}
+                </div>
+            </Modal>
         </div>
     );
 };
 
-const MarketingDashboard = () => {
-    const navigate = useNavigate();
-    const { campaigns, projects } = useMarketing();
-    const { startTour, restartTour } = useTour();
-
-    // --- EFFECTS ---
-    useEffect(() => {
-        // Attempt to start tour on mount (context handles persistence check)
-        startTour('marketing_dashboard', TOUR_STEPS);
-    }, [startTour]);
-
-    const getActiveProjectUrl = () => {
-        if (projects && projects.length > 0) {
-            return `/marketing/projects/${projects[0].id}`;
-        }
-        return '/marketing/projects';
-    };
-
+// --- WRAPPER ---
+const MarketingDashboard = (props) => {
     return (
-        <div className="space-y-8 relative">
-            <style>{`
-                @keyframes fadeInUp {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-            `}</style>
-
-            {/* HEADERS */}
-            <div className="flex items-start justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Marketing Dashboard</h1>
-                    <p className="text-gray-500 mt-1">Overview of your AI marketing activity</p>
-                </div>
-                <button
-                    onClick={() => restartTour('marketing_dashboard', TOUR_STEPS)}
-                    className="text-gray-400 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-blue-50 flex items-center gap-2 text-sm font-medium group"
-                    title="Restart Walkthrough"
-                >
-                    <HelpCircle className="w-5 h-5" />
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity -ml-2 group-hover:ml-0 overflow-hidden w-0 group-hover:w-auto">Walkthrough</span>
-                </button>
-            </div>
-
-            {/* METRICS GRID */}
-            <div id="metrics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div id="card-active-campaigns">
-                    <StatCard
-                        title="Active Campaigns"
-                        value={campaigns.filter(c => c.status === 'RUNNING' || c.status === 'running').length || "0"}
-                        change="+2"
-                        icon={Megaphone}
-                        color="bg-blue-100"
-                        onClick={() => navigate(getActiveProjectUrl())}
-                        delay={0.1}
-                    />
-                </div>
-                <StatCard
-                    title="Leads Generated"
-                    value="1,420"
-                    change="+15.3%"
-                    icon={Users}
-                    color="bg-purple-100"
-                    onClick={() => navigate('/marketing/analytics?tab=leads')}
-                    delay={0.2}
-                />
-                <StatCard
-                    title="Ad Spend"
-                    value="$12,450"
-                    change="-4.2%"
-                    icon={DollarSign}
-                    color="bg-green-100"
-                    onClick={() => navigate('/marketing/analytics')}
-                    delay={0.3}
-                />
-                <StatCard
-                    title="AI Efficiency"
-                    value="94%"
-                    change="+5.1%"
-                    icon={TrendingUp}
-                    color="bg-orange-100"
-                    onClick={() => navigate('/marketing/analytics')}
-                    delay={0.4}
-                />
-            </div>
-
-            {/* CONTENT SPLIT */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Feed */}
-                <div className="lg:col-span-2">
-                    <ActivityFeed campaigns={campaigns} />
-                </div>
-
-                {/* Side Panel (Mock Quick Actions) */}
-                <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl p-6 text-white text-center">
-                        <h3 className="font-bold text-lg mb-2">Boost Performance</h3>
-                        <p className="text-indigo-100 text-sm mb-4">AI detected a 12% opportunity in your Instagram campaigns.</p>
-                        <button className="bg-white text-indigo-600 w-full py-2 rounded-lg font-medium hover:bg-indigo-50 transition-colors shadow-lg">
-                            Review Suggestion
-                        </button>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-xl border border-gray-200" id="quick-actions">
-                        <h3 className="font-bold text-gray-900 mb-4">Quick Actions</h3>
-                        <div className="space-y-2">
-                            <button onClick={() => navigate('/marketing/projects/new')} className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700 transition-colors">
-                                <Megaphone className="w-4 h-4 text-blue-500" /> Create Campaign
-                            </button>
-                            <button onClick={() => navigate('/marketing/social/create')} className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700 transition-colors">
-                                <Users className="w-4 h-4 text-purple-500" /> New Social Post
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <AnalyticsProvider>
+            <DashboardContent {...props} />
+        </AnalyticsProvider>
     );
 };
 

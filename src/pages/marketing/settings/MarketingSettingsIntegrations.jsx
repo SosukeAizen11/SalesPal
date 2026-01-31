@@ -8,7 +8,7 @@ import { useIntegrations } from '../../../context/IntegrationContext';
 
 const MarketingSettingsIntegrations = () => {
     const navigate = useNavigate();
-    const { integrations, connectIntegration } = useIntegrations();
+    const { integrations, initiateConnection } = useIntegrations();
     const [connectingId, setConnectingId] = useState(null);
 
     const integrationList = [
@@ -44,11 +44,9 @@ const MarketingSettingsIntegrations = () => {
 
     const handleConnect = (id) => {
         setConnectingId(id);
-        // Simulate OAuth Flow
-        setTimeout(() => {
-            connectIntegration(id);
-            setConnectingId(null);
-        }, 1500);
+        // Use Global OAuth Flow
+        const path = initiateConnection(id, window.location.pathname);
+        navigate(path);
     };
 
     const handleManage = (item) => {

@@ -3,6 +3,8 @@ import { Plus, Facebook, Linkedin, Twitter, FileText, Calendar, CheckCircle2, In
 import Card from '../../../../components/ui/Card';
 import Badge from '../../../../components/ui/Badge';
 
+import { useIntegrations } from '../../../../context/IntegrationContext';
+
 const SocialSidebar = ({
     activeTab,
     onTabChange,
@@ -11,9 +13,10 @@ const SocialSidebar = ({
     onSelectPost,
     onCreateNew
 }) => {
+    const { integrations } = useIntegrations();
 
     const filteredPosts = posts.filter(post => {
-        if (activeTab === 'drafts') return post.status === 'draft' || !post.status; // Default to draft if status missing
+        if (activeTab === 'drafts') return post.status === 'draft' || !post.status;
         if (activeTab === 'scheduled') return post.status === 'scheduled';
         if (activeTab === 'published') return post.status === 'published';
         return true;
@@ -27,20 +30,32 @@ const SocialSidebar = ({
 
     return (
         <div className="h-full flex flex-col bg-white border-r border-gray-200">
-            {/* Account Selector (Mock) */}
+            {/* Account Selector (Dynamic) */}
             <div className="p-4 border-b border-gray-100">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Connected Accounts</h3>
                 <div className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center cursor-pointer hover:ring-2 ring-blue-200 transition-all">
-                        <Facebook className="w-4 h-4" />
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center cursor-pointer hover:ring-2 ring-pink-200 transition-all">
-                        <Instagram className="w-4 h-4" />
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-blue-50 text-[#0077B5] flex items-center justify-center cursor-pointer hover:ring-2 ring-blue-100 transition-all">
-                        <Linkedin className="w-4 h-4" />
-                    </div>
-                    <div className="w-8 h-8 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 cursor-pointer hover:border-gray-400 hover:text-gray-600">
+                    {integrations.meta.connected && (
+                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center cursor-pointer hover:ring-2 ring-blue-200 transition-all" title="Facebook">
+                            <Facebook className="w-4 h-4" />
+                        </div>
+                    )}
+                    {integrations.instagram.connected && (
+                        <div className="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center cursor-pointer hover:ring-2 ring-pink-200 transition-all" title="Instagram">
+                            <Instagram className="w-4 h-4" />
+                        </div>
+                    )}
+                    {integrations.linkedin.connected && (
+                        <div className="w-8 h-8 rounded-full bg-blue-50 text-[#0077B5] flex items-center justify-center cursor-pointer hover:ring-2 ring-blue-100 transition-all" title="LinkedIn">
+                            <Linkedin className="w-4 h-4" />
+                        </div>
+                    )}
+
+                    {/* Visual cue if none connected */}
+                    {!integrations.meta.connected && !integrations.instagram.connected && !integrations.linkedin.connected && (
+                        <span className="text-xs text-gray-400 italic">No accounts connected</span>
+                    )}
+
+                    <div className="w-8 h-8 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 cursor-pointer hover:border-gray-400 hover:text-gray-600" title="Connect New">
                         <Plus className="w-4 h-4" />
                     </div>
                 </div>

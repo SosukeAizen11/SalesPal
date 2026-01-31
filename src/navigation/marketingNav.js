@@ -16,11 +16,7 @@ export const marketingNav = [
         path: '/marketing/social',
         icon: Share2
     },
-    {
-        name: 'Analytics',
-        path: '/marketing/analytics',
-        icon: BarChart3
-    },
+
     {
         name: 'Settings',
         path: '/marketing/settings',

@@ -14,7 +14,7 @@ import ProtectedRoute from '../components/auth/ProtectedRoute';
 import MarketingLayout from '../layout/MarketingLayout';
 import MarketingDashboard from '../pages/marketing/MarketingDashboard';
 import Campaigns from '../pages/marketing/Campaigns';
-import Analytics from '../pages/marketing/Analytics';
+
 import Settings from '../pages/marketing/Settings';
 import NewCampaign from '../pages/marketing/campaigns/NewCampaign';
 import CampaignDetails from '../pages/marketing/campaigns/CampaignDetails';
@@ -55,11 +55,17 @@ import {
     MarketingSettingsNotifications
 } from '../pages/marketing/settings/MarketingSettingsPlaceholders';
 
+import ConnectPlatform from '../pages/auth/ConnectPlatform';
+
 export const router = createBrowserRouter([
     {
         path: "/",
         element: <App />,
         children: [
+            {
+                path: "/connect/:platformId",
+                element: <ConnectPlatform />
+            },
             {
                 path: "/",
                 element: <Home />,
@@ -135,10 +141,7 @@ export const router = createBrowserRouter([
                         path: "settings/integrations/meta",
                         element: <MetaIntegration />
                     },
-                    {
-                        path: "analytics",
-                        element: <Analytics />
-                    },
+
 
 
                 ]

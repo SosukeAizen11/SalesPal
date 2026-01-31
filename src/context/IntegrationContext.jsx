@@ -43,7 +43,16 @@ const INITIAL_INTEGRATIONS = {
 };
 
 export const IntegrationProvider = ({ children }) => {
-    const [integrations, setIntegrations] = useState(INITIAL_INTEGRATIONS);
+    // Initialize from localStorage or default
+    const [integrations, setIntegrations] = useState(() => {
+        const saved = localStorage.getItem('salespal_integrations');
+        return saved ? JSON.parse(saved) : INITIAL_INTEGRATIONS;
+    });
+
+    // Persist on change
+    React.useEffect(() => {
+        localStorage.setItem('salespal_integrations', JSON.stringify(integrations));
+    }, [integrations]);
 
     const connectIntegration = useCallback((id, accountName = 'Connected Account') => {
         setIntegrations(prev => ({
@@ -68,6 +77,22 @@ export const IntegrationProvider = ({ children }) => {
             }
         }));
     }, []);
+
+    // --- OAUTH MOCK FLOW ---
+    const initiateConnection = useCallback((platformId, returnPath = '/') => {
+        // Save return path
+        sessionStorage.setItem('oauth_return_path', returnPath);
+        // In a real app, this would redirect to backend/OAuth provider
+        // Here we simulate by returning the path to our mock connection page
+        return `/connect/${platformId}`;
+    }, []);
+
+    const completeConnection = useCallback((platformId) => {
+        connectIntegration(platformId);
+        const returnPath = sessionStorage.getItem('oauth_return_path') || '/marketing/settings';
+        sessionStorage.removeItem('oauth_return_path');
+        return returnPath;
+    }, [connectIntegration]);
 
     const isConnected = useCallback((id) => {
         return integrations[id]?.connected ?? false;
@@ -134,6 +159,8 @@ export const IntegrationProvider = ({ children }) => {
         integrations,
         connectIntegration,
         disconnectIntegration,
+        initiateConnection,
+        completeConnection,
         isConnected,
         getIntegration,
         validateIntegrations
