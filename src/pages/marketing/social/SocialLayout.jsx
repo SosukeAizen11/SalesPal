@@ -1,56 +1,239 @@
-import React from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
 import { LayoutDashboard, PlusCircle, FileText, Calendar, Send, BarChart2 } from 'lucide-react';
+import { useMarketing } from '../../../context/MarketingContext';
+import { useIntegrations } from '../../../context/IntegrationContext';
+import SocialCreate from './SocialCreate';
+import SocialList from './SocialList';
+
+const TABS = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'create', label: 'Create Post', icon: PlusCircle },
+    { id: 'drafts', label: 'Drafts', icon: FileText },
+    { id: 'scheduled', label: 'Scheduled', icon: Calendar },
+    { id: 'published', label: 'Published', icon: Send },
+    { id: 'analytics', label: 'Analytics', icon: BarChart2 },
+];
 
 const SocialLayout = () => {
-    const location = useLocation();
+    const [activeTab, setActiveTab] = useState('overview');
 
-    const tabs = [
-        { path: '', label: 'Overview', icon: LayoutDashboard, end: true },
-        { path: 'create', label: 'Create Post', icon: PlusCircle },
-        { path: 'drafts', label: 'Drafts', icon: FileText },
-        { path: 'scheduled', label: 'Scheduled', icon: Calendar },
-        { path: 'published', label: 'Published', icon: Send },
-        { path: 'analytics', label: 'Analytics', icon: BarChart2 },
-    ];
+    // Render content based on active tab
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'overview':
+                return <SocialOverviewInline onNavigate={setActiveTab} />;
+            case 'create':
+                return <SocialCreate onNavigate={setActiveTab} />;
+            case 'drafts':
+                return <SocialList status="drafts" onNavigate={setActiveTab} />;
+            case 'scheduled':
+                return <SocialList status="scheduled" onNavigate={setActiveTab} />;
+            case 'published':
+                return <SocialList status="published" onNavigate={setActiveTab} />;
+            case 'analytics':
+                return <SocialAnalyticsPlaceholder />;
+            default:
+                return <SocialOverviewInline onNavigate={setActiveTab} />;
+        }
+    };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-6rem)] -m-8 bg-gray-50/50">
-            {/* Top Navigation Bar */}
-            <div className="bg-white border-b border-gray-200 px-8 py-3 flex items-center gap-8 shadow-sm z-10">
-                <h1 className="text-xl font-bold text-gray-900 border-r border-gray-200 pr-6 mr-2">Social Studio</h1>
-                <nav className="flex items-center gap-1">
-                    {tabs.map((tab) => {
-                        const isActive = tab.end
-                            ? location.pathname === `/marketing/social` || location.pathname === `/marketing/social/`
-                            : location.pathname.includes(`/marketing/social/${tab.path}`);
+        <div className="space-y-6">
+            {/* Page Header */}
+            <div>
+                <h1 className="text-2xl font-bold text-gray-900">Social Studio</h1>
+                <p className="text-gray-500 mt-1">Manage, schedule, and analyze your social content</p>
+            </div>
+
+            {/* Tab Navigation - Below Heading */}
+            <div className="border-b border-gray-200 -mx-8 px-8">
+                <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide pb-px" role="tablist">
+                    {TABS.map((tab) => {
+                        const isActive = activeTab === tab.id;
+                        const Icon = tab.icon;
 
                         return (
-                            <NavLink
-                                key={tab.path}
-                                to={tab.path}
-                                end={tab.end}
-                                className={({ isActive: linkActive }) => `
-                                    group flex items-center gap-2 px-4 py-2 rounded-lg transition-colors
-                                    ${isActive || linkActive ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                role="tab"
+                                aria-selected={isActive}
+                                className={`
+                                    flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors
+                                    whitespace-nowrap border-b-2 -mb-px
+                                    ${isActive
+                                        ? 'border-blue-600 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }
                                 `}
                             >
-                                <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                                    <tab.icon className="w-4 h-4" />
-                                </div>
-                                <span className="text-sm font-medium leading-5">{tab.label}</span>
-                            </NavLink>
+                                <Icon className="w-4 h-4" />
+                                {tab.label}
+                            </button>
                         );
                     })}
                 </nav>
             </div>
 
-            {/* Main Content Area */}
-            <div className="flex-1 overflow-auto p-8 relative">
-                <div className="max-w-7xl mx-auto h-full">
-                    <Outlet />
+            {/* Tab Content */}
+            <div className="animate-fade-in-up">
+                {renderContent()}
+            </div>
+        </div>
+    );
+};
+
+// ==========================================
+// INLINE OVERVIEW COMPONENT
+// ==========================================
+const SocialOverviewInline = ({ onNavigate }) => {
+    const { socialPosts } = useMarketing();
+    const { integrations } = useIntegrations();
+
+    const scheduledCount = socialPosts.filter(p => p.status === 'scheduled').length;
+    const draftsCount = socialPosts.filter(p => p.status === 'draft').length;
+    const publishedCount = socialPosts.filter(p => p.status === 'published').length;
+
+    const channels = [
+        {
+            id: 'facebook',
+            name: 'Facebook Page',
+            accountName: integrations.meta?.accountName || 'Not connected',
+            icon: '📘',
+            connected: integrations.meta?.connected,
+        },
+        {
+            id: 'instagram',
+            name: 'Instagram Business',
+            accountName: integrations.meta?.connected ? '@salespal_tech' : 'Not connected',
+            icon: '📸',
+            connected: integrations.meta?.connected,
+        },
+        {
+            id: 'linkedin',
+            name: 'LinkedIn Company',
+            accountName: integrations.linkedin?.accountName || 'Not connected',
+            icon: '💼',
+            connected: integrations.linkedin?.connected,
+        }
+    ];
+
+    const connectedCount = channels.filter(c => c.connected).length;
+
+    return (
+        <div className="space-y-8">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard
+                    label="Drafts"
+                    value={draftsCount}
+                    subtext="Posts in progress"
+                    color="blue"
+                    onClick={() => onNavigate('drafts')}
+                />
+                <StatCard
+                    label="Scheduled"
+                    value={scheduledCount}
+                    subtext="Ready to go live"
+                    color="orange"
+                    onClick={() => onNavigate('scheduled')}
+                />
+                <StatCard
+                    label="Published (30d)"
+                    value={publishedCount}
+                    subtext="Total posts sent"
+                    color="green"
+                    onClick={() => onNavigate('published')}
+                />
+            </div>
+
+            {/* Connected Channels */}
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Connected Channels</h3>
+                    <span className="text-sm text-gray-500">{connectedCount} of {channels.length} connected</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {channels.map(channel => (
+                        <div
+                            key={channel.id}
+                            className={`p-4 bg-white rounded-xl border border-gray-200 flex items-center gap-4 ${!channel.connected ? 'opacity-60' : ''}`}
+                        >
+                            <div className="text-2xl">{channel.icon}</div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-gray-900">{channel.name}</h4>
+                                <p className="text-sm text-gray-500 truncate">{channel.accountName}</p>
+                            </div>
+                            {channel.connected ? (
+                                <div className="w-2 h-2 bg-green-500 rounded-full" />
+                            ) : (
+                                <span className="text-xs font-medium text-blue-600">Connect</span>
+                            )}
+                        </div>
+                    ))}
                 </div>
             </div>
+
+            {/* Create CTA */}
+            <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 flex items-center justify-between">
+                <div>
+                    <h3 className="font-semibold text-gray-900">Ready to create?</h3>
+                    <p className="text-sm text-gray-600 mt-1">Compose and schedule your next post</p>
+                </div>
+                <button
+                    onClick={() => onNavigate('create')}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                    <PlusCircle className="w-4 h-4" />
+                    Create Post
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Stat Card Component
+const StatCard = ({ label, value, subtext, color, onClick }) => {
+    const colorClasses = {
+        blue: 'bg-blue-50 text-blue-600',
+        orange: 'bg-orange-50 text-orange-600',
+        green: 'bg-green-50 text-green-600',
+    };
+    const hoverClasses = {
+        blue: 'hover:border-blue-200',
+        orange: 'hover:border-orange-200',
+        green: 'hover:border-green-200',
+    };
+
+    return (
+        <div
+            onClick={onClick}
+            className={`p-6 bg-white rounded-xl border border-gray-200 cursor-pointer ${hoverClasses[color]} hover:shadow-sm transition-all group`}
+        >
+            <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-500">{label}</span>
+                <div className={`w-8 h-8 rounded-full ${colorClasses[color]} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <span className="text-xs font-bold">{value}</span>
+                </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{value}</div>
+            <p className="text-xs text-gray-400">{subtext}</p>
+        </div>
+    );
+};
+
+// Analytics Placeholder
+const SocialAnalyticsPlaceholder = () => {
+    return (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-gray-200 border-dashed">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <BarChart2 className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Social Analytics</h3>
+            <p className="text-gray-500 text-center max-w-md">
+                Detailed analytics for your social content coming soon.
+                Track engagement, reach, and performance across all platforms.
+            </p>
         </div>
     );
 };

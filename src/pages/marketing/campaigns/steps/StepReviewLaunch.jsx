@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Rocket, ArrowLeft, Building2, Layout, Edit2, CheckSquare, Square, AlertCircle, ArrowRight } from 'lucide-react';
 import { useIntegrations } from '../../../../context/IntegrationContext';
 import { canLaunchCampaign, getIntegrationErrors } from '../../../../utils/campaignGuard';
 
 const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
+    const navigate = useNavigate();
     const [isConfirmed, setIsConfirmed] = useState(true);
     const [isLaunching, setIsLaunching] = useState(false);
-    const { integrations } = useIntegrations();
+    const { integrations, initiateConnection } = useIntegrations();
 
     // Derive platforms from budget split data
     // StepPlatformBudget stores: budget.split.meta (%) and budget.split.google (%)
@@ -66,7 +67,7 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
         if (!check.allowed) {
             // DO NOT navigate, DO NOT change status
             setLaunchError({
-                message: `Connect ${check.missing.join(', ')} in Settings to launch this campaign`,
+                message: `Connect ${check.missing.join(', ')} to launch this campaign`,
                 missing: check.missing
             });
             return;
@@ -85,6 +86,11 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
                 onLaunch(); // This sets campaign.status = 'running' in parent
             }
         }, 1500);
+    };
+
+    const handleConnectTrigger = (platformId) => {
+        const path = initiateConnection(platformId, location.pathname); // Current wizard URL
+        navigate(path);
     };
 
     const SectionHeader = ({ title }) => (
@@ -190,27 +196,24 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
                                 {integrationErrors.map((error) => (
                                     <li key={error.id} className="flex items-center justify-between gap-4">
                                         <span className="text-sm text-red-700">{error.message}</span>
-                                        <Link
-                                            to={`/marketing/settings/integrations/${error.id}`}
+                                        <button
+                                            onClick={() => handleConnectTrigger(error.id)}
                                             className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-800 whitespace-nowrap"
                                         >
                                             Connect <ArrowRight className="w-3 h-3" />
-                                        </Link>
+                                        </button>
                                     </li>
                                 ))}
                             </ul>
                             <p className="text-xs text-red-600">
-                                <Link to="/marketing/settings/integrations" className="underline hover:no-underline font-medium">
-                                    Go to Marketing → Settings → Integrations
-                                </Link>{' '}
-                                to connect required platforms before launching.
+                                You must connect these platforms to launch your campaign. You will be redirected back here.
                             </p>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Launch Error (shown when user clicks launch without integrations) */}
+            {/* Launch Error */}
             {launchError && (
                 <div className="bg-amber-50 border border-amber-300 rounded-xl p-5">
                     <div className="flex items-start gap-3">
@@ -222,12 +225,22 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
                             <p className="text-sm text-amber-700 mb-4">
                                 {launchError.message}
                             </p>
-                            <Link
-                                to="/marketing/settings/integrations"
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
-                            >
-                                Go to Integrations <ArrowRight className="w-4 h-4" />
-                            </Link>
+                            <div className="flex gap-2">
+                                {launchError.missing && launchError.missing.map(platform => {
+                                    // Map platform name back to ID (simple logic)
+                                    const id = platform.toLowerCase().includes('google') ? 'google' :
+                                        platform.toLowerCase().includes('linkedin') ? 'linkedin' : 'meta';
+                                    return (
+                                        <button
+                                            key={id}
+                                            onClick={() => handleConnectTrigger(id)}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-600 text-white text-xs font-medium rounded-lg hover:bg-amber-700 transition-colors"
+                                        >
+                                            Connect {platform}
+                                        </button>
+                                    )
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -261,10 +274,10 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
 
                     <button
                         onClick={handleLaunch}
-                        disabled={!launchCheck.allowed || !isConfirmed || isLaunching}
+                        disabled={!canLaunch || isLaunching}
                         className={`
                             group flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-lg shadow-lg transition-all
-                            ${launchCheck.allowed && isConfirmed && !isLaunching
+                            ${canLaunch && !isLaunching
                                 ? 'bg-primary text-white hover:bg-primary/90 hover:shadow-xl hover:-translate-y-0.5 shadow-primary/20'
                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none pointer-events-none'
                             }

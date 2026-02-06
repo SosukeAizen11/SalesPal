@@ -6,9 +6,12 @@ import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 
-const SocialList = ({ status }) => {
+const SocialList = ({ status, onNavigate }) => {
     const navigate = useNavigate();
     const { socialPosts, deleteSocialPost, updateSocialPost, addSocialPost } = useMarketing();
+
+    // Use onNavigate prop if provided (state-based), otherwise use router
+    const goTo = (tab) => onNavigate ? onNavigate(tab) : navigate(`/marketing/social/${tab}`);
 
     const posts = socialPosts.filter(p => {
         if (status === 'drafts') return p.status === 'draft' || !p.status;
@@ -35,7 +38,7 @@ const SocialList = ({ status }) => {
             scheduledFor: null
         };
         addSocialPost(newPost);
-        navigate('/marketing/social/drafts');
+        goTo('drafts');
     };
 
     const handleCancelSchedule = (post) => {
@@ -52,7 +55,7 @@ const SocialList = ({ status }) => {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/marketing/social/create?edit=${post.id}`)}
+                            onClick={() => goTo('create')}
                             className="text-gray-500 hover:text-primary"
                         >
                             <Edit2 className="w-4 h-4" />
@@ -75,7 +78,7 @@ const SocialList = ({ status }) => {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/marketing/social/create?edit=${post.id}`)}
+                            onClick={() => goTo('create')}
                             className="text-gray-500 hover:text-primary"
                             title="Edit Post"
                         >
@@ -128,7 +131,7 @@ const SocialList = ({ status }) => {
                     <p className="text-gray-500 mt-1">Manage your {status} posts</p>
                 </div>
                 {status !== 'published' && (
-                    <Button onClick={() => navigate('/marketing/social/create')}>Create New</Button>
+                    <Button onClick={() => goTo('create')}>Create New</Button>
                 )}
             </div>
 

@@ -1,425 +1,277 @@
-import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useRef } from 'react';
+import { Calendar, Filter, BarChart2, Globe, ChevronDown, HelpCircle } from 'lucide-react';
+import { useWalkthrough } from '../../walkthrough/WalkthroughProvider';
+import { AnalyticsProvider, useAnalytics } from '../../context/AnalyticsContext';
 import { useMarketing } from '../../context/MarketingContext';
-import Card from '../../components/ui/Card';
-import Badge from '../../components/ui/Badge';
-import Button from '../../components/ui/Button';
-import { FolderOpen, TrendingUp } from 'lucide-react';
+import Modal from '../../components/ui/Modal';
 
-const MarketingDashboard = () => {
-    const navigate = useNavigate();
-    const { projects, selectedProjectId, campaigns } = useMarketing();
+// Sections
+import PerformanceTrends from './analytics/sections/PerformanceTrends';
+import SpendAnalysis from './analytics/sections/SpendAnalysis';
+import PlatformSplit from './analytics/sections/PlatformSplit';
+import KPISummary from './analytics/sections/KPISummary';
+import ConversionFunnel from './analytics/sections/ConversionFunnel';
+import AttributionModel from './analytics/sections/AttributionModel';
+import CampaignPerformance from './analytics/sections/CampaignPerformance';
+import CampaignDetailView from './analytics/sections/CampaignDetailView';
 
-    // Get the active project - ALWAYS calculate before any returns
-    const activeProject = useMemo(() => {
-        return projects.find(p => p.id === selectedProjectId);
-    }, [projects, selectedProjectId]);
+// Components (AI Layer)
+import AIInsightsStream from './analytics/components/AIInsightsStream';
+import RecommendedActions from './analytics/components/RecommendedActions';
+import ActionPreviewView from './analytics/components/ActionPreviewView';
 
-    // Calculate campaign metrics for the active project - ALWAYS calculate
-    const projectMetrics = useMemo(() => {
-        if (!activeProject) return { runningCampaigns: 0, totalDailySpend: 0 };
+import { getMockAnalyticsData } from './analytics/utils/mockData';
 
-        const projectCampaigns = campaigns.filter(c => c.projectId === activeProject.id);
-        const runningCampaigns = projectCampaigns.filter(c =>
-            c.status === 'running' || c.status === 'active'
-        );
+// --- MAIN CONTENT COMPONENT ---
+const DashboardContent = ({ mode = 'page' }) => {
+    const {
+        isGlobal, selectedProjectId, timeRange, channelFilter,
+        setTimeRange, setChannelFilter, setCompareMode, compareMode, setProject
+    } = useAnalytics();
+    const { projects } = useMarketing();
 
-        const totalDailySpend = runningCampaigns.reduce((sum, campaign) => {
-            const budgetVal = campaign.dailyBudget || campaign.budget?.daily || 0;
-            const numericValue = parseInt(String(budgetVal).replace(/[^0-9]/g, '')) || 0;
-            return sum + numericValue;
-        }, 0);
+    // Walkthrough restart functionality
+    const { restartWalkthrough } = useWalkthrough();
 
-        return {
-            runningCampaigns: runningCampaigns.length,
-            totalDailySpend
+    // UI State
+    const [detailModalOpen, setDetailModalOpen] = useState(false);
+    const [modalContext, setModalContext] = useState(null);
+
+    // Scroll Refs
+    const trendsRef = useRef(null);
+    const spendRef = useRef(null);
+    const funnelRef = useRef(null);
+    const campaignsRef = useRef(null);
+
+    // Generate responsive mock data
+    const dashboardData = useMemo(() =>
+        getMockAnalyticsData(timeRange, selectedProjectId, channelFilter),
+        [timeRange, selectedProjectId, channelFilter]);
+
+    // HANDLERS
+    const handleKPIClick = (metric, title) => {
+        // Map metrics to sections for smooth scrolling
+        const sectionMap = {
+            'spend': spendRef,
+            'leads': funnelRef,
+            'conversion_rate': funnelRef,
+            'cpl': spendRef,
+            'projects': campaignsRef
         };
-    }, [activeProject, campaigns]);
 
-    // Calculate aggregate metrics across all projects - ALWAYS calculate
-    const allProjectsMetrics = useMemo(() => {
-        const totalProjects = projects.length;
-        const allCampaigns = campaigns.filter(c =>
-            c.status === 'running' || c.status === 'active'
-        );
-        const totalRunningCampaigns = allCampaigns.length;
+        const targetRef = sectionMap[metric];
+        if (targetRef && targetRef.current) {
+            targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
 
-        const totalDailySpend = allCampaigns.reduce((sum, campaign) => {
-            const budgetVal = campaign.dailyBudget || campaign.budget?.daily || 0;
-            const numericValue = parseInt(String(budgetVal).replace(/[^0-9]/g, '')) || 0;
-            return sum + numericValue;
-        }, 0);
-
-        return { totalProjects, totalRunningCampaigns, totalDailySpend };
-    }, [projects, campaigns]);
-
-    // Calculate metrics for each project - ALWAYS calculate
-    const projectsWithMetrics = useMemo(() => {
-        return projects.map(project => {
-            const projectCampaigns = campaigns.filter(c => c.projectId === project.id);
-            const runningCampaigns = projectCampaigns.filter(c =>
-                c.status === 'running' || c.status === 'active'
-            );
-            const dailySpend = runningCampaigns.reduce((sum, campaign) => {
-                const budgetVal = campaign.dailyBudget || campaign.budget?.daily || 0;
-                const numericValue = parseInt(String(budgetVal).replace(/[^0-9]/g, '')) || 0;
-                return sum + numericValue;
-            }, 0);
-
-            return {
-                ...project,
-                campaignCount: runningCampaigns.length,
-                dailySpend
-            };
+    const handleCampaignClick = (campaign) => {
+        setModalContext({
+            type: 'campaign',
+            data: campaign,
+            title: 'Campaign Details'
         });
-    }, [projects, campaigns]);
+        setDetailModalOpen(true);
+    };
 
-    // All Projects Overview when no specific project is selected
-    if (!activeProject) {
-        return (
-            <div className="max-w-7xl space-y-8">
-                {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">All Projects Overview</h1>
-                    <p className="text-gray-500">Aggregate view of all your marketing projects</p>
-                </div>
+    const handleActionPreview = (action) => {
+        setModalContext({
+            type: 'action',
+            data: action,
+            title: 'Preview Action'
+        });
+        setDetailModalOpen(true);
+    };
 
-                {/* Aggregate Metrics */}
-                <div className="grid md:grid-cols-3 gap-6">
-                    <Card
-                        className="p-6 bg-white cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all group"
-                        onClick={() => navigate('/marketing/projects')}
-                    >
-                        <h3 className="text-sm font-medium text-gray-500 mb-2 group-hover:text-blue-600 transition-colors">
-                            Total Projects
-                        </h3>
-                        <p className="text-3xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                            {allProjectsMetrics.totalProjects}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-2 group-hover:text-blue-500 transition-colors">
-                            Click to view all projects →
-                        </p>
-                    </Card>
-
-                    <Card
-                        className="p-6 bg-white cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all group"
-                        onClick={() => navigate('/marketing/campaigns')}
-                    >
-                        <h3 className="text-sm font-medium text-gray-500 mb-2 group-hover:text-blue-600 transition-colors">
-                            Running Campaigns
-                        </h3>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-3xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                {allProjectsMetrics.totalRunningCampaigns}
-                            </p>
-                            <span className="text-sm text-gray-400">active</span>
-                        </div>
-                        <p className="text-xs text-gray-400 mt-2 group-hover:text-blue-500 transition-colors">
-                            Click to view all campaigns →
-                        </p>
-                    </Card>
-
-                    <Card
-                        className="p-6 bg-white cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all group"
-                        onClick={() => navigate('/marketing/analytics')}
-                    >
-                        <h3 className="text-sm font-medium text-gray-500 mb-2 group-hover:text-blue-600 transition-colors">
-                            Total Daily Spend
-                        </h3>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-3xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                ₹{allProjectsMetrics.totalDailySpend.toLocaleString()}
-                            </p>
-                            <span className="text-sm text-gray-400">/day</span>
-                        </div>
-                        <p className="text-xs text-gray-400 mt-2 group-hover:text-blue-500 transition-colors">
-                            Click to view analytics →
-                        </p>
-                    </Card>
-                </div>
-
-                {/* Projects Comparison */}
-                {projectsWithMetrics.length > 0 ? (
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold text-gray-900">Projects</h2>
-                            <Button
-                                variant="secondary"
-                                onClick={() => navigate('/marketing/projects/new')}
-                            >
-                                Create New Project
-                            </Button>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {projectsWithMetrics.map(project => (
-                                <Card
-                                    key={project.id}
-                                    className="p-6 bg-white hover:shadow-lg transition-shadow cursor-pointer"
-                                    onClick={() => navigate(`/marketing/projects/${project.id}`)}
-                                >
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex-1">
-                                            <h3 className="font-semibold text-gray-900 mb-1">{project.name}</h3>
-                                            <p className="text-sm text-gray-500 capitalize">{project.industry || 'Industry not set'}</p>
-                                        </div>
-                                        <Badge variant="success" className="text-xs">Active</Badge>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-500">Campaigns</span>
-                                            <span className="font-medium text-gray-900">{project.campaignCount}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-500">Daily Spend</span>
-                                            <span className="font-medium text-gray-900">₹{project.dailySpend.toLocaleString()}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4 pt-4 border-t border-gray-100">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                navigate(`/marketing/projects/${project.id}`);
-                                            }}
-                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                        >
-                                            View Details →
-                                        </button>
-                                    </div>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
-                ) : (
-                    <Card className="p-12 bg-white text-center">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FolderOpen className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Projects Yet</h3>
-                        <p className="text-gray-500 mb-6">
-                            Create your first project to start managing marketing campaigns.
-                        </p>
-                        <Button onClick={() => navigate('/marketing/projects/new')}>
-                            Create Your First Project
-                        </Button>
-                    </Card>
-                )}
-            </div>
-        );
-    }
-
-    // Single project view
     return (
-        <div className="max-w-5xl space-y-8">
-            {/* Project Header */}
-            <div>
-                <div className="flex items-start justify-between mb-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{activeProject.name}</h1>
-                        <p className="text-gray-500">Your AI-powered marketing dashboard</p>
-                    </div>
-                    <Badge variant="success" className="capitalize">
-                        Active
-                    </Badge>
+        <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-12">
+            {/* HEADER & CONTROLS */}
+            <div id="tour-header" className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-2 border-b border-gray-100">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        Marketing Dashboard
+                        <button
+                            onClick={restartWalkthrough}
+                            className="p-1 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
+                            title="Restart Tour"
+                        >
+                            <HelpCircle className="w-4 h-4" />
+                        </button>
+                    </h1>
+                    <p className="text-gray-500 mt-1">Real-time performance, spend, and AI intelligence</p>
                 </div>
-            </div>
 
-            {/* Project Overview Cards */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Industry */}
-                <Card className="p-6 bg-white">
-                    <h3 className="text-sm font-medium text-gray-500 mb-2">Industry</h3>
-                    <p className="text-xl font-semibold text-gray-900 capitalize">
-                        {activeProject.industry || 'Not specified'}
-                    </p>
-                </Card>
+                {/* CONTROLS AREA */}
+                <div className="flex flex-wrap items-center gap-3">
 
-                {/* Status */}
-                <Card className="p-6 bg-white">
-                    <h3 className="text-sm font-medium text-gray-500 mb-2">Status</h3>
-                    <div className="flex items-center gap-2">
-                        <span className="relative flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                        </span>
-                        <span className="text-xl font-semibold text-green-600">Active</span>
+                    {/* 1. Scope Selector */}
+                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+                        <Globe className="w-4 h-4 text-indigo-600" />
+                        <select
+                            value={selectedProjectId}
+                            onChange={(e) => setProject(e.target.value)}
+                            className="bg-transparent text-sm font-semibold text-gray-900 border-none p-0 cursor-pointer focus:ring-0 w-32 md:w-auto"
+                        >
+                            <option value="all">Global (All Projects)</option>
+                            {projects.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
                     </div>
-                </Card>
 
-                {/* Running Campaigns - Clickable */}
-                <Card
-                    className="p-6 bg-white cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all group"
-                    onClick={() => navigate(`/marketing/projects/${activeProject.id}`)}
-                >
-                    <h3 className="text-sm font-medium text-gray-500 mb-2 group-hover:text-blue-600 transition-colors">
-                        Running Campaigns
-                    </h3>
-                    <div className="flex items-baseline gap-2">
-                        <p className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                            {projectMetrics.runningCampaigns}
-                        </p>
-                        <span className="text-sm text-gray-400">active</span>
+                    {/* 2. Channel Filter */}
+                    <div className="relative">
+                        <select
+                            value={channelFilter}
+                            onChange={(e) => setChannelFilter(e.target.value)}
+                            className="appearance-none bg-white border border-gray-200 text-gray-700 text-sm rounded-lg pl-3 pr-8 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 font-medium cursor-pointer hover:border-gray-300 transition-colors"
+                        >
+                            <option value="all">All Channels</option>
+                            <option value="meta">Meta Ads</option>
+                            <option value="google">Google Ads</option>
+                            <option value="linkedin">LinkedIn</option>
+                        </select>
+                        <Filter className="w-3 h-3 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
-                    <p className="text-xs text-gray-400 mt-2 group-hover:text-blue-500 transition-colors">
-                        Click to view campaigns →
-                    </p>
-                </Card>
 
-                {/* Total Daily Spend - Clickable */}
-                <Card
-                    className="p-6 bg-white cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all group"
-                    onClick={() => navigate('/marketing/analytics')}
-                >
-                    <h3 className="text-sm font-medium text-gray-500 mb-2 group-hover:text-blue-600 transition-colors">
-                        Total Daily Spend
-                    </h3>
-                    <div className="flex items-baseline gap-2">
-                        <p className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                            ₹{projectMetrics.totalDailySpend.toLocaleString()}
-                        </p>
-                        <span className="text-sm text-gray-400">/day</span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2 group-hover:text-blue-500 transition-colors">
-                        Click to view analytics →
-                    </p>
-                </Card>
-            </div>
-
-            {activeProject.modules && activeProject.modules.length > 0 && (
-                <Card className="p-6 bg-white">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Modules</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {activeProject.modules.map(mod => (
-                            <Badge key={mod} variant="secondary" className="capitalize">
-                                {mod}
-                            </Badge>
+                    {/* 3. Time Range */}
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        {['today', '7d', '30d', 'custom'].map((range) => (
+                            <button
+                                key={range}
+                                onClick={() => setTimeRange(range)}
+                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${timeRange === range
+                                    ? 'bg-white text-gray-900 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                {range === '7d' ? '7D' : range === '30d' ? '30D' : range === 'today' ? 'Today' : 'Custom'}
+                            </button>
                         ))}
                     </div>
-                </Card>
-            )}
 
-            {/* Active Campaigns Section */}
-            {(() => {
-                const activeCampaigns = campaigns.filter(c =>
-                    c.projectId === activeProject.id &&
-                    (c.status === 'running' || c.status === 'active')
-                );
-
-                const getPlatformIcon = (platform) => {
-                    const platformLower = platform.toLowerCase();
-                    if (platformLower.includes('facebook') || platformLower.includes('meta')) {
-                        return '📘'; // Facebook icon
-                    }
-                    if (platformLower.includes('google')) {
-                        return '🔍'; // Google icon
-                    }
-                    if (platformLower.includes('linkedin')) {
-                        return '💼'; // LinkedIn icon
-                    }
-                    if (platformLower.includes('instagram')) {
-                        return '📸'; // Instagram icon
-                    }
-                    return '📢'; // Default campaign icon
-                };
-
-                if (activeCampaigns.length === 0) return null;
-
-                return (
-                    <Card className="p-6 bg-white">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900">Active Campaigns</h3>
-                            <span className="text-sm text-gray-500">{activeCampaigns.length} running</span>
-                        </div>
-
-                        <div className="space-y-3">
-                            {activeCampaigns.map(campaign => (
-                                <div
-                                    key={campaign.id}
-                                    onClick={() => navigate(`/marketing/projects/${activeProject.id}/campaigns/${campaign.id}`)}
-                                    className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex-1">
-                                            <h4 className="font-medium text-gray-900 mb-1">
-                                                {campaign.name || 'Untitled Campaign'}
-                                            </h4>
-                                            <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                                                <div className="flex items-center gap-1">
-                                                    <span className="text-gray-500">Budget:</span>
-                                                    <span className="font-medium">
-                                                        {campaign.dailyBudget || campaign.budget?.daily || '₹0'}/day
-                                                    </span>
-                                                </div>
-                                                {campaign.leads && (
-                                                    <div className="flex items-center gap-1">
-                                                        <span className="text-gray-500">Est. Leads:</span>
-                                                        <span className="font-medium">{campaign.leads}/mo</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <Badge variant="success" className="text-xs">
-                                            Running
-                                        </Badge>
-                                    </div>
-
-                                    {campaign.platforms && campaign.platforms.length > 0 && (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-500">Platforms:</span>
-                                            <div className="flex gap-1">
-                                                {campaign.platforms.map((platform, idx) => (
-                                                    <span
-                                                        key={idx}
-                                                        className="text-lg"
-                                                        title={platform}
-                                                    >
-                                                        {getPlatformIcon(platform)}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-                );
-            })()}
-
-            {/* Quick Actions */}
-            <Card className="p-6 bg-white">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                <div className="grid md:grid-cols-2 gap-4">
+                    {/* 4. Compare Toggle */}
                     <button
-                        onClick={() => navigate(`/marketing/projects/${activeProject.id}/campaigns/new`)}
-                        className="flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-left group"
+                        onClick={() => setCompareMode(!compareMode)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors shadow-sm ${compareMode
+                            ? 'bg-blue-50 border-blue-200 text-blue-700'
+                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                            }`}
                     >
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <TrendingUp className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                            <p className="font-medium text-gray-900">Create Campaign</p>
-                            <p className="text-sm text-gray-500">Launch a new marketing campaign</p>
-                        </div>
-                    </button>
-
-                    <button
-                        onClick={() => navigate('/marketing/analytics')}
-                        className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left group"
-                    >
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <TrendingUp className="w-5 h-5 text-gray-600" />
-                        </div>
-                        <div>
-                            <p className="font-medium text-gray-900">View Analytics</p>
-                            <p className="text-sm text-gray-500">Track campaign performance</p>
-                        </div>
+                        <BarChart2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">Compare</span>
                     </button>
                 </div>
-            </Card>
+            </div>
+
+            <div className="p-6 max-w-[1600px] mx-auto space-y-6">
+
+                {/* A. Top KPI Cards */}
+                <div id="tour-kpi">
+                    <KPISummary data={dashboardData.kpis} onDetailClick={handleKPIClick} />
+                </div>
+
+                {/* B. AI Insights Stream */}
+                <div id="tour-insights">
+                    <AIInsightsStream
+                        insights={dashboardData.insights}
+                        onAction={(insight) => console.log('View details', insight)}
+                    />
+                </div>
+
+                {/* C. Recommended Actions */}
+                <div id="tour-actions">
+                    <RecommendedActions
+                        actions={dashboardData.recommendations}
+                        onPreviewAction={handleActionPreview}
+                    />
+                </div>
+
+                {/* D. Performance Trends & E. Spend Analysis */}
+                <div id="tour-performance" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24">
+                        <PerformanceTrends data={dashboardData.trends} timeRange={timeRange} />
+                    </div>
+                    <div ref={spendRef} className="scroll-mt-24">
+                        <SpendAnalysis data={dashboardData.spendAnalysis} />
+                    </div>
+                </div>
+
+                {/* F. Conversion Funnel */}
+                <div id="tour-funnel" ref={funnelRef} className="scroll-mt-24">
+                    <ConversionFunnel data={dashboardData.funnel} />
+                </div>
+
+                {/* G. Attribution & Platform */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <AttributionModel data={dashboardData.attribution} />
+                    </div>
+                    <div>
+                        <PlatformSplit data={dashboardData.platformSplit} />
+                    </div>
+                </div>
+
+                {/* H. Campaign Performance Table */}
+                <div ref={campaignsRef} className="scroll-mt-24">
+                    <CampaignPerformance
+                        campaigns={dashboardData.campaigns}
+                        onCampaignClick={handleCampaignClick}
+                        showProject={isGlobal}
+                    />
+                </div>
+            </div>
+
+            {/* DETAIL MODAL */}
+            <Modal
+                isOpen={detailModalOpen}
+                onClose={() => setDetailModalOpen(false)}
+                title={modalContext?.title || 'Details'}
+            >
+                {modalContext?.type === 'campaign' ? (
+                    <CampaignDetailView campaign={modalContext.data} />
+                ) : modalContext?.type === 'action' ? (
+                    <ActionPreviewView action={modalContext.data} />
+                ) : (
+                    <div className="p-4">Detailed view placeholder for metric.</div>
+                )}
+
+                <div className="mt-6 pt-6 border-t border-gray-100 flex justify-end gap-3">
+                    {modalContext?.type === 'action' ? (
+                        <>
+                            <button
+                                onClick={() => setDetailModalOpen(false)}
+                                className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                disabled
+                                className="px-4 py-2 bg-blue-600 opacity-50 cursor-not-allowed text-white rounded-lg text-sm font-medium flex items-center gap-2"
+                            >
+                                Apply Action
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => setDetailModalOpen(false)}
+                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-medium transition-colors"
+                        >
+                            Close
+                        </button>
+                    )}
+                </div>
+            </Modal>
         </div>
+    );
+};
+
+// --- WRAPPER ---
+const MarketingDashboard = (props) => {
+    return (
+        <AnalyticsProvider>
+            <DashboardContent {...props} />
+        </AnalyticsProvider>
     );
 };
 
