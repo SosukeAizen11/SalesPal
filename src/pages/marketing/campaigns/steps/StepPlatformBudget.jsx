@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { IndianRupee, PieChart, TrendingUp, Wallet, CheckCircle2, Facebook, Linkedin, Instagram, Twitter, Check, Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { IndianRupee, PieChart, TrendingUp, Wallet, CheckCircle2, Facebook, Linkedin, Instagram, Twitter, Check, Info, AlertCircle } from 'lucide-react';
 import StepNavigation from '../components/StepNavigation';
 
 // Mock Google Icon
@@ -21,11 +21,11 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
     // State
     const [dailyBudget, setDailyBudget] = useState(data?.budget?.daily || 3500);
     const [metaSplit, setMetaSplit] = useState(data?.budget?.split?.meta || 60);
+    const [showError, setShowError] = useState(false);
 
     // Initialize selected platforms from data or default to recommended
     const [selectedPlatforms, setSelectedPlatforms] = useState(() => {
         if (data?.platforms?.length > 0) return data.platforms;
-        // Fallback for legacy data or fresh start
         if (data?.budget?.split) {
             const legacy = [];
             if (data.budget.split.meta > 0) legacy.push('meta');
@@ -45,17 +45,47 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
         }
     };
 
+    // Handle manual percentage input for Meta
+    const handleMetaPercentChange = (value) => {
+        const numValue = Math.min(80, Math.max(20, Number(value) || 20));
+        setMetaSplit(numValue);
+    };
+
+    // Handle manual percentage input for Google
+    const handleGooglePercentChange = (value) => {
+        const numValue = Math.min(80, Math.max(20, Number(value) || 20));
+        setMetaSplit(100 - numValue);
+    };
+
+    // Handle manual budget amount input for Meta
+    const handleMetaBudgetChange = (value) => {
+        const numValue = Number(value) || 0;
+        const newPercent = Math.min(80, Math.max(20, Math.round((numValue / dailyBudget) * 100)));
+        setMetaSplit(newPercent);
+    };
+
+    // Handle manual budget amount input for Google
+    const handleGoogleBudgetChange = (value) => {
+        const numValue = Number(value) || 0;
+        const newPercent = Math.min(80, Math.max(20, Math.round((numValue / dailyBudget) * 100)));
+        setMetaSplit(100 - newPercent);
+    };
+
     const handleNext = () => {
         if (selectedPlatforms.length === 0) {
             alert('Please select at least one platform.');
             return;
         }
 
-        // Determine splits for legacy compatibility in Review step
+        if (!dailyBudget || Number(dailyBudget) < 100) {
+            setShowError(true);
+            alert('Please enter a valid daily budget (minimum ₹100).');
+            return;
+        }
+
         let finalMetaSplit = 0;
         let finalGoogleSplit = 0;
 
-        // If standard Meta+Google pair is active (and only them), use slider value
         const isStandardPair = selectedPlatforms.length === 2 &&
             selectedPlatforms.includes('meta') &&
             selectedPlatforms.includes('google');
@@ -64,7 +94,6 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
             finalMetaSplit = metaSplit;
             finalGoogleSplit = 100 - metaSplit;
         } else {
-            // Simplified logic for non-standard selections for visual bars
             if (selectedPlatforms.includes('meta')) finalMetaSplit = Math.floor(100 / selectedPlatforms.length);
             if (selectedPlatforms.includes('google')) finalGoogleSplit = Math.floor(100 / selectedPlatforms.length);
         }
@@ -105,7 +134,9 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                     <div>
                         <div className="flex items-center gap-2 mb-4">
                             <Wallet className="w-5 h-5 text-gray-400" />
-                            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Daily Budget</h3>
+                            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                                Daily Budget <span className="text-red-500">*</span>
+                            </h3>
                         </div>
 
                         <div className="relative">
@@ -116,14 +147,21 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                                 type="number"
                                 value={dailyBudget}
                                 onChange={(e) => setDailyBudget(e.target.value)}
-                                className="block w-full pl-10 pr-4 py-4 text-2xl font-bold text-gray-900 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                className={`block w-full pl-10 pr-4 py-4 text-2xl font-bold text-gray-900 bg-white border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${showError && (!dailyBudget || Number(dailyBudget) < 100) ? 'border-red-500 ring-2 ring-red-100' : 'border-gray-200'}`}
                                 placeholder="3500"
                             />
                             <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                                 <span className="text-gray-400 text-sm font-medium">/ day</span>
                             </div>
                         </div>
-                        <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
+
+                        {/* PART 2: Recommended Budget Helper Text */}
+                        <p className="mt-2 text-xs text-gray-500 flex items-center gap-1.5">
+                            <Info className="w-3.5 h-3.5 text-blue-500" />
+                            Recommended daily budget based on industry benchmarks and AI analysis.
+                        </p>
+
+                        <p className="mt-1 text-xs text-gray-500 flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-green-500" />
                             You can edit this amount anytime.
                         </p>
@@ -240,13 +278,13 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                         </div>
                     </div>
 
-                    {/* 3. Platform Split (Conditional) */}
+                    {/* PART 1: Enhanced Platform Split with Manual Inputs */}
                     {isStandardSplit && (
                         <div className="animate-fade-in-up">
                             <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 space-y-6">
                                 <div className="flex items-center justify-between mb-2">
                                     <h4 className="text-sm font-medium text-gray-900">Budget Allocation</h4>
-                                    <span className="text-xs text-gray-500">Adjust sliding scale</span>
+                                    <span className="text-xs text-gray-500">Multiple adjustment methods</span>
                                 </div>
 
                                 {/* Visual Bar */}
@@ -261,37 +299,96 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                                     />
                                 </div>
 
-                                {/* Inputs */}
-                                <div className="flex items-center justify-between gap-4">
-                                    {/* Meta */}
-                                    <div className="text-left">
-                                        <div className="flex items-center gap-2 mb-1">
+                                {/* Manual Inputs Section */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* Meta Column */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
                                             <Facebook className="w-4 h-4 text-blue-600" />
-                                            <span className="text-sm font-medium text-gray-900">Meta</span>
+                                            <span className="text-sm font-semibold text-gray-900">Meta Ads</span>
                                         </div>
-                                        <div className="text-2xl font-bold text-gray-900">{metaSplit}%</div>
-                                        <div className="text-xs text-gray-500">₹{metaSpend}/day</div>
+
+                                        {/* Percentage Input */}
+                                        <div>
+                                            <label className="text-xs text-gray-600 mb-1 block">Percentage %</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    min="20"
+                                                    max="80"
+                                                    value={metaSplit}
+                                                    onChange={(e) => handleMetaPercentChange(e.target.value)}
+                                                    className="w-full px-3 py-2 text-sm font-semibold border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all"
+                                                />
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Amount Input */}
+                                        <div>
+                                            <label className="text-xs text-gray-600 mb-1 block">Daily Amount</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">₹</span>
+                                                <input
+                                                    type="number"
+                                                    value={metaSpend}
+                                                    onChange={(e) => handleMetaBudgetChange(e.target.value)}
+                                                    className="w-full pl-6 pr-3 py-2 text-sm font-semibold border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    {/* Slider Input */}
+                                    {/* Google Column */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <GoogleIcon className="w-4 h-4 text-orange-500" />
+                                            <span className="text-sm font-semibold text-gray-900">Google Ads</span>
+                                        </div>
+
+                                        {/* Percentage Input */}
+                                        <div>
+                                            <label className="text-xs text-gray-600 mb-1 block">Percentage %</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    min="20"
+                                                    max="80"
+                                                    value={googleSplit}
+                                                    onChange={(e) => handleGooglePercentChange(e.target.value)}
+                                                    className="w-full px-3 py-2 text-sm font-semibold border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-500 transition-all"
+                                                />
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Amount Input */}
+                                        <div>
+                                            <label className="text-xs text-gray-600 mb-1 block">Daily Amount</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">₹</span>
+                                                <input
+                                                    type="number"
+                                                    value={googleSpend}
+                                                    onChange={(e) => handleGoogleBudgetChange(e.target.value)}
+                                                    className="w-full pl-6 pr-3 py-2 text-sm font-semibold border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-500 transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Slider - Optional Method */}
+                                <div className="pt-2 border-t border-gray-200">
+                                    <label className="text-xs text-gray-600 mb-2 block">Or use slider for quick adjustment</label>
                                     <input
                                         type="range"
                                         min="20"
                                         max="80"
                                         value={metaSplit}
                                         onChange={(e) => setMetaSplit(Number(e.target.value))}
-                                        className="flex-1 max-w-[120px] accent-gray-900"
+                                        className="w-full accent-blue-600"
                                     />
-
-                                    {/* Google */}
-                                    <div className="text-right">
-                                        <div className="flex items-center justify-end gap-2 mb-1">
-                                            <span className="text-sm font-medium text-gray-900">Google</span>
-                                            <GoogleIcon className="w-4 h-4 text-orange-500" />
-                                        </div>
-                                        <div className="text-2xl font-bold text-gray-900">{googleSplit}%</div>
-                                        <div className="text-xs text-gray-500">₹{googleSpend}/day</div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -328,6 +425,17 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                                             <div className="text-lg font-bold text-gray-900">45 - 60</div>
                                             <div className="text-xs text-gray-500">Leads</div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* PART 3: AI Estimation Disclaimer */}
+                                <div className="pt-4 border-t border-gray-100">
+                                    <div className="flex items-start gap-2 text-xs text-gray-500 leading-relaxed">
+                                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-gray-400" />
+                                        <p>
+                                            These estimates are based on historical data, industry benchmarks, and AI insights.
+                                            Actual performance may vary and results are not guaranteed.
+                                        </p>
                                     </div>
                                 </div>
                             </div>

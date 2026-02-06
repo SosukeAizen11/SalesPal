@@ -80,7 +80,7 @@ export const IntegrationProvider = ({ children }) => {
 
     // --- OAUTH MOCK FLOW ---
     const initiateConnection = useCallback((platformId, returnPath = '/') => {
-        // Save return path
+        // Save return path (may include query params)
         sessionStorage.setItem('oauth_return_path', returnPath);
         // In a real app, this would redirect to backend/OAuth provider
         // Here we simulate by returning the path to our mock connection page
@@ -89,8 +89,10 @@ export const IntegrationProvider = ({ children }) => {
 
     const completeConnection = useCallback((platformId) => {
         connectIntegration(platformId);
+        // Return exact path that was stored (including query params)
         const returnPath = sessionStorage.getItem('oauth_return_path') || '/marketing/settings';
         sessionStorage.removeItem('oauth_return_path');
+        console.log('[IntegrationContext] Returning to:', returnPath);
         return returnPath;
     }, [connectIntegration]);
 

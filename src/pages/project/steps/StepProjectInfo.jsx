@@ -19,7 +19,9 @@ const StepProjectInfo = ({ projectData, updateData }) => {
 
             <div className="space-y-6">
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Project Name</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Project Name <span className="text-red-500">*</span>
+                    </label>
                     <input
                         type="text"
                         value={projectData.name}
@@ -31,7 +33,9 @@ const StepProjectInfo = ({ projectData, updateData }) => {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Industry</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Industry <span className="text-red-500">*</span>
+                    </label>
                     <div className="relative">
                         <select
                             value={projectData.industry}

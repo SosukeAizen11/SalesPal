@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Rocket, ArrowLeft, Building2, Layout, Edit2, CheckSquare, Square, AlertCircle, ArrowRight } from 'lucide-react';
 import { useIntegrations } from '../../../../context/IntegrationContext';
+import { useMarketing } from '../../../../context/MarketingContext';
 import { canLaunchCampaign, getIntegrationErrors } from '../../../../utils/campaignGuard';
+
+const WIZARD_STATE_KEY = 'salespal_campaign_wizard_state';
 
 const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
     const navigate = useNavigate();
+    const { projectId } = useParams();
     const [isConfirmed, setIsConfirmed] = useState(true);
     const [isLaunching, setIsLaunching] = useState(false);
     const { integrations, initiateConnection } = useIntegrations();
+    const { activeDraft } = useMarketing();
 
     // Derive platforms from budget split data
     // StepPlatformBudget stores: budget.split.meta (%) and budget.split.google (%)
@@ -88,9 +93,25 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
         }, 1500);
     };
 
+    // PART 1 & 3: Save wizard state before redirecting to platform connection
     const handleConnectTrigger = (platformId) => {
-        const path = initiateConnection(platformId, location.pathname); // Current wizard URL
-        navigate(path);
+        // Save current wizard state to localStorage
+        const wizardState = {
+            projectId,
+            stepIndex: 4, // Review step index
+            draftData: activeDraft?.data || data || {}
+        };
+
+        console.log('[StepReviewLaunch] Saving wizard state before platform connection:', wizardState);
+        localStorage.setItem(WIZARD_STATE_KEY, JSON.stringify(wizardState));
+
+        // Get the return URL with ?connected=true parameter for the toast
+        const currentPath = `/marketing/projects/${projectId}/campaigns/new`;
+        const returnUrl = `${currentPath}?connected=true`;
+
+        // Initiate connection with return URL
+        const connectionPath = initiateConnection(platformId, returnUrl);
+        navigate(connectionPath);
     };
 
     const SectionHeader = ({ title }) => (

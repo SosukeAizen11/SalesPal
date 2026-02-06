@@ -50,18 +50,25 @@ const FileUploadBox = ({ onFileSelect, selectedFile }) => {
             {...getRootProps()}
             className={`
                 border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all duration-300
-                ${isDragActive ? 'border-secondary bg-secondary/5' : 'border-gray-200 hover:border-secondary/50 hover:bg-gray-50'}
+                ${isDragActive ? 'border-secondary bg-secondary/5' : ''}
+                ${!isDragActive && !props.error ? 'border-gray-200 hover:border-secondary/50 hover:bg-gray-50' : ''}
+                ${props.error ? 'border-red-500 bg-red-50' : ''}
+                ${props.className || ''}
             `}
         >
             <input {...getInputProps()} />
             <div className={`
                 w-12 h-12 rounded-full mb-4 flex items-center justify-center transition-colors
-                ${isDragActive ? 'bg-secondary/20 text-secondary' : 'bg-gray-100 text-gray-400'}
+                ${isDragActive ? 'bg-secondary/20 text-secondary' : ''}
+                ${!isDragActive && !props.error ? 'bg-gray-100 text-gray-400' : ''}
+                ${props.error ? 'bg-red-100 text-red-500' : ''}
             `}>
                 <UploadCloud className="w-6 h-6" />
             </div>
             <p className="text-sm font-medium text-gray-900">Click to upload or drag and drop</p>
-            <p className="text-xs text-gray-500 mt-1">PDF files only (max 10MB)</p>
+            <p className={`text-xs mt-1 ${props.error ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
+                {props.error ? 'Please upload a PDF document' : 'PDF files only (max 10MB)'}
+            </p>
         </div>
     );
 };

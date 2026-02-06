@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, PlusCircle, FileText, Calendar, Send, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, FileText, Calendar, Send, BarChart2, MessageCircle } from 'lucide-react';
 import { useMarketing } from '../../../context/MarketingContext';
 import { useIntegrations } from '../../../context/IntegrationContext';
 import SocialCreate from './SocialCreate';
 import SocialList from './SocialList';
+import SocialEngagementDashboard from '../components/social/SocialEngagementDashboard';
 
 const TABS = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -11,11 +12,13 @@ const TABS = [
     { id: 'drafts', label: 'Drafts', icon: FileText },
     { id: 'scheduled', label: 'Scheduled', icon: Calendar },
     { id: 'published', label: 'Published', icon: Send },
+    { id: 'engage', label: 'Engage', icon: MessageCircle },
     { id: 'analytics', label: 'Analytics', icon: BarChart2 },
 ];
 
 const SocialLayout = () => {
     const [activeTab, setActiveTab] = useState('overview');
+    const { socialPosts } = useMarketing();
 
     // Render content based on active tab
     const renderContent = () => {
@@ -30,6 +33,8 @@ const SocialLayout = () => {
                 return <SocialList status="scheduled" onNavigate={setActiveTab} />;
             case 'published':
                 return <SocialList status="published" onNavigate={setActiveTab} />;
+            case 'engage':
+                return <SocialEngagementDashboard posts={socialPosts} />;
             case 'analytics':
                 return <SocialAnalyticsPlaceholder />;
             default:
