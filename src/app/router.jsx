@@ -58,6 +58,10 @@ import {
 
 import ConnectPlatform from '../pages/auth/ConnectPlatform';
 
+import SubscriptionManagement from '../pages/subscription/SubscriptionManagement';
+import RevenueAnalytics from '../pages/marketing/analytics/RevenueAnalytics';
+import PlaceholderPage from '../pages/marketing/PlaceholderPage';
+
 export const router = createBrowserRouter([
     {
         path: "/",
@@ -158,6 +162,12 @@ export const router = createBrowserRouter([
                         path: "settings/integrations/meta",
                         element: <MetaIntegration />
                     },
+                    { path: "photos", element: <PlaceholderPage title="My Photos" description="Manage your image assets and generated photos here." /> },
+                    { path: "videos", element: <PlaceholderPage title="My Videos" description="Manage your video assets and generated content here." /> },
+                    { path: "calls", element: <PlaceholderPage title="Call History" description="View call logs and manage communication credits." /> },
+                    { path: "whatsapp", element: <PlaceholderPage title="WhatsApp" description="Manage WhatsApp campaigns and message history." /> },
+                    { path: "subscription", element: <SubscriptionManagement /> },
+                    { path: "financials", element: <RevenueAnalytics /> },
 
 
 

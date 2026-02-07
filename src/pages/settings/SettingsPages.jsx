@@ -29,6 +29,7 @@ export const SettingsBilling = () => (
                 <div>
                     <h3 className="text-lg font-semibold text-gray-900">Pro Plan</h3>
                     <p className="text-sm text-gray-500">$29/month, billed annually</p>
+                    <p className="text-xs text-gray-400 mt-0.5">(Exclusive of GST & convenience fee)</p>
                 </div>
                 <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">Active</span>
             </div>
