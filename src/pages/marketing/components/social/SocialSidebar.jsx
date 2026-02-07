@@ -62,24 +62,30 @@ const SocialSidebar = ({
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex border-b border-gray-100">
+            <div className="flex border-b border-gray-100 overflow-x-auto no-scrollbar">
                 <button
                     onClick={() => onTabChange('drafts')}
-                    className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'drafts' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    className={`flex-1 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-1 ${activeTab === 'drafts' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                 >
                     Drafts
                 </button>
                 <button
                     onClick={() => onTabChange('scheduled')}
-                    className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'scheduled' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    className={`flex-1 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-1 ${activeTab === 'scheduled' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                 >
-                    Scheduled
+                    Sched.
                 </button>
                 <button
                     onClick={() => onTabChange('published')}
-                    className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'published' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    className={`flex-1 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-1 ${activeTab === 'published' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                 >
                     Sent
+                </button>
+                <button
+                    onClick={() => onTabChange('engagement')}
+                    className={`flex-1 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-1 ${activeTab === 'engagement' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                    Engage
                 </button>
             </div>
 
@@ -93,7 +99,15 @@ const SocialSidebar = ({
                     <span className="text-sm font-medium">Create New Post</span>
                 </button>
 
-                {filteredPosts.length === 0 ? (
+                {activeTab === 'engagement' ? (
+                    <div className="text-center py-10 px-4">
+                        <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <span className="text-xl">💬</span>
+                        </div>
+                        <h4 className="font-medium text-gray-900 mb-1">Engagement Dashboard</h4>
+                        <p className="text-xs text-gray-500">Manage all your social interactions in the main view.</p>
+                    </div>
+                ) : filteredPosts.length === 0 ? (
                     <div className="text-center py-8 px-4">
                         <p className="text-sm text-gray-400">No {activeTab} posts found.</p>
                     </div>

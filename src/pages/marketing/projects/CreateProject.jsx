@@ -18,7 +18,7 @@ export default function CreateProject() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!formData.name) return;
+        if (!formData.name || !formData.website) return;
 
         const newProject = createProject(formData);
         navigate(`/marketing/projects/${newProject.id}`);
@@ -66,6 +66,7 @@ export default function CreateProject() {
                         value={formData.website}
                         onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
                         placeholder="https://example.com"
+                        required
                     />
 
                     <div className="pt-4 flex justify-end gap-3">

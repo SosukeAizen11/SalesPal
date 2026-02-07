@@ -16,6 +16,11 @@ export const marketingNav = [
         path: '/marketing/social',
         icon: Share2
     },
+    {
+        name: 'Financials',
+        path: '/marketing/financials',
+        icon: BarChart3
+    },
 
     {
         name: 'Settings',

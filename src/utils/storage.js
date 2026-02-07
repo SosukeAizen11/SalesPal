@@ -31,9 +31,9 @@ export const addCampaign = (campaign) => {
     const campaigns = getCampaigns();
     const newCampaign = {
         ...campaign,
-        id: crypto.randomUUID(), // Ensure ID generation happens here if not provided
+        id: campaign.id || crypto.randomUUID(),
         createdAt: new Date().toISOString(),
-        status: 'running', // Default status as per requirement
+        status: campaign.status || 'draft', // specific default if missing
     };
     const updatedCampaigns = [newCampaign, ...campaigns];
     saveCampaigns(updatedCampaigns);

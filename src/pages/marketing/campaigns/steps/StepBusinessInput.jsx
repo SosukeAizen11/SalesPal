@@ -32,17 +32,28 @@ const StepBusinessInput = ({ onComplete, data }) => {
         maxSize: 2097152 // 2MB
     });
 
+    // Validation State
+    const [showError, setShowError] = useState(false);
+
     // Validation
     const isTabValid = () => {
         switch (activeTab) {
-            case 'description': return description.length > 10;
-            case 'url': return Boolean(websiteUrl);
+            case 'description': return description.trim().length > 10;
+            case 'url':
+                // Basic URL regex or simple non-empty check
+                return Boolean(websiteUrl) && websiteUrl.includes('.');
             case 'pdf': return Boolean(pdfFile);
             default: return false;
         }
     };
 
     const handleNext = () => {
+        if (!isTabValid()) {
+            setShowError(true);
+            alert("Please fill in the mandatory fields to proceed."); // "Pop up" as requested
+            return;
+        }
+
         if (onComplete) {
             onComplete({
                 inputMode: activeTab,
@@ -94,8 +105,11 @@ const StepBusinessInput = ({ onComplete, data }) => {
                     {activeTab === 'description' && (
                         <div className="animate-fade-in space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-900 mb-2">Business Description</label>
+                                <label className="block text-sm font-medium text-gray-900 mb-2">
+                                    Business Description <span className="text-red-500">*</span>
+                                </label>
                                 <Textarea
+                                    error={showError && description.trim().length <= 10 ? "Please enter a detailed business description (min 10 chars)" : undefined}
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     placeholder="We are a premium coffee subscription service based in Mumbai, India, targeting busy professionals who want fresh, ethically sourced beans delivered monthly at ₹999/month..."
@@ -114,8 +128,11 @@ const StepBusinessInput = ({ onComplete, data }) => {
                     {activeTab === 'url' && (
                         <div className="animate-fade-in space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-900 mb-2">Your Business Website</label>
+                                <label className="block text-sm font-medium text-gray-900 mb-2">
+                                    Your Business Website <span className="text-red-500">*</span>
+                                </label>
                                 <Input
+                                    error={showError && (!websiteUrl || !websiteUrl.includes('.')) ? "Please enter a valid website URL" : undefined}
                                     type="url"
                                     value={websiteUrl}
                                     onChange={(e) => setWebsiteUrl(e.target.value)}
@@ -155,9 +172,12 @@ const StepBusinessInput = ({ onComplete, data }) => {
                     {/* Tab 3: Upload PDF */}
                     {activeTab === 'pdf' && (
                         <div className="animate-fade-in space-y-6">
-                            <label className="block text-sm font-medium text-gray-900">Upload Business Document (PDF)</label>
+                            <label className="block text-sm font-medium text-gray-900">
+                                Upload Business Document (PDF) <span className="text-red-500">*</span>
+                            </label>
 
                             <FileUploadBox
+                                error={showError && !pdfFile}
                                 selectedFile={pdfFile}
                                 onFileSelect={setPdfFile}
                                 className="min-h-[200px]"

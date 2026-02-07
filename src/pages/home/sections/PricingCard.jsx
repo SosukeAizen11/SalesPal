@@ -29,6 +29,7 @@ const PricingCard = ({
                     <span className="text-4xl font-bold text-white">₹{price.toLocaleString('en-IN')}</span>
                     <span className="text-sm text-[#A8B3BD]">/ month</span>
                 </div>
+                <p className="text-[10px] text-[#7C8A96] mt-2 font-medium">(Exclusive of GST & convenience fee)</p>
             </div>
 
             <ul className="space-y-4 mb-8 flex-1">
