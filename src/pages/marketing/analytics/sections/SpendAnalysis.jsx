@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { formatCurrency } from '../../../../utils/formatCurrency';
 import AnalyticsSection from '../AnalyticsSection';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -12,7 +13,7 @@ const CustomTooltip = ({ active, payload, label }) => {
         <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg px-4 py-3">
             <p className="text-xs text-gray-500 font-medium mb-1">{label}</p>
             <p className="text-lg font-bold text-rose-600">
-                ${payload[0].value.toLocaleString()}
+                {formatCurrency(payload[0].value)}
             </p>
             <p className="text-xs text-gray-400">Daily Spend</p>
         </div>
@@ -20,14 +21,16 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const SpendAnalysis = ({ data }) => {
-    // Generate daily spend data for chart
+    // Generate daily spend data for chart - DETERMINISTIC based on dailyAvg
     const chartData = useMemo(() => {
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const baseDaily = data?.dailyAvg || 1000;
+        // Deterministic distribution pattern (Mon-Sun weights)
+        const weights = [0.9, 1.0, 1.1, 1.05, 1.15, 0.85, 0.75];
 
         return days.map((day, i) => ({
             day,
-            spend: Math.floor(baseDaily * (0.6 + Math.random() * 0.8)),
+            spend: Math.floor(baseDaily * weights[i]),
         }));
     }, [data?.dailyAvg]);
 
@@ -44,7 +47,7 @@ const SpendAnalysis = ({ data }) => {
                 <div className="p-3 bg-rose-50 rounded-lg border border-rose-100">
                     <p className="text-xs text-rose-600 font-bold uppercase tracking-wide">Total Spend</p>
                     <p className="text-xl font-bold text-gray-900">
-                        {data?.total?.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) || '$0'}
+                        {formatCurrency(data?.total) || '—'}
                     </p>
                     {data?.trend && (
                         <p className={`text-xs mt-1 font-medium ${data.trend.startsWith('+') ? 'text-rose-500' : 'text-green-500'}`}>
@@ -55,7 +58,7 @@ const SpendAnalysis = ({ data }) => {
                 <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                     <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">Daily Avg</p>
                     <p className="text-xl font-bold text-gray-900">
-                        {data?.dailyAvg?.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) || '$0'}
+                        {formatCurrency(data?.dailyAvg) || '—'}
                     </p>
                     <p className="text-xs mt-1 text-gray-400">Reference line</p>
                 </div>
@@ -88,7 +91,7 @@ const SpendAnalysis = ({ data }) => {
                                 axisLine={false}
                                 tickLine={false}
                                 tick={{ fontSize: 11, fill: '#9ca3af' }}
-                                tickFormatter={(v) => `$${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`}
+                                tickFormatter={(v) => formatCurrency(v, { compact: true })}
                             />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
                             <ReferenceLine

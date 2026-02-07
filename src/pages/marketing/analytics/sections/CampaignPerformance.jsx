@@ -4,18 +4,19 @@ import Badge from '../../../../components/ui/Badge';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { ArrowUp, ArrowDown, Minus, ChevronRight } from 'lucide-react';
 
-// Mini Sparkline Component
+// Mini Sparkline Component - DETERMINISTIC based on trend
 const Sparkline = ({ trend }) => {
-    // Generate 7 days of random data based on trend
+    // Generate 7 days of deterministic data based on trend
     const data = useMemo(() => {
         const isUp = trend === 'up';
         const isDown = trend === 'down';
+        // Deterministic pattern: base progression with fixed variation per day
+        const patterns = [0, 5, -2, 8, 3, 10, 12]; // Fixed daily variations
 
-        return Array.from({ length: 7 }, (_, i) => {
+        return patterns.map((variation, i) => {
             const base = 50;
             const trendFactor = isUp ? i * 5 : isDown ? -i * 5 : 0;
-            const noise = (Math.random() - 0.5) * 20;
-            return { value: base + trendFactor + noise };
+            return { value: base + trendFactor + (isUp ? variation : isDown ? -variation : 0) };
         });
     }, [trend]);
 
@@ -46,12 +47,16 @@ const TrendIndicator = ({ trend }) => {
 };
 
 const CampaignPerformance = ({ campaigns, onCampaignClick, showProject = false }) => {
-    // Add trend data to campaigns
+    // Derive trend from campaign ROAS performance - DETERMINISTIC
     const campaignsWithTrend = useMemo(() => {
-        return campaigns?.map(c => ({
-            ...c,
-            trend: ['up', 'down', 'flat'][Math.floor(Math.random() * 3)]
-        })) || [];
+        return campaigns?.map(c => {
+            const spend = Number(c.spend) || 0;
+            const revenue = Number(c.revenue) || 0;
+            const roas = spend > 0 ? revenue / spend : 0;
+            // Trend based on ROAS: >3.5 = up, <2 = down, else flat
+            const trend = roas >= 3.5 ? 'up' : roas < 2 ? 'down' : 'flat';
+            return { ...c, trend };
+        }) || [];
     }, [campaigns]);
 
     const isEmpty = !campaignsWithTrend?.length;
@@ -98,8 +103,8 @@ const CampaignPerformance = ({ campaigns, onCampaignClick, showProject = false }
                                     )}
                                     <td className="py-3">
                                         <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold border ${campaign.platform === 'Meta' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                campaign.platform === 'Google' ? 'bg-red-50 text-red-700 border-red-100' :
-                                                    'bg-sky-50 text-sky-700 border-sky-100'
+                                            campaign.platform === 'Google' ? 'bg-red-50 text-red-700 border-red-100' :
+                                                'bg-sky-50 text-sky-700 border-sky-100'
                                             }`}>
                                             {campaign.platform}
                                         </span>

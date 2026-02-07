@@ -3,6 +3,7 @@ import { useNavigate, Link, useParams } from 'react-router-dom';
 import { LogOut, X, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useMarketing } from '../../../context/MarketingContext';
+import { getProjectsBackRoute } from '../../../utils/navigationUtils';
 
 // Components
 import StepHeader from './components/StepHeader';
@@ -76,7 +77,7 @@ const NewCampaign = () => {
             setDraftStepIndex(currentStep + 1);
         } else {
             launchCampaign();
-            navigate(`/marketing/projects/${projectId}`);
+            navigate(getProjectsBackRoute(projectId));
         }
     };
 
@@ -89,7 +90,7 @@ const NewCampaign = () => {
     const handleExit = () => {
         if (window.confirm('Are you sure you want to exit? Process will be lost.')) {
             cancelDraft();
-            navigate(`/marketing/projects/${projectId}`);
+            navigate(getProjectsBackRoute(projectId));
         }
     };
 
@@ -114,7 +115,7 @@ const NewCampaign = () => {
             case 3: return <StepPlatformBudget onComplete={(data) => onStepComplete('budget', data)} {...commonProps} />;
             case 4: return <StepReviewLaunch onLaunch={() => {
                 const campaign = launchCampaign();
-                navigate(`/marketing/projects/${projectId}`);
+                navigate(getProjectsBackRoute(projectId));
             }} {...commonProps} />;
             default: return null;
         }

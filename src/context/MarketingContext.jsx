@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getCampaigns, addCampaign, updateCampaign, getProjects, addProject } from '../utils/storage';
+import { getCampaigns, addCampaign, updateCampaign, getProjects, addProject, saveCampaigns, saveProjects } from '../utils/storage';
+import { seedProjects, seedCampaigns } from '../utils/seedData';
 
 const MarketingContext = createContext();
 
@@ -10,8 +11,22 @@ export const MarketingProvider = ({ children }) => {
 
     // Load campaigns and projects on init
     useEffect(() => {
-        const storedCampaigns = getCampaigns();
-        const storedProjects = getProjects();
+        let storedCampaigns = getCampaigns();
+        let storedProjects = getProjects();
+
+        // SEEDING LOGIC: Ensure Demo Data Exists
+        const hasDemoConfig = storedProjects.some(p => p.id === 'proj_acme_re');
+
+        if (!hasDemoConfig) {
+            console.log("Seeding Demo Data (Acme & Zenith)...");
+            // Merge seed data with existing data to avoid data loss
+            storedProjects = [...storedProjects, ...seedProjects];
+            storedCampaigns = [...storedCampaigns, ...seedCampaigns];
+
+            saveProjects(storedProjects);
+            saveCampaigns(storedCampaigns);
+        }
+
         setCampaigns(storedCampaigns);
         setProjects(storedProjects);
 
@@ -244,13 +259,19 @@ export const MarketingProvider = ({ children }) => {
             projectId: activeDraft.projectId,
             status: 'running',
             createdAt: new Date().toISOString(),
-            metrics: {
-                spend: '₹0',
-                impressions: '0',
-                clicks: '0',
-                ctr: '0%',
-                conversions: '0',
-                roas: '0x'
+            // RAW METRICS (Canonical Schema Root)
+            spend: 0,
+            impressions: 0,
+            clicks: 0,
+            conversions: 0,
+            revenue: 0,
+            reach: 0,
+            // Detailed Breakdown Containers
+            details: {
+                creatives: [],      // [{ id, name, spend, impressions, clicks, conversions }]
+                demographics: {},   // { age: [{ range, impressions... }], gender: ... }
+                device: [],         // [{ name, impressions, clicks... }]
+                platformSpecific: {} // { qualityScore: 7, ... } raw values only
             }
         });
 
