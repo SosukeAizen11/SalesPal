@@ -12,24 +12,24 @@ const ModularApproach = () => {
                         <Layout className="w-3 h-3" /> Scalable Architecture
                     </Badge>
 
-                    <h2 className="text-3xl md:text-4xl font-bold">Build Your AI Workforce</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold">Multi-Channel Automation, Unlimited Scalability</h2>
                     <p className="text-lg text-[#A8B3BD]">
-                        Select the specific AI agents you need for your business.
-                        SalesPal's modular architecture lets you start with Marketing and expand to Sales or Support instantly.
+                        Engage customers wherever they are—WhatsApp, email, SMS, voice calls, and social media—all from one unified AI platform.
+                        Handle 10 or 10,000 conversations simultaneously without sacrificing quality.
                     </p>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-4 p-4 rounded-lg bg-primary/50 border border-white/10">
                             <Zap className="w-8 h-8 text-yellow-400" />
                             <div>
-                                <h4 className="font-semibold">Instant Activation</h4>
-                                <p className="text-sm text-[#7C8A96]">Deploy AI agents in seconds.</p>
+                                <h4 className="font-semibold">Human-Like AI</h4>
+                                <p className="text-sm text-[#7C8A96]">Natural conversations that build trust.</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-4 p-4 rounded-lg bg-primary/50 border border-white/10">
                             <Shield className="w-8 h-8 text-green-400" />
                             <div>
-                                <h4 className="font-semibold">Scalable Power</h4>
-                                <p className="text-sm text-[#7C8A96]">Add more compute as you grow.</p>
+                                <h4 className="font-semibold">24/7 Operations</h4>
+                                <p className="text-sm text-[#7C8A96]">Never miss a lead, day or night.</p>
                             </div>
                         </div>
                     </div>

@@ -5,25 +5,47 @@ import { problems } from '../../../data/homepageData';
 
 const WhySalesPal = () => {
     return (
-        <SectionWrapper className="bg-primary/50 relative">
-            <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Why Sales Intelligence Matters</h2>
-                <p className="text-[#A8B3BD] max-w-2xl mx-auto">The old way of managing growth is broken.</p>
-            </div>
+        <SectionWrapper id="about" className="relative bg-gradient-to-b from-gray-50 to-white overflow-hidden">
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {problems.map((item, idx) => {
-                    const Icon = item.icon;
-                    return (
-                        <Card key={idx} variant="dark" className="p-6 hover:bg-[#132B3A]/80 transition-colors">
-                            <div className="p-3 bg-[#76F7C5]/10 w-fit rounded-lg mb-4">
-                                <Icon className={`w-6 h-6 text-[#76F7C5]`} />
+            <div className="relative z-10">
+                <div className="text-center mb-16">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+                        Leads Come, But <span className="text-red-500">Revenue Leaks</span>
+                    </h2>
+                    <p className="text-gray-600 max-w-2xl mx-auto">
+                        Every day, potential revenue slips through the cracks. Manual processes can't keep up with the speed of modern business.
+                    </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {problems.map((item, idx) => {
+                        const Icon = item.icon;
+
+                        return (
+                            <div
+                                key={idx}
+                                className="group p-6 rounded-2xl bg-white border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 shadow-md"
+                            >
+                                {/* Icon container */}
+                                <div className="inline-flex p-3 rounded-lg mb-4" style={{
+                                    background: 'rgba(255, 59, 48, 0.10)'
+                                }}>
+                                    <Icon className="w-5 h-5 text-red-500" />
+                                </div>
+
+                                {/* Card title */}
+                                <h3 className="text-lg font-semibold mb-2 text-gray-900">
+                                    {item.title}
+                                </h3>
+
+                                {/* Card description */}
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    {item.desc}
+                                </p>
                             </div>
-                            <h3 className="text-lg font-semibold mb-2 text-white">{item.title}</h3>
-                            <p className="text-sm text-[#A8B3BD]">{item.desc}</p>
-                        </Card>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
         </SectionWrapper>
     );
