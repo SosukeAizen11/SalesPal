@@ -11,6 +11,11 @@ import ProjectsHub from '../pages/projects/ProjectsHub';
 import ContactPage from '../pages/contact/ContactPage';
 import SignIn from '../pages/auth/SignIn';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
+import MarketingProduct from '../pages/products/MarketingProduct';
+import SalesProduct from '../pages/products/SalesProduct';
+import PostSaleProduct from '../pages/products/PostSaleProduct';
+import SupportProduct from '../pages/products/SupportProduct';
+import SalesPal360Product from '../pages/products/SalesPal360Product';
 
 // Marketing Shell Components
 import MarketingLayout from '../layout/MarketingLayout';
@@ -83,6 +88,26 @@ export const router = createBrowserRouter([
             {
                 path: "/contact",
                 element: <ContactPage />,
+            },
+            {
+                path: "/products/marketing",
+                element: <MarketingProduct />,
+            },
+            {
+                path: "/products/sales",
+                element: <SalesProduct />,
+            },
+            {
+                path: "/products/post-sale",
+                element: <PostSaleProduct />,
+            },
+            {
+                path: "/products/support",
+                element: <SupportProduct />,
+            },
+            {
+                path: "/products/salespal-360",
+                element: <SalesPal360Product />,
             },
             // Marketing App Shell
             {

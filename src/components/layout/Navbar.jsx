@@ -1,21 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { ShoppingCart } from 'lucide-react';
+import useReducedMotion from '../../hooks/useReducedMotion';
 
 const Navbar = () => {
     const { isAuthenticated, logout } = useAuth();
     const { cartCount } = useCart();
     const location = useLocation();
+    const prefersReducedMotion = useReducedMotion();
 
-    const [activeSection, setActiveSection] = React.useState('');
+    const [activeSection, setActiveSection] = useState('');
+    const [isScrolled, setIsScrolled] = useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const handleScroll = () => {
             const sections = ['about', 'modules', 'how-it-works', 'pricing', 'contact'];
-            // Offset for navbar height (80px) + some buffer
             const scrollPosition = window.scrollY + 100;
+
+            // Update navbar style based on scroll
+            setIsScrolled(window.scrollY > 20);
 
             // Specific check for bottom of page to prioritize Contact section
             if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50) {
@@ -35,7 +41,7 @@ const Navbar = () => {
                     }
                 }
             }
-            // If at the very top, maybe clear it or set to nothing
+
             if (window.scrollY < 50) {
                 setActiveSection('');
             }
@@ -50,7 +56,20 @@ const Navbar = () => {
         if (location.pathname !== '/') {
             window.location.href = `/#${id}`;
         } else {
-            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+            const element = document.getElementById(id);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+
+                // Brief highlight effect on section title
+                const sectionTitle = element.querySelector('h2, h1');
+                if (sectionTitle && !prefersReducedMotion) {
+                    sectionTitle.style.transition = 'text-shadow 0.4s ease-out';
+                    sectionTitle.style.textShadow = '0 0 20px rgba(59, 130, 246, 0.5)';
+                    setTimeout(() => {
+                        sectionTitle.style.textShadow = 'none';
+                    }, 400);
+                }
+            }
         }
     };
 
@@ -64,8 +83,33 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md border-b border-gray-200">
-            <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <motion.nav
+            className="fixed top-0 w-full z-50 border-b border-gray-200"
+            initial={prefersReducedMotion ? {} : { opacity: 0, y: -10, filter: 'blur(8px)' }}
+            animate={prefersReducedMotion ? {} : {
+                opacity: 1,
+                y: 0,
+                filter: 'blur(0px)',
+                height: isScrolled ? '64px' : '80px',
+                backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: isScrolled ? 'blur(16px)' : 'blur(12px)',
+                boxShadow: isScrolled ? '0 4px 12px rgba(0, 0, 0, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.05)'
+            }}
+            transition={{
+                opacity: { duration: 0.5 },
+                y: { duration: 0.5 },
+                filter: { duration: 0.5 },
+                height: { duration: 0.25, ease: 'easeOut' },
+                backgroundColor: { duration: 0.25 },
+                backdropFilter: { duration: 0.25 },
+                boxShadow: { duration: 0.25 }
+            }}
+            style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(12px)'
+            }}
+        >
+            <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
                 <Link to="/" className="flex items-center gap-2">
                     {/* Custom circular logo with dot */}
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -83,7 +127,6 @@ const Navbar = () => {
                     <Link to="/contact" className={getLinkClasses('contact')}>Contact</Link>
                 </div>
 
-
                 <div className="flex items-center space-x-4">
                     {/* Shopping Cart Icon with Badge */}
                     <Link to="/cart" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group">
@@ -99,33 +142,24 @@ const Navbar = () => {
                         <>
                             <Link
                                 to="/marketing"
-                                className="hidden md:block text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                             >
-                                AI Console
+                                Dashboard
                             </Link>
                             <button
                                 onClick={logout}
-                                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
                             >
-                                Sign Out
+                                Logout
                             </button>
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs border border-blue-200">
-                                D
-                            </div>
                         </>
                     ) : (
                         <Link
-                            to="/signin"
-                            className="px-5 py-2.5 rounded-md text-sm font-semibold text-white transition-all shadow-lg"
+                            to="/login"
+                            className="px-5 py-2 text-sm font-semibold text-white rounded-lg transition-all hover:-translate-y-0.5"
                             style={{
-                                background: 'linear-gradient(90deg, #1D7CFF 0%, #073B8F 100%)',
-                                boxShadow: '0px 14px 40px rgba(29, 124, 255, 0.25)'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(90deg, #2A88FF 0%, #0A4DB4 100%)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.background = 'linear-gradient(90deg, #1D7CFF 0%, #073B8F 100%)';
+                                background: 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)',
+                                boxShadow: '0px 4px 12px rgba(59, 130, 246, 0.3)'
                             }}
                         >
                             Sign In
@@ -133,7 +167,7 @@ const Navbar = () => {
                     )}
                 </div>
             </div>
-        </nav>
+        </motion.nav>
     );
 };
 
