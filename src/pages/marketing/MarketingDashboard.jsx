@@ -1,3 +1,13 @@
+/**
+ * ARCHITECTURE GUARD: LAYER 1 - GLOBAL OVERVIEW
+ * ---------------------------------------------
+ * Scope: Global Financial & Health Metrics (Spend, ROAS, Revenue).
+ * Rules:
+ * 1. Must only display aggregated high-level KPIs.
+ * 2. NO granular campaign or ad-set level data.
+ * 3. NO deep diagnostic segmentation (Demographics, etc.).
+ * 4. Links to Layer 2 (CampaignDetailView) for optimization context.
+ */
 import React, { useState, useMemo, useRef } from 'react';
 import { Calendar, Filter, BarChart2, Globe, ChevronDown, HelpCircle } from 'lucide-react';
 import { useWalkthrough } from '../../walkthrough/WalkthroughProvider';
@@ -6,14 +16,10 @@ import { useMarketing } from '../../context/MarketingContext';
 import Modal from '../../components/ui/Modal';
 
 // Sections
-import PerformanceTrends from './analytics/sections/PerformanceTrends';
-import SpendAnalysis from './analytics/sections/SpendAnalysis';
-import PlatformSplit from './analytics/sections/PlatformSplit';
 import KPISummary from './analytics/sections/KPISummary';
+import PerformanceTrends from './analytics/sections/PerformanceTrends';
+import ROASTrend from './analytics/sections/ROASTrend';
 import ConversionFunnel from './analytics/sections/ConversionFunnel';
-import AttributionModel from './analytics/sections/AttributionModel';
-import CampaignPerformance from './analytics/sections/CampaignPerformance';
-import CampaignDetailView from './analytics/sections/CampaignDetailView';
 
 // Components (AI Layer)
 import AIInsightsStream from './analytics/components/AIInsightsStream';
@@ -171,7 +177,22 @@ const DashboardContent = ({ mode = 'page' }) => {
                     <KPISummary data={dashboardData.kpis} onDetailClick={handleKPIClick} />
                 </div>
 
-                {/* B. AI Insights Stream */}
+                {/* B. Efficiency Charts Row */}
+                <div id="tour-performance" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24 min-w-0">
+                        <PerformanceTrends data={dashboardData.trends} timeRange={timeRange} />
+                    </div>
+                    <div className="lg:col-span-1 min-w-0">
+                        <ROASTrend data={dashboardData.trends} />
+                    </div>
+                </div>
+
+                {/* C. Conversion Funnel */}
+                <div id="tour-funnel" ref={funnelRef} className="scroll-mt-24">
+                    <ConversionFunnel data={dashboardData.funnel} />
+                </div>
+
+                {/* D. AI Insights Stream */}
                 <div id="tour-insights">
                     <AIInsightsStream
                         insights={dashboardData.insights}
@@ -179,45 +200,11 @@ const DashboardContent = ({ mode = 'page' }) => {
                     />
                 </div>
 
-                {/* C. Recommended Actions */}
+                {/* E. Recommended Actions */}
                 <div id="tour-actions">
                     <RecommendedActions
                         actions={dashboardData.recommendations}
                         onPreviewAction={handleActionPreview}
-                    />
-                </div>
-
-                {/* D. Performance Trends & E. Spend Analysis */}
-                <div id="tour-performance" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24">
-                        <PerformanceTrends data={dashboardData.trends} timeRange={timeRange} />
-                    </div>
-                    <div ref={spendRef} className="scroll-mt-24">
-                        <SpendAnalysis data={dashboardData.spendAnalysis} />
-                    </div>
-                </div>
-
-                {/* F. Conversion Funnel */}
-                <div id="tour-funnel" ref={funnelRef} className="scroll-mt-24">
-                    <ConversionFunnel data={dashboardData.funnel} />
-                </div>
-
-                {/* G. Attribution & Platform */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                        <AttributionModel data={dashboardData.attribution} />
-                    </div>
-                    <div>
-                        <PlatformSplit data={dashboardData.platformSplit} />
-                    </div>
-                </div>
-
-                {/* H. Campaign Performance Table */}
-                <div ref={campaignsRef} className="scroll-mt-24">
-                    <CampaignPerformance
-                        campaigns={dashboardData.campaigns}
-                        onCampaignClick={handleCampaignClick}
-                        showProject={isGlobal}
                     />
                 </div>
             </div>

@@ -3,12 +3,12 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import HeroSection from './sections/HeroSection';
 import WhySalesPal from './sections/WhySalesPal';
+import ValueProposition from './sections/ValueProposition';
 import ModulesSection from './sections/ModulesSection';
-import ModularApproach from './sections/ModularApproach';
-import PricingSection from './sections/PricingSection';
 import HowItWorks from './sections/HowItWorks';
-import TrustSection from './sections/TrustSection';
-import WhyChooseSalesPal from './sections/WhyChooseSalesPal';
+import PricingSection from './sections/PricingSection';
+import FinalCTA from './sections/FinalCTA';
+
 
 const Home = () => {
     return (
@@ -17,12 +17,12 @@ const Home = () => {
             <main>
                 <HeroSection />
                 <WhySalesPal />
+                <ValueProposition />
                 <ModulesSection />
-                <ModularApproach />
-                <PricingSection />
                 <HowItWorks />
-                <WhyChooseSalesPal />
-                <TrustSection />
+                <PricingSection />
+                <FinalCTA />
+
             </main>
             <Footer />
         </div>
