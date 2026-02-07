@@ -6,7 +6,9 @@ import Marketing from '../pages/dashboard/modules/Marketing';
 import Sales from '../pages/dashboard/modules/Sales';
 import Support from '../pages/dashboard/modules/Support';
 import Home from '../pages/home/Home';
+import Cart from '../pages/Cart';
 import ProjectsHub from '../pages/projects/ProjectsHub';
+import ContactPage from '../pages/contact/ContactPage';
 import SignIn from '../pages/auth/SignIn';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 
@@ -73,6 +75,14 @@ export const router = createBrowserRouter([
             {
                 path: "/signin",
                 element: <SignIn />,
+            },
+            {
+                path: "/cart",
+                element: <Cart />,
+            },
+            {
+                path: "/contact",
+                element: <ContactPage />,
             },
             // Marketing App Shell
             {

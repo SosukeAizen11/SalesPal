@@ -1,64 +1,102 @@
-import { BarChart3, Users, Phone, Cpu, Zap, Bot, CheckCircle2, Shield, Layout } from 'lucide-react';
+import { BarChart3, Users, Phone, Cpu, Zap, Bot, CheckCircle2, Shield, Layout, TrendingDown, UserX, DollarSign, AlertTriangle, Clock, XCircle, Megaphone, UserCheck, Headphones } from 'lucide-react';
 
 export const problems = [
     {
-        icon: BarChart3,
-        title: "Wasted Ad Spend",
-        desc: "Businesses lose 30% of budget on unoptimized campaigns.",
-        color: "text-red-400"
+        icon: Clock,
+        title: "Leads Go Cold",
+        desc: "Delayed responses mean lost opportunities. By the time you call back, they've moved on.",
+        color: "text-red-500"
     },
     {
-        icon: Users,
-        title: "Missed Leads",
-        desc: "Sales teams can't follow up with every lead instantly.",
-        color: "text-orange-400"
+        icon: XCircle,
+        title: "Missed Follow-ups",
+        desc: "Your team can't keep track of every lead. 80% of sales require 5+ follow-ups.",
+        color: "text-red-500"
     },
     {
-        icon: Phone,
-        title: "Overloaded Support",
-        desc: "Support agents drown in repetitive queries.",
-        color: "text-yellow-400"
+        icon: UserX,
+        title: "High Team Costs",
+        desc: "Hiring salespeople, marketers, and support staff is expensive and hard to scale.",
+        color: "text-red-500"
     },
     {
-        icon: Cpu,
-        title: "Manual Processes",
-        desc: "Scaling is impossible with manual workflows.",
-        color: "text-blue-400"
+        icon: TrendingDown,
+        title: "Revenue Leaks",
+        desc: "Poor post-sales engagement means churn. Customers leave before they become advocates.",
+        color: "text-red-500"
     }
 ];
 
 export const modules = [
     {
         id: "marketing",
-        title: "AI Business Analysis",
-        icon: Zap,
+        title: "SalesPal Marketing",
+        subtitle: "AI-Powered Content & Campaigns",
+        description: "AI creates ad creatives, videos, carousels, and captions. Schedule posts across platforms - all on autopilot.",
+        icon: Megaphone,
+        iconColor: "text-blue-400",
+        iconBg: "bg-blue-500/20",
         features: [
-            "Analyzes market trends 24/7",
-            "Identifies high-value audiences",
-            "Predicts campaign performance",
-            "Competitor ad strategy tracking"
+            "20 AI image creatives / month",
+            "4 AI videos (≥30 sec) / month",
+            "6 AI carousel creatives / month",
+            "30 scheduled posts / month",
+            "AI ad copy & captions",
+            "Multi-platform publishing"
         ]
     },
     {
         id: "sales",
-        title: "Automated Ad Creation",
-        icon: BarChart3,
+        title: "SalesPal Sales",
+        subtitle: "Human-like Conversations",
+        description: "Human-like WhatsApp & Voice conversations that qualify leads, handle objections, and book meetings automatically.",
+        icon: Phone,
+        iconColor: "text-green-400",
+        iconBg: "bg-green-500/20",
         features: [
-            "Generates high-converting ad copy",
-            "Creates visuals & video assets",
-            "A/B tests thousands of variations",
-            "Auto-optimizes for ROI"
+            "1000 AI calling minutes / month",
+            "1000 WhatsApp conversations / month",
+            "AI outbound & inbound calling",
+            "AI WhatsApp replies",
+            "Follow-up & re-scheduling logic",
+            "Context memory",
+            "Human escalation when needed"
+        ]
+    },
+    {
+        id: "postsale",
+        title: "SalesPal Post-Sale",
+        subtitle: "Automated Payment & Document Collection",
+        description: "Automated payment reminders, proof collection, document checklists, and owner-verified closure workflows.",
+        icon: UserCheck,
+        iconColor: "text-yellow-400",
+        iconBg: "bg-yellow-500/20",
+        features: [
+            "1000 AI calling minutes / month",
+            "1000 WhatsApp conversations / month",
+            "Automated payment reminders",
+            "Payment proof collection",
+            "Owner verified closure",
+            "Document checklist & re-upload",
+            "Full audit log"
         ]
     },
     {
         id: "support",
-        title: "Real-time Budget Optimization",
-        icon: Bot,
+        title: "SalesPal Support",
+        subtitle: "AI-Powered Customer Support",
+        description: "24/7 AI support with sentiment detection, knowledge-based answers, and smart escalation when needed.",
+        icon: Headphones,
+        iconColor: "text-red-400",
+        iconBg: "bg-red-500/20",
         features: [
-            "Allocates budget to best channels",
-            "Stops bleeding campaigns",
-            "Scales winning ads instantly",
-            "Cross-platform attribution"
+            "1000 AI calling minutes / month",
+            "1000 WhatsApp conversations / month",
+            "AI answers from your knowledge",
+            "No hallucination (escalates if unsure)",
+            "Call diversion ON/OFF",
+            "Complaint registration with ID",
+            "Sentiment detection"
         ]
     }
 ];
@@ -108,23 +146,23 @@ export const plans = [
 export const steps = [
     {
         number: "01",
-        title: "Connect Your Platforms",
-        description: "Securely link your ad accounts (Meta, Google, LinkedIn). SalesPal instantly analyzes historical data to find opportunities."
+        title: "Connect Your Channels",
+        description: "Link your WhatsApp Business, email, CRM, and other communication channels in just a few clicks. Our guided setup takes less than 10 minutes."
     },
     {
         number: "02",
-        title: "Select AI Agents",
-        description: "Choose your AI workforce: Business Analyst, Ad Creator, or Budget Optimizer. Activate them instantly."
+        title: "Train Your AI Agent",
+        description: "Upload your product information, FAQs, and sales scripts. Our AI learns your brand voice and business rules to represent you perfectly."
     },
     {
         number: "03",
-        title: "Launch & Optimize",
-        description: "AI generates campaigns, you approve. The system then monitors and optimizes 24/7 to maximize ROI."
+        title: "Launch & Automate",
+        description: "Activate your AI workforce and watch it engage leads, qualify prospects, and close deals automatically—24 hours a day, 7 days a week."
     },
     {
         number: "04",
-        title: "Scale Results",
-        description: "As performance improves, AI automatically scales winning strategies and cuts wasted spend."
+        title: "Optimize & Scale",
+        description: "Monitor performance through real-time analytics, refine your strategies with A/B testing, and scale effortlessly as your business grows."
     }
 ];
 
@@ -137,28 +175,28 @@ export const trustLogos = [
 
 export const comparisonPoints = [
     {
-        title: "Optimization Speed",
-        traditional: "Manual weekly reviews",
-        salespal: "Real-time 24/7 adjustment"
+        title: "Response Time",
+        traditional: "Hours or days to follow up",
+        salespal: "Instant 24/7 engagement"
     },
     {
-        title: "Ad Creative",
-        traditional: "Expensive agency fees",
-        salespal: "Unlimited AI-generated variations"
+        title: "Lead Handling",
+        traditional: "Limited by team capacity",
+        salespal: "Unlimited concurrent conversations"
     },
     {
-        title: "Data Analysis",
-        traditional: "Spreadsheet chaos",
-        salespal: "Instant actionable insights"
+        title: "Personalization",
+        traditional: "Generic templates",
+        salespal: "Context-aware AI responses"
     },
     {
         title: "Scalability",
-        traditional: "Hire more staff",
-        salespal: "Click to add more compute"
+        traditional: "Hire and train more staff",
+        salespal: "Scale instantly with AI"
     },
     {
         title: "Implementation",
-        traditional: "Months of onboarding",
-        salespal: "Live in minutes"
+        traditional: "Weeks of onboarding",
+        salespal: "Live in under 10 minutes"
     }
 ];
