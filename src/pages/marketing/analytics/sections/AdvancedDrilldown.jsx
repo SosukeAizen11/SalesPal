@@ -99,7 +99,8 @@ const AdvancedDrilldown = ({ details, onClose }) => {
                         <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 text-center">
                             <p className="text-xs text-gray-500 mb-1">Bounce Rate</p>
                             <p className="text-xl font-bold text-gray-900">{details.landingPage?.bounceRate || 'N/A'}</p>
-                            <p className="text-xs text-green-600 font-medium">-2.1% improvement</p>
+                            {/* Static mock improvement or hidden if no data */}
+                            {details.landingPage && <p className="text-xs text-green-600 font-medium">-2.1% improvement</p>}
                         </div>
                         <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 text-center">
                             <p className="text-xs text-gray-500 mb-1">Avg. Time</p>
@@ -107,7 +108,7 @@ const AdvancedDrilldown = ({ details, onClose }) => {
                         </div>
                         <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 text-center">
                             <p className="text-xs text-gray-500 mb-1">Load Time</p>
-                            <p className={`text-xl font-bold ${parseFloat(details.landingPage?.loadTime) > 2 ? 'text-amber-600' : 'text-green-600'}`}>
+                            <p className={`text-xl font-bold ${details.landingPage?.loadTime && parseFloat(details.landingPage.loadTime) > 2 ? 'text-amber-600' : 'text-green-600'}`}>
                                 {details.landingPage?.loadTime || 'N/A'}
                             </p>
                         </div>
@@ -129,8 +130,11 @@ const AdvancedDrilldown = ({ details, onClose }) => {
                         </div>
 
                         {/* Visual Bar */}
-                        <div className="flex h-6 rounded-full overflow-hidden mb-4">
-                            <div style={{ width: `${details.competitive?.myImpShare}%` }} className="bg-blue-600 h-full" title="You" />
+                        <div className="flex h-6 rounded-full overflow-hidden mb-4 bg-gray-100">
+                            {/* Fallback if no competitive data: just show gray or empty */}
+                            {details.competitive?.myImpShare > 0 && (
+                                <div style={{ width: `${details.competitive.myImpShare}%` }} className="bg-blue-600 h-full" title="You" />
+                            )}
                             {(details.competitive?.competitors || []).map((comp, i) => (
                                 <div key={i} style={{ width: `${comp.value}%`, backgroundColor: comp.color }} className="h-full" title={comp.name} />
                             ))}
@@ -148,19 +152,22 @@ const AdvancedDrilldown = ({ details, onClose }) => {
                                     <span>{comp.name}</span>
                                 </div>
                             ))}
+                            {(!details.competitive || !details.competitive.competitors) && <span className="text-gray-400 italic">No competitor data</span>}
                         </div>
 
                         {/* Loss Reasons */}
-                        <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4 text-xs">
-                            <div>
-                                <span className="text-gray-500">Lost to Rank:</span>
-                                <span className="ml-2 font-bold text-gray-900">{details.competitive?.lostToRank}</span>
+                        {details.competitive && (
+                            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4 text-xs">
+                                <div>
+                                    <span className="text-gray-500">Lost to Rank:</span>
+                                    <span className="ml-2 font-bold text-gray-900">{details.competitive?.lostToRank || '-'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-gray-500">Lost to Budget:</span>
+                                    <span className="ml-2 font-bold text-gray-900">{details.competitive?.lostToBudget || '-'}</span>
+                                </div>
                             </div>
-                            <div>
-                                <span className="text-gray-500">Lost to Budget:</span>
-                                <span className="ml-2 font-bold text-gray-900">{details.competitive?.lostToBudget}</span>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </DrilldownSection>
 

@@ -3,6 +3,7 @@ import { useMarketing } from '../../context/MarketingContext';
 import SocialSidebar from './components/social/SocialSidebar';
 import SocialEditor from './components/social/SocialEditor';
 import SocialRightPanel from './components/social/SocialRightPanel';
+import SocialEngagementDashboard from './components/social/SocialEngagementDashboard';
 
 const Social = () => {
     const { addSocialPost, socialPosts, deleteSocialPost } = useMarketing();
@@ -108,25 +109,35 @@ const Social = () => {
                 />
             </div>
 
-            {/* Center Editor (50%) */}
-            <div className="flex-1 min-w-0 z-0">
-                <SocialEditor
-                    content={content}
-                    setContent={setContent}
-                    postType={postType}
-                    setPostType={setPostType}
-                    scheduleMode={scheduleMode}
-                    setScheduleMode={setScheduleMode}
-                    onSave={handleSave}
-                    onSchedule={handleSchedule}
-                    isSaving={isSaving}
-                />
-            </div>
+            {/* Main Content Area */}
+            {activeTab === 'engagement' ? (
+                /* Full width Engagement Dashboard (takes remaining space) */
+                <div className="flex-1 min-w-0 z-0">
+                    <SocialEngagementDashboard posts={socialPosts} />
+                </div>
+            ) : (
+                <>
+                    {/* Center Editor (50%) */}
+                    <div className="flex-1 min-w-0 z-0">
+                        <SocialEditor
+                            content={content}
+                            setContent={setContent}
+                            postType={postType}
+                            setPostType={setPostType}
+                            scheduleMode={scheduleMode}
+                            setScheduleMode={setScheduleMode}
+                            onSave={handleSave}
+                            onSchedule={handleSchedule}
+                            isSaving={isSaving}
+                        />
+                    </div>
 
-            {/* Right Panel (25%) */}
-            <div className="w-96 flex-shrink-0 border-l border-gray-200 bg-gray-50/30 hidden xl:block">
-                <SocialRightPanel content={content} />
-            </div>
+                    {/* Right Panel (25%) */}
+                    <div className="w-96 flex-shrink-0 border-l border-gray-200 bg-gray-50/30 hidden xl:block">
+                        <SocialRightPanel content={content} />
+                    </div>
+                </>
+            )}
         </div>
     );
 };

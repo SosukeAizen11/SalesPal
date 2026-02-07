@@ -171,6 +171,7 @@ export default function ProjectDetails() {
                         label="Website"
                         value={editData.website}
                         onChange={(e) => setEditData({ ...editData, website: e.target.value })}
+                        required
                     />
                     <div className="pt-4 flex justify-between items-center border-t border-gray-100 mt-6">
                         <Button

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketing } from '../../../context/MarketingContext';
 import { ArrowLeft, Save, AlertCircle } from 'lucide-react';
+import { getCampaignRoute } from '../../../utils/navigationUtils';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
@@ -37,7 +38,7 @@ export default function EditCampaign() {
         e.preventDefault();
         updateCampaign(campaignId, formData);
         // Navigate back to details
-        navigate(`/marketing/projects/${projectId}/campaigns/${campaignId}`);
+        navigate(getCampaignRoute(projectId, campaignId));
     };
 
     const togglePlatform = (platform) => {
@@ -56,7 +57,7 @@ export default function EditCampaign() {
             {/* Header */}
             <div>
                 <button
-                    onClick={() => navigate(`/marketing/projects/${projectId}/campaigns/${campaignId}`)}
+                    onClick={() => navigate(getCampaignRoute(projectId, campaignId))}
                     className="flex items-center text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4 mr-1" />
@@ -134,7 +135,7 @@ export default function EditCampaign() {
                     <Button
                         type="button"
                         variant="secondary"
-                        onClick={() => navigate(`/marketing/projects/${projectId}/campaigns/${campaignId}`)}
+                        onClick={() => navigate(getCampaignRoute(projectId, campaignId))}
                     >
                         Cancel
                     </Button>

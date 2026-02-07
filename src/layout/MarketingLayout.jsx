@@ -8,6 +8,7 @@ import ProjectSwitcher from '../components/ProjectSwitcher';
 import Button from '../components/ui/Button';
 import { TourProvider } from '../context/TourContext';
 import TourOverlay from '../components/tour/TourOverlay';
+import GlobalCreditDisplay from '../components/GlobalCreditDisplay';
 
 const MarketingLayoutContent = () => {
     const { logout } = useAuth();
@@ -64,8 +65,15 @@ const MarketingLayoutContent = () => {
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0">
-                {/* Top Bar */}
-
+                {/* Top Bar - Now visible for Project Switcher & Credits */}
+                <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 sticky top-0 z-20">
+                    <div className="w-64">
+                        <ProjectSwitcher />
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <GlobalCreditDisplay />
+                    </div>
+                </header>
 
                 {/* Content Area */}
                 <main className="flex-1 overflow-auto p-6 md:p-8">

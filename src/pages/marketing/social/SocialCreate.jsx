@@ -191,7 +191,9 @@ const SocialCreate = ({ onNavigate }) => {
                             {/* Caption */}
                             <div>
                                 <div className="flex justify-between items-center mb-2">
-                                    <label className="text-sm font-medium text-gray-700">Caption</label>
+                                    <label className="text-sm font-medium text-gray-700">
+                                        Caption <span className="text-red-500">*</span>
+                                    </label>
                                     <button className="flex items-center gap-1.5 text-xs font-medium text-purple-600 hover:bg-purple-50 px-2 py-1 rounded transition-colors">
                                         <Wand2 className="w-3 h-3" />
                                         AI Assist

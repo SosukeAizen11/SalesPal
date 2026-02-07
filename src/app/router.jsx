@@ -26,6 +26,7 @@ import { MarketingProvider } from '../context/MarketingContext';
 import Projects from '../pages/marketing/projects/Projects';
 import CreateProject from '../pages/marketing/projects/CreateProject';
 import ProjectDetails from '../pages/marketing/projects/ProjectDetails';
+import MarketingKPIDrilldown from '../pages/marketing/analysis/MarketingKPIDrilldown';
 
 // Social Pages
 import SocialLayout from '../pages/marketing/social/SocialLayout';
@@ -58,6 +59,10 @@ import {
 } from '../pages/marketing/settings/MarketingSettingsPlaceholders';
 
 import ConnectPlatform from '../pages/auth/ConnectPlatform';
+
+import SubscriptionManagement from '../pages/subscription/SubscriptionManagement';
+import RevenueAnalytics from '../pages/marketing/analytics/RevenueAnalytics';
+import PlaceholderPage from '../pages/marketing/PlaceholderPage';
 
 export const router = createBrowserRouter([
     {
@@ -98,6 +103,22 @@ export const router = createBrowserRouter([
                     {
                         index: true,
                         element: <MarketingDashboard />
+                    },
+                    {
+                        path: "insights/:kpiType",
+                        element: <MarketingKPIDrilldown />
+                    },
+                    {
+                        path: "campaigns",
+                        element: <Campaigns />
+                    },
+                    {
+                        path: "campaigns/new",
+                        element: <NewCampaign />
+                    },
+                    {
+                        path: "campaigns/:campaignId",
+                        element: <CampaignDetails />
                     },
                     {
                         path: "projects",
@@ -151,6 +172,12 @@ export const router = createBrowserRouter([
                         path: "settings/integrations/meta",
                         element: <MetaIntegration />
                     },
+                    { path: "photos", element: <PlaceholderPage title="My Photos" description="Manage your image assets and generated photos here." /> },
+                    { path: "videos", element: <PlaceholderPage title="My Videos" description="Manage your video assets and generated content here." /> },
+                    { path: "calls", element: <PlaceholderPage title="Call History" description="View call logs and manage communication credits." /> },
+                    { path: "whatsapp", element: <PlaceholderPage title="WhatsApp" description="Manage WhatsApp campaigns and message history." /> },
+                    { path: "subscription", element: <SubscriptionManagement /> },
+                    { path: "financials", element: <RevenueAnalytics /> },
 
 
 
