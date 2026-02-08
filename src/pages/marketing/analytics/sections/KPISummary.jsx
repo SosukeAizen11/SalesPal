@@ -27,64 +27,49 @@ const KPICard = ({ title, value, trend, icon: Icon, color, onClick, isWarning })
     </div>
 );
 
-const KPISummary = ({ data, onDetailClick }) => {
+const KPISummary = ({ data, onDetailClick, mode = 'full' }) => {
+    // Helper to render card if data exists
+    const renderCard = (key, title, icon, color, label) => {
+        if (!data[key]) return null;
+        return (
+            <KPICard
+                key={key}
+                title={title}
+                value={data[key].value}
+                trend={data[key].trend}
+                icon={icon}
+                color={color}
+                onClick={() => onDetailClick(key, label || title)}
+                isWarning={data[key].isFatigue}
+            />
+        );
+    };
+
+    const gridClass = mode === 'pulse'
+        ? "grid grid-cols-2 lg:grid-cols-4 gap-4"
+        : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4";
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            {/* 1. ROAS (Primary) */}
-            <KPICard
-                title="ROAS"
-                value={data.roas.value}
-                trend={data.roas.trend}
-                icon={Target}
-                color="bg-indigo-100"
-                onClick={() => onDetailClick('spend', 'Return on Ad Spend')}
-            />
-            {/* 2. Total Spend */}
-            <KPICard
-                title="Total Spend"
-                value={data.totalSpend.value}
-                trend={data.totalSpend.trend}
-                icon={DollarSign}
-                color="bg-red-100"
-                onClick={() => onDetailClick('spend', 'Total Ad Spend')}
-            />
-            {/* 3. Total Leads */}
-            <KPICard
-                title="Total Leads"
-                value={data.totalLeads.value}
-                trend={data.totalLeads.trend}
-                icon={Users}
-                color="bg-purple-100"
-                onClick={() => onDetailClick('leads', 'Total Leads Generated')}
-            />
-            {/* 4. Conversion Rate */}
-            <KPICard
-                title="Conversion Rate"
-                value={data.convRate.value}
-                trend={data.convRate.trend}
-                icon={BarChart}
-                color="bg-emerald-100"
-                onClick={() => onDetailClick('conv', 'Conversion Rate')}
-            />
-            {/* 5. Avg CPC */}
-            <KPICard
-                title="Avg CPC"
-                value={data.avgCpc.value}
-                trend={data.avgCpc.trend}
-                icon={MousePointer}
-                color="bg-blue-100"
-                onClick={() => onDetailClick('spend', 'Cost Per Click')}
-            />
-            {/* 6. Frequency (Fatigue Check) */}
-            <KPICard
-                title="Frequency"
-                value={data.frequency.value}
-                trend={data.frequency.trend} // Can be null if warning shown
-                icon={Activity}
-                color={data.frequency.isFatigue ? "bg-amber-100" : "bg-orange-100"}
-                onClick={() => onDetailClick('projects', 'Ad Frequency')}
-                isWarning={data.frequency.isFatigue}
-            />
+        <div className={gridClass}>
+            {/* 1. ROAS (Primary - Financial Health) */}
+            {renderCard('roas', 'ROAS', Target, 'bg-indigo-100', 'Return on Ad Spend')}
+
+            {/* 2. Total Revenue (Financial Health) - NEW */}
+            {renderCard('totalRevenue', 'Total Revenue', TrendingUp, 'bg-emerald-100', 'Total Revenue')}
+
+            {/* 3. Total Spend (Financial Health) */}
+            {renderCard('totalSpend', 'Total Spend', DollarSign, 'bg-red-100', 'Total Ad Spend')}
+
+            {/* 4. CPA (Efficiency) - NEW */}
+            {renderCard('cpa', 'Avg CPA', MousePointer, 'bg-blue-100', 'Cost Per Acquisition')}
+
+            {/* Extended Metrics (Non-Pulse Mode Only) */}
+            {mode !== 'pulse' && (
+                <>
+                    {renderCard('totalConversions', 'Conversions', Users, 'bg-purple-100', 'Total Conversions')}
+                    {renderCard('frequency', 'Frequency', Activity, data.frequency?.isFatigue ? "bg-amber-100" : "bg-orange-100", 'Ad Frequency')}
+                </>
+            )}
         </div>
     );
 };

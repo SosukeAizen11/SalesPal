@@ -1,60 +1,95 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import SectionWrapper from '../../../components/layout/SectionWrapper';
 import { Calendar, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import Button from '../../../components/ui/Button';
 
 const FinalCTA = () => {
     return (
-        <SectionWrapper className="bg-white">
-            <div className="max-w-4xl mx-auto">
-                <div className="relative p-12 rounded-[32px] bg-gradient-to-br from-[#243748] to-[#2D4152] text-center overflow-hidden" style={{
-                    boxShadow: '0px 30px 80px rgba(0,0,0,0.18), inset 0px 1px 0px rgba(255,255,255,0.06)'
-                }}>
-                    {/* Removed background decoration for cleaner look */}
-
+        <SectionWrapper className="bg-gradient-to-b from-gray-50 to-white">
+            <div className="max-w-[1100px] mx-auto">
+                <div
+                    className="relative p-12 md:p-16 lg:p-20 rounded-[40px] text-center overflow-hidden"
+                    style={{
+                        background: 'linear-gradient(135deg, #3d4f5f 0%, #3a4a5a 50%, #37454f 100%)',
+                        boxShadow: '0px 30px 80px rgba(0,0,0,0.18), inset 0px 1px 0px rgba(255,255,255,0.06)'
+                    }}
+                >
+                    {/* Content */}
                     <div className="relative z-10">
-                        {/* Badge */}
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6" style={{
-                            background: 'rgba(255,255,255,0.08)',
-                            border: '1px solid rgba(255,255,255,0.10)',
-                            color: 'rgba(255,255,255,0.90)'
-                        }}>
-                            <Calendar className="w-4 h-4" style={{ color: 'rgba(255,255,255,0.75)' }} />
+                        {/* Top Badge */}
+                        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium mb-8"
+                            style={{
+                                background: '#2563eb',
+                                border: '1px solid rgba(37, 99, 235, 0.5)',
+                                color: '#ffffff'
+                            }}
+                        >
+                            <Calendar className="w-4 h-4" style={{ color: '#ffffff' }} />
                             Get Started Today
                         </div>
 
-                        <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-                            Ready to Automate<br />
-                            <span className="text-[#1677FF]" style={{ textShadow: '0 0 20px rgba(22,119,255,0.3)' }}>Your Revenue?</span>
+                        {/* Heading */}
+                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+                            Ready to Automate{' '}
+                            <span
+                                style={{
+                                    color: '#3b9eff'
+                                }}
+                            >
+                                Your<br />Revenue?
+                            </span>
                         </h2>
 
-                        <p className="text-lg mb-8 max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                        {/* Subheading */}
+                        <p
+                            className="text-base md:text-lg mb-10 max-w-[700px] mx-auto leading-relaxed"
+                            style={{ color: '#cbd5e1' }}
+                        >
                             Join hundreds of businesses that have transformed their sales with AI. See SalesPal in action with a personalized demo.
                         </p>
 
+                        {/* Buttons */}
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <Link to="/contact">
-                                <button className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all hover:-translate-y-0.5" style={{
-                                    background: 'linear-gradient(135deg, #2E8BFF 0%, #0B3B86 100%)',
-                                    boxShadow: '0px 12px 35px rgba(0,120,255,0.25)'
-                                }}>
+                                <button
+                                    className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-white transition-all hover:-translate-y-0.5"
+                                    style={{
+                                        background: '#3b82f6',
+                                        boxShadow: '0px 8px 20px rgba(59, 130, 246, 0.3)',
+                                        minHeight: '52px'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = '#2563eb';
+                                        e.currentTarget.style.boxShadow = '0px 12px 30px rgba(59, 130, 246, 0.4)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = '#3b82f6';
+                                        e.currentTarget.style.boxShadow = '0px 8px 20px rgba(59, 130, 246, 0.3)';
+                                    }}
+                                >
                                     Book Your Demo
-                                    <ArrowRight className="w-4 h-4" />
+                                    <ArrowRight className="w-5 h-5" />
                                 </button>
                             </Link>
+
                             <Link to="/contact">
-                                <button className="px-6 py-3 rounded-xl font-semibold transition-all" style={{
-                                    background: 'transparent',
-                                    border: '1px solid rgba(255,255,255,0.25)',
-                                    color: 'rgba(255,255,255,0.85)'
-                                }} onMouseEnter={(e) => {
-                                    e.currentTarget.style.border = '1px solid rgba(255,255,255,0.40)';
-                                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                                }} onMouseLeave={(e) => {
-                                    e.currentTarget.style.border = '1px solid rgba(255,255,255,0.25)';
-                                    e.currentTarget.style.background = 'transparent';
-                                }}>
+                                <button
+                                    className="px-8 py-3.5 rounded-xl font-semibold transition-all"
+                                    style={{
+                                        background: 'transparent',
+                                        border: '2px solid rgba(255,255,255,0.3)',
+                                        color: '#ffffff',
+                                        minHeight: '52px'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.border = '2px solid rgba(255,255,255,0.5)';
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.border = '2px solid rgba(255,255,255,0.3)';
+                                        e.currentTarget.style.background = 'transparent';
+                                    }}
+                                >
                                     Contact Sales
                                 </button>
                             </Link>

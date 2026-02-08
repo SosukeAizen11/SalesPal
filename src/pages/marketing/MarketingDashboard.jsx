@@ -9,6 +9,8 @@
  * 4. Links to Layer 2 (CampaignDetailView) for optimization context.
  */
 import React, { useState, useMemo, useRef } from 'react';
+import { formatCurrency } from '../../utils/formatCurrency';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Filter, BarChart2, Globe, ChevronDown, HelpCircle } from 'lucide-react';
 import { useWalkthrough } from '../../walkthrough/WalkthroughProvider';
 import { AnalyticsProvider, useAnalytics } from '../../context/AnalyticsContext';
@@ -16,17 +18,17 @@ import { useMarketing } from '../../context/MarketingContext';
 import Modal from '../../components/ui/Modal';
 
 // Sections
+// Sections
 import KPISummary from './analytics/sections/KPISummary';
 import PerformanceTrends from './analytics/sections/PerformanceTrends';
-import ROASTrend from './analytics/sections/ROASTrend';
-import ConversionFunnel from './analytics/sections/ConversionFunnel';
+import ChannelPerformanceMix from './analytics/sections/ChannelPerformanceMix';
+import ActionFeed from './analytics/sections/ActionFeed';
+import CampaignDetailView from './analytics/sections/CampaignDetailView';
 
-// Components (AI Layer)
-import AIInsightsStream from './analytics/components/AIInsightsStream';
-import RecommendedActions from './analytics/components/RecommendedActions';
-import ActionPreviewView from './analytics/components/ActionPreviewView';
-
-import { getMockAnalyticsData } from './analytics/utils/mockData';
+import {
+    calculateCPL, calculateFrequency, calculateLandingPageCVR, calculateCPM,
+    calculateROAS, calculateCPC, calculateCTR, distribute
+} from '../../utils/analyticsCalculations';
 
 // --- MAIN CONTENT COMPONENT ---
 const DashboardContent = ({ mode = 'page' }) => {
@@ -49,26 +51,171 @@ const DashboardContent = ({ mode = 'page' }) => {
     const funnelRef = useRef(null);
     const campaignsRef = useRef(null);
 
-    // Generate responsive mock data
-    const dashboardData = useMemo(() =>
-        getMockAnalyticsData(timeRange, selectedProjectId, channelFilter),
-        [timeRange, selectedProjectId, channelFilter]);
+    // --- DATA AGGREGATION & ANALYTICS ---
+    const { campaigns } = useMarketing();
+
+
+    const dashboardData = useMemo(() => {
+        // 1. Filter Campaigns
+        const filtered = campaigns.filter(c => {
+            const projectMatch = selectedProjectId === 'all' || (c.projectId && c.projectId === selectedProjectId);
+
+            if (channelFilter === 'all') return projectMatch;
+
+            const platformName = (c.platform || '').toLowerCase();
+            const filterName = channelFilter.toLowerCase();
+
+            let platformValid = false;
+            if (filterName === 'meta') platformValid = platformName.includes('meta') || platformName.includes('facebook') || platformName.includes('instagram');
+            else if (filterName === 'google') platformValid = platformName.includes('google') || platformName.includes('youtube');
+            else if (filterName === 'linkedin') platformValid = platformName.includes('linkedin');
+            else platformValid = platformName.includes(filterName);
+
+            return projectMatch && platformValid;
+        });
+
+        // 2. Aggregate Totals
+        const totals = filtered.reduce((acc, c) => ({
+            spend: acc.spend + (Number(c.spend) || 0),
+            revenue: acc.revenue + (Number(c.revenue) || 0),
+            conversions: acc.conversions + (Number(c.conversions) || 0),
+        }), { spend: 0, revenue: 0, conversions: 0 });
+
+        // 3. Derived Metrics (Using Pure Utils)
+        const roas = calculateROAS(totals.revenue, totals.spend);
+        const cpa = calculateCPL(totals.spend, totals.conversions);
+
+        // 4. Trend Generation (Distribute totals for visualization)
+        const dayCount = timeRange === '30d' ? 30 : 7;
+        const labels = Array.from({ length: dayCount }, (_, i) => `Day ${i + 1}`);
+
+        // Helper to distribute total into array (Mock distribution)
+        const spendTrend = distribute(totals.spend, dayCount);
+        const revTrend = distribute(totals.revenue, dayCount);
+        const convTrend = distribute(totals.conversions, dayCount);
+
+        // Recalculate ROAS trend point-by-point
+        const roasTrend = spendTrend.map((s, i) => s > 0 ? (revTrend[i] / s).toFixed(2) : 0);
+
+        // Recalculate CPA trend point-by-point
+        const cpaTrend = spendTrend.map((s, i) => {
+            const c = convTrend[i];
+            return c > 0 ? (s / c).toFixed(2) : 0;
+        });
+
+        // 5. Channel Mix Data
+        const channelMix = ['Meta Ads', 'Google Ads', 'LinkedIn'].map(platform => {
+            const platformCampaigns = filtered.filter(c => (c.platform || '').toLowerCase().includes(platform.toLowerCase().split(' ')[0]));
+            const pSpend = platformCampaigns.reduce((a, c) => a + (Number(c.spend) || 0), 0);
+            const pRev = platformCampaigns.reduce((a, c) => a + (Number(c.revenue) || 0), 0);
+            const pConv = platformCampaigns.reduce((a, c) => a + (Number(c.conversions) || 0), 0);
+            return {
+                platform,
+                spend: pSpend,
+                revenue: pRev,
+                conversions: pConv,
+                roas: calculateROAS(pRev, pSpend).toFixed(2),
+                color: platform === 'Meta Ads' ? '#8884d8' : platform === 'Google Ads' ? '#82ca9d' : '#ffc658'
+            };
+        }).filter(d => d.spend > 0);
+
+        // 6. Anomaly Detection (Rule-Based)
+        const anomalies = [];
+
+        // Rule 1: Burn Alert (Campaign Level)
+        filtered.forEach(c => {
+            const cSpend = Number(c.spend) || 0;
+            const cRev = Number(c.revenue) || 0;
+            if (cSpend > 500 && cRev === 0) {
+                anomalies.push({
+                    type: 'burn',
+                    severity: 'high',
+                    title: `Burn Alert: ${c.name}`,
+                    message: `Spent ${formatCurrency(cSpend)} with ${formatCurrency(0)} revenue. Pause immediately to stop losses.`,
+                    actionLabel: 'Pause Campaign',
+                    campaignId: c.id,
+                    action: true,
+                    onAction: () => handleActionPreview({ type: 'pause_campaign', campaignId: c.id, name: c.name })
+                });
+            }
+        });
+
+        // Rule 2: CPA Spike (CPA increase > 40% vs target)
+        const cpaTarget = 50; // Example target
+        const cpaIncrease = ((cpa - cpaTarget) / cpaTarget) * 100;
+        if (cpaIncrease > 40) {
+            anomalies.push({
+                type: 'spike',
+                severity: 'medium',
+                title: 'CPA Spike Detected',
+                message: `CPA is ${formatCurrency(cpa)} (+${cpaIncrease.toFixed(0)}% vs ${formatCurrency(cpaTarget)} target). Investigate underperforming campaigns.`,
+                actionLabel: 'Investigate',
+                action: true,
+                onAction: () => handleActionPreview({ type: 'check_ad_groups', metric: 'cpa', value: cpa })
+            });
+        }
+
+        // Rule 3: ROAS Opportunity (High ROAS + Budget > 90% utilization)
+        const google = channelMix.find(c => c.platform === 'Google Ads');
+        const meta = channelMix.find(c => c.platform === 'Meta Ads');
+        if (google && meta && parseFloat(google.roas) > parseFloat(meta.roas) * 1.5 && meta.spend > google.spend) {
+            anomalies.push({
+                type: 'opportunity',
+                severity: 'low',
+                title: 'Budget Reallocation Opportunity',
+                message: `Google ROAS (${google.roas}x) outperforms Meta (${meta.roas}x) by 50%+. Shift budget to maximize returns.`,
+                actionLabel: 'Shift Budget',
+                action: true,
+                onAction: () => handleActionPreview({ type: 'shift_budget', from: 'Meta Ads', to: 'Google Ads' })
+            });
+        }
+
+        return {
+            // High-Level KPIs (Financial Health Focus)
+            kpis: {
+                roas: { value: roas.toFixed(2) + 'x', trend: null },
+                totalSpend: { value: formatCurrency(totals.spend), trend: null },
+                totalRevenue: { value: formatCurrency(totals.revenue), trend: null },
+                cpa: { value: formatCurrency(cpa), trend: null },
+            },
+            // Charts
+            trends: {
+                dates: labels,
+                spend: spendTrend,
+                revenue: revTrend,
+                roas: roasTrend,
+                cpa: cpaTrend
+            },
+            channelMix,
+            anomalies
+        };
+    }, [campaigns, selectedProjectId, timeRange, channelFilter]);
+
+    const navigate = useNavigate();
 
     // HANDLERS
     const handleKPIClick = (metric, title) => {
-        // Map metrics to sections for smooth scrolling
-        const sectionMap = {
-            'spend': spendRef,
-            'leads': funnelRef,
-            'conversion_rate': funnelRef,
-            'cpl': spendRef,
-            'projects': campaignsRef
-        };
+        let route = '';
 
-        const targetRef = sectionMap[metric];
-        if (targetRef && targetRef.current) {
-            targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        switch (metric) {
+            case 'roas':
+                route = '/marketing/insights/roas';
+                break;
+            case 'totalRevenue':
+                route = '/marketing/insights/revenue';
+                break;
+            case 'totalSpend':
+                route = '/marketing/insights/spend';
+                break;
+            case 'cpa':
+                route = '/marketing/insights/cpa';
+                break;
+            default:
+                // Fallback for other cards if any
+                return;
         }
+
+        navigate(route);
     };
 
     const handleCampaignClick = (campaign) => {
@@ -172,41 +319,32 @@ const DashboardContent = ({ mode = 'page' }) => {
 
             <div className="p-6 max-w-[1600px] mx-auto space-y-6">
 
-                {/* A. Top KPI Cards */}
-                <div id="tour-kpi">
-                    <KPISummary data={dashboardData.kpis} onDetailClick={handleKPIClick} />
-                </div>
+                {/* A. THE PULSE (Financial Vitals) */}
+                <section id="tour-kpi" aria-label="Financial Vitals">
+                    <KPISummary data={dashboardData.kpis} onDetailClick={handleKPIClick} mode="pulse" />
+                </section>
 
-                {/* B. Efficiency Charts Row */}
+                {/* B. Efficiency & Allocation Grid */}
                 <div id="tour-performance" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24 min-w-0">
+                    {/* Trend Health (2/3 width) */}
+                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-gray-900">Trend Health</h3>
+                            <p className="text-xs text-gray-500">7-Day Financial Stability</p>
+                        </div>
                         <PerformanceTrends data={dashboardData.trends} timeRange={timeRange} />
                     </div>
+
+                    {/* Allocation Mix (1/3 width) */}
                     <div className="lg:col-span-1 min-w-0">
-                        <ROASTrend data={dashboardData.trends} />
+                        <ChannelPerformanceMix data={dashboardData.channelMix} />
                     </div>
                 </div>
 
-                {/* C. Conversion Funnel */}
-                <div id="tour-funnel" ref={funnelRef} className="scroll-mt-24">
-                    <ConversionFunnel data={dashboardData.funnel} />
-                </div>
-
-                {/* D. AI Insights Stream */}
-                <div id="tour-insights">
-                    <AIInsightsStream
-                        insights={dashboardData.insights}
-                        onAction={(insight) => console.log('View details', insight)}
-                    />
-                </div>
-
-                {/* E. Recommended Actions */}
-                <div id="tour-actions">
-                    <RecommendedActions
-                        actions={dashboardData.recommendations}
-                        onPreviewAction={handleActionPreview}
-                    />
-                </div>
+                {/* C. Action Feed (Anomalies Only) */}
+                <section id="tour-actions" aria-label="Action Feed">
+                    <ActionFeed alerts={dashboardData.anomalies} />
+                </section>
             </div>
 
             {/* DETAIL MODAL */}

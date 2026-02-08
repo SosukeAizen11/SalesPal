@@ -11,6 +11,11 @@ import ProjectsHub from '../pages/projects/ProjectsHub';
 import ContactPage from '../pages/contact/ContactPage';
 import SignIn from '../pages/auth/SignIn';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
+import MarketingProduct from '../pages/products/MarketingProduct';
+import SalesProduct from '../pages/products/SalesProduct';
+import PostSaleProduct from '../pages/products/PostSaleProduct';
+import SupportProduct from '../pages/products/SupportProduct';
+import SalesPal360Product from '../pages/products/SalesPal360Product';
 
 // Marketing Shell Components
 import MarketingLayout from '../layout/MarketingLayout';
@@ -26,6 +31,7 @@ import { MarketingProvider } from '../context/MarketingContext';
 import Projects from '../pages/marketing/projects/Projects';
 import CreateProject from '../pages/marketing/projects/CreateProject';
 import ProjectDetails from '../pages/marketing/projects/ProjectDetails';
+import MarketingKPIDrilldown from '../pages/marketing/analysis/MarketingKPIDrilldown';
 
 // Social Pages
 import SocialLayout from '../pages/marketing/social/SocialLayout';
@@ -88,6 +94,26 @@ export const router = createBrowserRouter([
                 path: "/contact",
                 element: <ContactPage />,
             },
+            {
+                path: "/products/marketing",
+                element: <MarketingProduct />,
+            },
+            {
+                path: "/products/sales",
+                element: <SalesProduct />,
+            },
+            {
+                path: "/products/post-sale",
+                element: <PostSaleProduct />,
+            },
+            {
+                path: "/products/support",
+                element: <SupportProduct />,
+            },
+            {
+                path: "/products/salespal-360",
+                element: <SalesPal360Product />,
+            },
             // Marketing App Shell
             {
                 path: "/marketing",
@@ -102,6 +128,22 @@ export const router = createBrowserRouter([
                     {
                         index: true,
                         element: <MarketingDashboard />
+                    },
+                    {
+                        path: "insights/:kpiType",
+                        element: <MarketingKPIDrilldown />
+                    },
+                    {
+                        path: "campaigns",
+                        element: <Campaigns />
+                    },
+                    {
+                        path: "campaigns/new",
+                        element: <NewCampaign />
+                    },
+                    {
+                        path: "campaigns/:campaignId",
+                        element: <CampaignDetails />
                     },
                     {
                         path: "projects",
