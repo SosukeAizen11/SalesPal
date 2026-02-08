@@ -110,13 +110,12 @@ const Navbar = () => {
             }}
         >
             <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-                <Link to="/" className="flex items-center gap-2">
-                    {/* Custom circular logo with dot */}
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="16" cy="16" r="13" stroke="#1F2937" strokeWidth="2.5" fill="none" />
-                        <circle cx="22" cy="10" r="2.5" fill="#1F2937" />
-                    </svg>
-                    <span className="text-xl font-semibold text-gray-900">SalesPal</span>
+                <Link to="/" className="flex items-center -ml-12">
+                    <img
+                        src="/SalesPal Logo Navbar.png"
+                        alt="SalesPal Logo"
+                        className="h-16 object-contain"
+                    />
                 </Link>
 
                 <div className="hidden md:flex items-center space-x-8 text-sm font-medium">
