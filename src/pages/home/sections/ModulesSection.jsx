@@ -70,10 +70,16 @@ const ModulesSection = () => {
                         <motion.div
                             key={module.id}
                             variants={prefersReducedMotion ? {} : cardVariants}
-                            className="group relative p-6 rounded-2xl bg-white border border-gray-100 shadow-md transition-all duration-300"
+                            className="group relative p-6 rounded-2xl bg-white border border-gray-100 shadow-md"
                             whileHover={prefersReducedMotion ? {} : {
-                                y: -4,
-                                boxShadow: '0 20px 40px rgba(0,0,0,0.12)'
+                                y: -6,
+                                scale: 1.01,
+                                borderColor: 'rgba(59, 130, 246, 0.3)',
+                                boxShadow: '0 24px 48px rgba(0,0,0,0.15)',
+                                transition: {
+                                    duration: 0.25,
+                                    ease: [0.22, 1, 0.36, 1]
+                                }
                             }}
                         >
                             <motion.div
@@ -86,12 +92,17 @@ const ModulesSection = () => {
                                     boxShadow: '0px 6px 16px rgba(0,0,0,0.08)'
                                 }}
                                 whileHover={prefersReducedMotion ? {} : {
-                                    boxShadow: module.id === 'marketing' ? '0px 8px 20px rgba(59, 130, 246, 0.4)' :
-                                        module.id === 'sales' ? '0px 8px 20px rgba(34, 197, 94, 0.4)' :
-                                            module.id === 'postsale' ? '0px 8px 20px rgba(245, 158, 11, 0.4)' :
-                                                '0px 8px 20px rgba(239, 68, 68, 0.4)'
+                                    scale: 1.06,
+                                    rotate: 2,
+                                    boxShadow: module.id === 'marketing' ? '0px 10px 24px rgba(59, 130, 246, 0.5)' :
+                                        module.id === 'sales' ? '0px 10px 24px rgba(34, 197, 94, 0.5)' :
+                                            module.id === 'postsale' ? '0px 10px 24px rgba(245, 158, 11, 0.5)' :
+                                                '0px 10px 24px rgba(239, 68, 68, 0.5)',
+                                    transition: {
+                                        duration: 0.2,
+                                        ease: [0.22, 1, 0.36, 1]
+                                    }
                                 }}
-                                transition={{ duration: 0.25 }}
                             >
                                 <Icon
                                     className="w-6 h-6"
@@ -110,9 +121,34 @@ const ModulesSection = () => {
                                             module.id === 'support' ? '/products/support' :
                                                 '#'
                             }>
-                                <button className="text-gray-700 hover:bg-blue-50 border border-blue-400 hover:border-blue-500 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 inline-flex items-center gap-1">
-                                    Learn More <ArrowRight className="w-4 h-4" />
-                                </button>
+                                <motion.button
+                                    className="text-gray-700 bg-white border border-gray-300 hover:border-blue-500 px-4 py-2 rounded-full text-sm font-medium inline-flex items-center gap-1 transition-colors duration-250"
+                                    whileHover={prefersReducedMotion ? {} : {
+                                        scale: 1.02,
+                                        transition: { duration: 0.2 }
+                                    }}
+                                    whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = '#3b82f6';
+                                        e.currentTarget.style.color = '#ffffff';
+                                        e.currentTarget.style.borderColor = '#3b82f6';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = '#ffffff';
+                                        e.currentTarget.style.color = '#374151';
+                                        e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
+                                >
+                                    Learn More
+                                    <motion.span
+                                        whileHover={prefersReducedMotion ? {} : {
+                                            x: 3,
+                                            transition: { duration: 0.2 }
+                                        }}
+                                    >
+                                        <ArrowRight className="w-4 h-4" />
+                                    </motion.span>
+                                </motion.button>
                             </Link>
                         </motion.div>
                     );

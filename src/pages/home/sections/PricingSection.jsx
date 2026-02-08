@@ -148,11 +148,11 @@ const PricingSection = () => {
 
                             <Button
                                 variant={isAdded ? "primary" : "outline"}
-                                className="w-full"
+                                className="w-full gap-2.5"
                                 onClick={() => handleAddToCart(product)}
                             >
-                                <ShoppingCart className="w-4 h-4 mr-2" />
-                                {isAdded ? "Added to Cart!" : "Add to Cart"}
+                                <ShoppingCart className="w-5 h-5 shrink-0" />
+                                <span className="whitespace-nowrap">{isAdded ? "Added to Cart!" : "Add to Cart"}</span>
                             </Button>
                         </div>
                     );

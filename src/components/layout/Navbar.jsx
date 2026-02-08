@@ -110,21 +110,45 @@ const Navbar = () => {
             }}
         >
             <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-                <Link to="/" className="flex items-center gap-2">
-                    {/* Custom circular logo with dot */}
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="16" cy="16" r="13" stroke="#1F2937" strokeWidth="2.5" fill="none" />
-                        <circle cx="22" cy="10" r="2.5" fill="#1F2937" />
-                    </svg>
-                    <span className="text-xl font-semibold text-gray-900">SalesPal</span>
+                <Link to="/" className="flex items-center -ml-12">
+                    <img
+                        src="/SalesPal Logo Navbar.png"
+                        alt="SalesPal Logo"
+                        className="h-16 object-contain"
+                    />
                 </Link>
 
                 <div className="hidden md:flex items-center space-x-8 text-sm font-medium">
-                    <button onClick={() => scrollToSection('about')} className={getLinkClasses('about')}>About</button>
-                    <button onClick={() => scrollToSection('modules')} className={getLinkClasses('modules')}>Products</button>
-                    <button onClick={() => scrollToSection('how-it-works')} className={getLinkClasses('how-it-works')}>How It Works</button>
-                    <button onClick={() => scrollToSection('pricing')} className={getLinkClasses('pricing')}>Pricing</button>
-                    <Link to="/contact" className={getLinkClasses('contact')}>Contact</Link>
+                    {[
+                        { id: 'about', label: 'About' },
+                        { id: 'modules', label: 'Products' },
+                        { id: 'how-it-works', label: 'How It Works' },
+                        { id: 'pricing', label: 'Pricing' }
+                    ].map((link) => (
+                        <motion.button
+                            key={link.id}
+                            onClick={() => scrollToSection(link.id)}
+                            className="relative py-1 text-gray-600 transition-colors hover:text-blue-600"
+                            whileHover="hover"
+                            initial="rest"
+                        >
+                            {link.label}
+                            <motion.div
+                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                                variants={{
+                                    rest: { scaleX: activeSection === link.id ? 1 : 0, opacity: activeSection === link.id ? 1 : 0 },
+                                    hover: { scaleX: 1, opacity: 1 }
+                                }}
+                                initial="rest"
+                                animate={activeSection === link.id ? "hover" : "rest"}
+                                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                                style={{ transformOrigin: 'left' }}
+                            />
+                        </motion.button>
+                    ))}
+                    <Link to="/contact" className="relative py-1 text-gray-600 transition-colors hover:text-blue-600">
+                        Contact
+                    </Link>
                 </div>
 
                 <div className="flex items-center space-x-4">

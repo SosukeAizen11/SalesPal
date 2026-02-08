@@ -1,5 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
+import { motion } from 'framer-motion';
 import { Bot, Target, Zap, BarChart3, Share2, TrendingUp } from 'lucide-react';
+import { ScrollRevealHeading, ScrollRevealSubheading } from '../animations/ScrollReveal';
+import useScrollReveal from '../../hooks/useScrollReveal';
+import useReducedMotion from '../../hooks/useReducedMotion';
 
 const features = [
     {
@@ -35,71 +39,105 @@ const features = [
 ];
 
 const FeaturesGrid = () => {
-    const [isVisible, setIsVisible] = useState(false);
-    const sectionRef = useRef(null);
+    const { ref, isVisible } = useScrollReveal({ threshold: 0.1 });
+    const prefersReducedMotion = useReducedMotion();
 
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsVisible(true);
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        if (sectionRef.current) {
-            observer.observe(sectionRef.current);
-        }
-
-        return () => {
-            if (sectionRef.current) {
-                observer.unobserve(sectionRef.current);
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.08,
+                delayChildren: 0.1
             }
-        };
-    }, []);
+        }
+    };
+
+    const itemVariants = {
+        hidden: {
+            opacity: 0,
+            y: 20,
+            scale: 0.98
+        },
+        visible: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: {
+                duration: 0.65,
+                ease: [0.25, 0.1, 0.25, 1]
+            }
+        }
+    };
 
     return (
         <section
             id="powerful-features"
-            ref={sectionRef}
             className="py-20 px-6 bg-white"
             style={{ scrollMarginTop: '80px' }}
         >
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-16">
-                    <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
-                        Powerful Features
-                    </h2>
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        Everything you need to automate and scale your revenue operations.
-                    </p>
+                    <ScrollRevealHeading>
+                        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+                            Powerful Features
+                        </h2>
+                    </ScrollRevealHeading>
+                    <ScrollRevealSubheading>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                            Everything you need to automate and scale your revenue operations.
+                        </p>
+                    </ScrollRevealSubheading>
                 </div>
 
                 {/* Features Grid */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <motion.div
+                    ref={ref}
+                    className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+                    variants={prefersReducedMotion ? {} : containerVariants}
+                    initial="hidden"
+                    animate={isVisible ? "visible" : "hidden"}
+                >
                     {features.map((feature, index) => {
                         const Icon = feature.icon;
                         return (
-                            <div
+                            <motion.div
                                 key={index}
-                                className={`p-6 bg-white rounded-2xl border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${isVisible ? 'animate-fade-in-stagger' : 'opacity-0'
-                                    }`}
+                                className="p-6 bg-white rounded-2xl border border-gray-100"
                                 style={{
-                                    animationDelay: `${index * 0.1}s`,
                                     boxShadow: '0px 4px 12px rgba(0,0,0,0.08)'
+                                }}
+                                variants={prefersReducedMotion ? {} : itemVariants}
+                                whileHover={prefersReducedMotion ? {} : {
+                                    y: -6,
+                                    scale: 1.01,
+                                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                                    boxShadow: '0px 24px 48px rgba(0,0,0,0.15)',
+                                    transition: {
+                                        duration: 0.25,
+                                        ease: [0.22, 1, 0.36, 1]
+                                    }
                                 }}
                             >
                                 {/* Icon Container */}
-                                <div
+                                <motion.div
                                     className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
                                     style={{
                                         background: 'rgba(59, 130, 246, 0.1)'
                                     }}
+                                    whileHover={prefersReducedMotion ? {} : {
+                                        scale: 1.06,
+                                        rotate: 2,
+                                        boxShadow: '0px 8px 20px rgba(59, 130, 246, 0.3)',
+                                        transition: {
+                                            duration: 0.2,
+                                            ease: [0.22, 1, 0.36, 1]
+                                        }
+                                    }}
                                 >
                                     <Icon className="w-5 h-5 text-blue-500" strokeWidth={2.5} />
-                                </div>
+                                </motion.div>
 
                                 {/* Content */}
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -108,27 +146,11 @@ const FeaturesGrid = () => {
                                 <p className="text-sm text-gray-600 leading-relaxed">
                                     {feature.description}
                                 </p>
-                            </div>
+                            </motion.div>
                         );
                     })}
-                </div>
+                </motion.div>
             </div>
-
-            <style jsx>{`
-                @keyframes fadeInStagger {
-                    from {
-                        opacity: 0;
-                        transform: translateY(20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-                .animate-fade-in-stagger {
-                    animation: fadeInStagger 0.6s ease-out forwards;
-                }
-            `}</style>
         </section>
     );
 };

@@ -1,8 +1,15 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import SectionWrapper from '../../../components/layout/SectionWrapper';
 import { Megaphone, Phone, Users, Heart, ChevronDown } from 'lucide-react';
+import { ScrollRevealHeading, ScrollRevealSubheading } from '../../../components/animations/ScrollReveal';
+import useScrollReveal from '../../../hooks/useScrollReveal';
+import useReducedMotion from '../../../hooks/useReducedMotion';
 
 const HowItWorks = () => {
+    const { ref: stepsRef, isVisible: stepsVisible } = useScrollReveal({ threshold: 0.05 });
+    const prefersReducedMotion = useReducedMotion();
+
     const steps = [
         {
             number: "01",
@@ -34,21 +41,60 @@ const HowItWorks = () => {
         }
     ];
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.15,
+                delayChildren: 0.1
+            }
+        }
+    };
+
+    const stepVariants = {
+        hidden: {
+            opacity: 0,
+            y: 30,
+            scale: 0.95
+        },
+        visible: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: {
+                duration: 0.7,
+                ease: [0.25, 0.1, 0.25, 1]
+            }
+        }
+    };
+
     return (
         <SectionWrapper id="how-it-works" className="bg-white relative overflow-hidden">
             {/* Subtle radial glow background */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-50/40 rounded-full blur-3xl pointer-events-none"></div>
+
             <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-bold mt-2 text-gray-900">
-                    How <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">SalesPal</span> Works
-                </h2>
-                <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
-                    From first touch to loyal customer - automated, intelligent, and always on.
-                </p>
+                <ScrollRevealHeading>
+                    <h2 className="text-3xl md:text-4xl font-bold mt-2 text-gray-900">
+                        How <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">SalesPal</span> Works
+                    </h2>
+                </ScrollRevealHeading>
+                <ScrollRevealSubheading>
+                    <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
+                        From first touch to loyal customer - automated, intelligent, and always on.
+                    </p>
+                </ScrollRevealSubheading>
             </div>
 
             {/* Vertical Timeline */}
-            <div className="max-w-5xl mx-auto relative">
+            <motion.div
+                ref={stepsRef}
+                className="max-w-5xl mx-auto relative"
+                variants={prefersReducedMotion ? {} : containerVariants}
+                initial="hidden"
+                animate={stepsVisible ? "visible" : "hidden"}
+            >
                 {/* Center line - very light grey */}
                 <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-20 w-px bg-gray-200 hidden lg:block"></div>
 
@@ -57,7 +103,11 @@ const HowItWorks = () => {
                     const isLeft = step.side === "left";
 
                     return (
-                        <div key={idx} className="relative mb-20 last:mb-0">
+                        <motion.div
+                            key={idx}
+                            className="relative mb-20 last:mb-0"
+                            variants={prefersReducedMotion ? {} : stepVariants}
+                        >
                             {/* Timeline dot - deep navy with white text */}
                             <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 top-1/2 z-10 hidden lg:flex items-center justify-center w-14 h-14 rounded-full bg-gray-900 shadow-lg">
                                 <span className="text-white font-bold text-base">{step.number}</span>
@@ -83,7 +133,7 @@ const HowItWorks = () => {
                             <div className="lg:hidden flex items-center justify-center w-12 h-12 rounded-full bg-gray-900 mx-auto mb-4">
                                 <span className="text-white font-bold text-sm">{step.number}</span>
                             </div>
-                        </div>
+                        </motion.div>
                     );
                 })}
 
@@ -93,7 +143,7 @@ const HowItWorks = () => {
                         <ChevronDown className="w-6 h-6 text-white" />
                     </div>
                 </div>
-            </div>
+            </motion.div>
 
             <style jsx>{`
                 @keyframes bounce-slow {

@@ -2,16 +2,23 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import SectionWrapper from '../../../components/layout/SectionWrapper';
 import { Calendar, ArrowRight } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 const FinalCTA = () => {
+    const prefersReducedMotion = useReducedMotion();
+
     return (
         <SectionWrapper className="bg-gradient-to-b from-gray-50 to-white">
             <div className="max-w-[1100px] mx-auto">
-                <div
-                    className="relative p-12 md:p-16 lg:p-20 rounded-[40px] text-center overflow-hidden"
+                <motion.div
+                    className="relative max-w-4xl mx-auto text-center p-12 md:p-16 rounded-3xl overflow-hidden"
                     style={{
                         background: 'linear-gradient(135deg, #3d4f5f 0%, #3a4a5a 50%, #37454f 100%)',
                         boxShadow: '0px 30px 80px rgba(0,0,0,0.18), inset 0px 1px 0px rgba(255,255,255,0.06)'
+                    }}
+                    whileHover={prefersReducedMotion ? {} : {
+                        boxShadow: '0px 35px 90px rgba(0,0,0,0.22), inset 0px 1px 0px rgba(255,255,255,0.08), 0 0 60px rgba(37, 99, 235, 0.15)',
+                        transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
                     }}
                 >
                     {/* Content */}
@@ -95,7 +102,7 @@ const FinalCTA = () => {
                             </Link>
                         </div>
                     </div>
-                </div>
+                </motion.div>
             </div>
         </SectionWrapper>
     );
