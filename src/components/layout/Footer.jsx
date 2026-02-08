@@ -8,7 +8,7 @@ const Footer = () => {
     return (
         <>
             <footer id="contact" className="py-16 px-6 relative" style={{
-                background: 'linear-gradient(180deg, #10293B 0%, #0E2434 100%)',
+                background: '#122332',
                 borderTop: '1px solid rgba(255,255,255,0.06)'
             }}>
                 <div className="max-w-7xl mx-auto">
@@ -16,13 +16,12 @@ const Footer = () => {
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
                         {/* Left section - Logo and tagline */}
                         <div className="lg:col-span-1">
-                            <Link to="/" className="flex items-center gap-2 mb-4">
-                                {/* Custom circular logo with dot */}
-                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="16" cy="16" r="13" stroke="#FFFFFF" strokeWidth="2.5" fill="none" />
-                                    <circle cx="22" cy="10" r="2.5" fill="#FFFFFF" />
-                                </svg>
-                                <span className="text-xl font-semibold text-white">SalesPal</span>
+                            <Link to="/" className="flex items-center mb-4 -ml-5">
+                                <img
+                                    src="/SalesPal Logo Footer.jpeg"
+                                    alt="SalesPal Logo"
+                                    className="h-14 object-contain"
+                                />
                             </Link>
                             <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.65)' }}>
                                 The World's First AI Workforce for Revenue Automation. Replace manual marketing, sales & support with human-like AI.
