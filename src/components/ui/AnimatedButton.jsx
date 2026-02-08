@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import useReducedMotion from '../../hooks/useReducedMotion';
 
 /**
- * Premium animated button with shine effect on hover
+ * Premium animated button with shimmer effect on hover
  * @param {Object} props
  * @param {React.ReactNode} props.children - Button content
  * @param {string} props.variant - 'primary' or 'secondary'
@@ -20,11 +20,11 @@ const AnimatedButton = ({
     const [isHovered, setIsHovered] = useState(false);
     const prefersReducedMotion = useReducedMotion();
 
-    const baseClasses = "relative overflow-hidden px-6 py-3 rounded-xl font-semibold transition-all duration-300";
+    const baseClasses = "relative overflow-hidden px-6 py-3 rounded-xl font-semibold";
 
     const variantClasses = {
         primary: "text-white",
-        secondary: "text-gray-900 border-2 border-gray-300 hover:border-gray-400"
+        secondary: "text-gray-900 border-2 border-gray-300"
     };
 
     const variantStyles = {
@@ -37,6 +37,35 @@ const AnimatedButton = ({
         }
     };
 
+    const buttonVariants = {
+        rest: { scale: 1 },
+        hover: {
+            scale: 1.02,
+            boxShadow: variant === 'primary'
+                ? '0px 12px 28px rgba(59, 130, 246, 0.4)'
+                : '0px 6px 16px rgba(0, 0, 0, 0.12)',
+            transition: {
+                duration: 0.25,
+                ease: [0.22, 1, 0.36, 1]
+            }
+        },
+        tap: {
+            scale: 0.98,
+            transition: { duration: 0.1 }
+        }
+    };
+
+    const shimmerVariants = {
+        rest: { x: '-100%' },
+        hover: {
+            x: '200%',
+            transition: {
+                duration: 0.8,
+                ease: [0.22, 1, 0.36, 1]
+            }
+        }
+    };
+
     return (
         <motion.button
             className={`${baseClasses} ${variantClasses[variant]} ${className}`}
@@ -44,33 +73,23 @@ const AnimatedButton = ({
             onClick={onClick}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            whileHover={prefersReducedMotion ? {} : {
-                y: -2,
-                boxShadow: variant === 'primary'
-                    ? '0px 12px 24px rgba(59, 130, 246, 0.4)'
-                    : '0px 4px 12px rgba(0, 0, 0, 0.1)'
-            }}
-            whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            variants={prefersReducedMotion ? {} : buttonVariants}
+            initial="rest"
+            whileHover="hover"
+            whileTap="tap"
             {...props}
         >
-            {/* Shine effect for primary buttons */}
+            {/* Shimmer effect for primary buttons */}
             {variant === 'primary' && !prefersReducedMotion && (
                 <motion.div
                     className="absolute inset-0 w-full h-full"
                     style={{
-                        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)',
-                        transform: 'translateX(-100%)'
+                        background: 'linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%)',
+                        transform: 'skewX(-15deg)'
                     }}
-                    animate={isHovered ? {
-                        transform: 'translateX(100%)'
-                    } : {
-                        transform: 'translateX(-100%)'
-                    }}
-                    transition={{
-                        duration: 0.6,
-                        ease: 'easeInOut'
-                    }}
+                    variants={shimmerVariants}
+                    initial="rest"
+                    animate={isHovered ? "hover" : "rest"}
                 />
             )}
 

@@ -1,37 +1,80 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import SectionWrapper from '../../../components/layout/SectionWrapper';
 import Badge from '../../../components/ui/Badge';
 import { Layout, Zap, Shield, BarChart3, Bot } from 'lucide-react';
+import { ScrollRevealHeading, ScrollRevealSubheading } from '../../../components/animations/ScrollReveal';
+import useScrollReveal from '../../../hooks/useScrollReveal';
+import useReducedMotion from '../../../hooks/useReducedMotion';
 
 const ModularApproach = () => {
+    const { ref: featuresRef, isVisible: featuresVisible } = useScrollReveal({ threshold: 0.1 });
+    const prefersReducedMotion = useReducedMotion();
+
+    const featureVariants = {
+        hidden: {
+            opacity: 0,
+            x: -20
+        },
+        visible: (i) => ({
+            opacity: 1,
+            x: 0,
+            transition: {
+                duration: 0.6,
+                delay: i * 0.1,
+                ease: [0.25, 0.1, 0.25, 1]
+            }
+        })
+    };
+
     return (
         <SectionWrapper className="bg-white/5 border-y border-white/5">
             <div className="flex flex-col lg:flex-row items-center gap-12">
                 <div className="flex-1 space-y-6">
-                    <Badge variant="outline">
-                        <Layout className="w-3 h-3" /> Scalable Architecture
-                    </Badge>
+                    <ScrollRevealHeading>
+                        <Badge variant="outline">
+                            <Layout className="w-3 h-3" /> Scalable Architecture
+                        </Badge>
+                    </ScrollRevealHeading>
 
-                    <h2 className="text-3xl md:text-4xl font-bold">Multi-Channel Automation, Unlimited Scalability</h2>
-                    <p className="text-lg text-[#A8B3BD]">
-                        Engage customers wherever they are—WhatsApp, email, SMS, voice calls, and social media—all from one unified AI platform.
-                        Handle 10 or 10,000 conversations simultaneously without sacrificing quality.
-                    </p>
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-4 p-4 rounded-lg bg-primary/50 border border-white/10">
+                    <ScrollRevealHeading>
+                        <h2 className="text-3xl md:text-4xl font-bold">Multi-Channel Automation, Unlimited Scalability</h2>
+                    </ScrollRevealHeading>
+
+                    <ScrollRevealSubheading>
+                        <p className="text-lg text-[#A8B3BD]">
+                            Engage customers wherever they are—WhatsApp, email, SMS, voice calls, and social media—all from one unified AI platform.
+                            Handle 10 or 10,000 conversations simultaneously without sacrificing quality.
+                        </p>
+                    </ScrollRevealSubheading>
+
+                    <div ref={featuresRef} className="flex flex-col gap-4">
+                        <motion.div
+                            className="flex items-center gap-4 p-4 rounded-lg bg-primary/50 border border-white/10"
+                            custom={0}
+                            variants={prefersReducedMotion ? {} : featureVariants}
+                            initial="hidden"
+                            animate={featuresVisible ? "visible" : "hidden"}
+                        >
                             <Zap className="w-8 h-8 text-yellow-400" />
                             <div>
                                 <h4 className="font-semibold">Human-Like AI</h4>
                                 <p className="text-sm text-[#7C8A96]">Natural conversations that build trust.</p>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-4 p-4 rounded-lg bg-primary/50 border border-white/10">
+                        </motion.div>
+                        <motion.div
+                            className="flex items-center gap-4 p-4 rounded-lg bg-primary/50 border border-white/10"
+                            custom={1}
+                            variants={prefersReducedMotion ? {} : featureVariants}
+                            initial="hidden"
+                            animate={featuresVisible ? "visible" : "hidden"}
+                        >
                             <Shield className="w-8 h-8 text-green-400" />
                             <div>
                                 <h4 className="font-semibold">24/7 Operations</h4>
                                 <p className="text-sm text-[#7C8A96]">Never miss a lead, day or night.</p>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
                 <div className="flex-1 w-full flex justify-center">
@@ -49,10 +92,11 @@ const ModularApproach = () => {
                             </div>
                             <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-32 h-32 flex flex-col items-center justify-center border border-white/10 transform translate-y-4">
                                 <Bot className="w-8 h-8 text-white mb-2" />
-                                <span className="text-white font-bold text-xs">SUP</span>
+                                <span className="text-white font-bold text-xs">POST</span>
                             </div>
-                            <div className="bg-white/5 border border-dashed border-white/20 p-6 rounded-2xl w-32 h-32 flex flex-col items-center justify-center transform -translate-y-4">
-                                <span className="text-[#7C8A96] font-bold text-xs">+ ADD</span>
+                            <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-32 h-32 flex flex-col items-center justify-center border border-white/10 transform -translate-y-4">
+                                <Shield className="w-8 h-8 text-white mb-2" />
+                                <span className="text-white font-bold text-xs">SUP</span>
                             </div>
                         </div>
                     </div>

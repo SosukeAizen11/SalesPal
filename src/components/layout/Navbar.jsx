@@ -120,11 +120,36 @@ const Navbar = () => {
                 </Link>
 
                 <div className="hidden md:flex items-center space-x-8 text-sm font-medium">
-                    <button onClick={() => scrollToSection('about')} className={getLinkClasses('about')}>About</button>
-                    <button onClick={() => scrollToSection('modules')} className={getLinkClasses('modules')}>Products</button>
-                    <button onClick={() => scrollToSection('how-it-works')} className={getLinkClasses('how-it-works')}>How It Works</button>
-                    <button onClick={() => scrollToSection('pricing')} className={getLinkClasses('pricing')}>Pricing</button>
-                    <Link to="/contact" className={getLinkClasses('contact')}>Contact</Link>
+                    {[
+                        { id: 'about', label: 'About' },
+                        { id: 'modules', label: 'Products' },
+                        { id: 'how-it-works', label: 'How It Works' },
+                        { id: 'pricing', label: 'Pricing' }
+                    ].map((link) => (
+                        <motion.button
+                            key={link.id}
+                            onClick={() => scrollToSection(link.id)}
+                            className="relative py-1 text-gray-600 transition-colors hover:text-blue-600"
+                            whileHover="hover"
+                            initial="rest"
+                        >
+                            {link.label}
+                            <motion.div
+                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                                variants={{
+                                    rest: { scaleX: activeSection === link.id ? 1 : 0, opacity: activeSection === link.id ? 1 : 0 },
+                                    hover: { scaleX: 1, opacity: 1 }
+                                }}
+                                initial="rest"
+                                animate={activeSection === link.id ? "hover" : "rest"}
+                                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                                style={{ transformOrigin: 'left' }}
+                            />
+                        </motion.button>
+                    ))}
+                    <Link to="/contact" className="relative py-1 text-gray-600 transition-colors hover:text-blue-600">
+                        Contact
+                    </Link>
                 </div>
 
                 <div className="flex items-center space-x-4">
