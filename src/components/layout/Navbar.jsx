@@ -179,7 +179,7 @@ const Navbar = () => {
                         </>
                     ) : (
                         <Link
-                            to="/login"
+                            to="/signin"
                             className="px-5 py-2 text-sm font-semibold text-white rounded-lg transition-all hover:-translate-y-0.5"
                             style={{
                                 background: 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)',
