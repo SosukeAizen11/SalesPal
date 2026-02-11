@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
+import AuthModal from '../../../components/auth/AuthModal';
 import { useCart } from '../../../context/CartContext';
 import SectionWrapper from '../../../components/layout/SectionWrapper';
 import { Phone, Check, ShoppingCart, Layers, Plus, PhoneCall, MessageSquare, Image, Grid3x3, Video, Zap, Bot, UserCheck, Megaphone, Headphones } from 'lucide-react';
@@ -121,13 +123,7 @@ const PricingSection = () => {
         { icon: Video, label: "+2 AI videos (≥30 sec)", color: "text-red-400" }
     ];
 
-    const handleAddToCart = (product) => {
-        addToCart(product);
-        setAddedItems(prev => ({ ...prev, [product.id]: true }));
-        setTimeout(() => {
-            setAddedItems(prev => ({ ...prev, [product.id]: false }));
-        }, 2000);
-    };
+
 
     return (
         <SectionWrapper id="pricing" className="bg-gradient-to-b from-white to-gray-50">
@@ -150,8 +146,8 @@ const PricingSection = () => {
                         <div
                             key={idx}
                             className={`p-6 rounded-2xl border transition-all relative overflow-hidden flex flex-col ${isOwned
-                                    ? 'bg-blue-50/30 border-blue-200'
-                                    : 'bg-white border-gray-100 shadow-lg hover:shadow-xl'
+                                ? 'bg-blue-50/30 border-blue-200'
+                                : 'bg-white border-gray-100 shadow-lg hover:shadow-xl'
                                 }`}
                         >
                             {isOwned && (
@@ -221,8 +217,8 @@ const PricingSection = () => {
                         <div
                             key={idx}
                             className={`lg:col-span-4 p-8 md:p-12 rounded-[32px] border transition-all relative overflow-hidden group flex flex-col md:flex-row gap-12 items-center ${isOwned
-                                    ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
-                                    : 'bg-white border-blue-100 shadow-[0_20px_50px_rgba(59,130,246,0.12)] hover:border-blue-300'
+                                ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
+                                : 'bg-white border-blue-100 shadow-[0_20px_50px_rgba(59,130,246,0.12)] hover:border-blue-300'
                                 } mt-4`}
                         >
                             {/* Visual Accents */}
@@ -325,7 +321,15 @@ const PricingSection = () => {
                     </div>
 
                     {/* Right side - Button */}
-                    <button className="bg-white border border-gray-300 hover:border-blue-500 text-gray-900 px-6 py-2.5 rounded-lg font-medium transition-all shrink-0">
+                    <button
+                        onClick={() => handleAddToCart({
+                            id: 'top-up-1000',
+                            name: 'Top-Up Credit',
+                            subtitle: '₹1,000 Universal Credit',
+                            price: 1000,
+                            features: ['Works with all products', 'No expiry', 'Instant credit']
+                        })}
+                        className="bg-white border border-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:border-transparent hover:text-white text-gray-900 px-6 py-2.5 rounded-lg font-medium transition-all shrink-0">
                         Add Top-Up
                     </button>
                 </div>
@@ -348,12 +352,18 @@ const PricingSection = () => {
             <div className="mt-12 text-center">
                 <p className="text-gray-600 mb-4">Need a custom solution for your enterprise?</p>
                 <Link to="/contact">
-                    <button className="bg-white border border-gray-300 hover:border-blue-500 text-gray-900 px-8 py-2.5 rounded-lg font-medium transition-all">
+                    <button className="bg-white border border-gray-300 hover:bg-blue-600 hover:border-blue-600 hover:text-white text-gray-900 px-8 py-2.5 rounded-lg font-medium transition-all">
                         Contact Sales
                     </button>
                 </Link>
             </div>
-        </SectionWrapper>
+
+            <AuthModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+                onSuccess={handleAuthSuccess}
+            />
+        </SectionWrapper >
     );
 };
 

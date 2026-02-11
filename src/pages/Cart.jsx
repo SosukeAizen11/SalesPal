@@ -291,6 +291,10 @@ const Cart = () => {
         );
     }
 
+    // Calculate tax and total with new values
+    const taxAmount = Math.round(cartTotal * 0.18);
+    const finalTotal = cartTotal + taxAmount;
+
     return (
         <div className="min-h-screen bg-[#0A0F16]">
             <Navbar />

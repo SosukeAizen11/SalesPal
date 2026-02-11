@@ -138,6 +138,7 @@ const HeroSection = () => {
                             </Link>
                             <AnimatedButton
                                 variant="secondary"
+                                className="hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:border-transparent hover:text-white transition-all duration-300"
                                 onClick={() => {
                                     const element = document.getElementById('modules');
                                     if (element) {
