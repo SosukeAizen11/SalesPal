@@ -11,6 +11,35 @@ const PricingSection = () => {
     const { addToCart, ownedProducts, cartItems } = useCart();
     const [addedItems, setAddedItems] = useState({});
 
+    // Auth Modal State
+    const { isAuthenticated } = useAuth();
+    const [showAuthModal, setShowAuthModal] = useState(false);
+
+    const handleAddToCart = (product) => {
+        if (!isAuthenticated) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        addToCart(product);
+        setAddedItems(prev => ({
+            ...prev,
+            [product.id]: true
+        }));
+
+        // Reset added state after 2 seconds
+        setTimeout(() => {
+            setAddedItems(prev => ({
+                ...prev,
+                [product.id]: false
+            }));
+        }, 2000);
+    };
+
+    const handleAuthSuccess = () => {
+        setShowAuthModal(false);
+    };
+
     const isPlanOwned = (id) => ownedProducts?.some(p => p.id === id && p.status === 'active');
     const isInCart = (id) => cartItems?.some(i => i.id === id);
 
