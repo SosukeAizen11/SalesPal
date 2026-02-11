@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
+import AuthModal from '../../../components/auth/AuthModal';
 import { useCart } from '../../../context/CartContext';
 import SectionWrapper from '../../../components/layout/SectionWrapper';
 import { Phone, Check, ShoppingCart, Layers, Plus, PhoneCall, MessageSquare, Image, Grid3x3, Video, Zap, Bot, UserCheck, Megaphone, Headphones } from 'lucide-react';
@@ -7,7 +9,43 @@ import Button from '../../../components/ui/Button';
 
 const PricingSection = () => {
     const { addToCart } = useCart();
+    const { isAuthenticated } = useAuth();
+    const navigate = useNavigate();
     const [addedItems, setAddedItems] = useState({});
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [pendingProduct, setPendingProduct] = useState(null);
+
+    const handleAddToCart = (product) => {
+        if (!isAuthenticated) {
+            setPendingProduct(product);
+            setShowAuthModal(true);
+            return;
+        }
+
+        addProductToCart(product);
+    };
+
+    const addProductToCart = (product) => {
+        setAddedItems(prev => ({ ...prev, [product.id]: true }));
+        addToCart(product);
+
+        // Navigate to cart immediately as requested
+        navigate('/cart');
+
+        setTimeout(() => {
+            setAddedItems(prev => ({ ...prev, [product.id]: false }));
+        }, 2000);
+    };
+
+    const handleAuthSuccess = () => {
+        if (pendingProduct) {
+            addProductToCart(pendingProduct);
+            setPendingProduct(null);
+        } else {
+            navigate('/cart');
+        }
+        setShowAuthModal(false);
+    };
 
 
 
@@ -100,13 +138,7 @@ const PricingSection = () => {
         { icon: Video, label: "+2 AI videos (≥30 sec)", color: "text-red-400" }
     ];
 
-    const handleAddToCart = (product) => {
-        addToCart(product);
-        setAddedItems(prev => ({ ...prev, [product.id]: true }));
-        setTimeout(() => {
-            setAddedItems(prev => ({ ...prev, [product.id]: false }));
-        }, 2000);
-    };
+
 
     return (
         <SectionWrapper id="pricing" className="bg-gradient-to-b from-white to-gray-50">
@@ -146,14 +178,16 @@ const PricingSection = () => {
                                 ))}
                             </ul>
 
-                            <Button
-                                variant={isAdded ? "primary" : "outline"}
-                                className="w-full gap-2.5"
+                            <button
                                 onClick={() => handleAddToCart(product)}
+                                className={`w-full flex items-center justify-center gap-3 rounded-xl font-semibold border transition-all h-10 px-4 ${isAdded
+                                    ? "bg-gradient-to-r from-blue-500 to-blue-600 border-transparent text-white shadow-lg"
+                                    : "bg-white border-blue-200 text-slate-900 hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:border-transparent hover:text-white"
+                                    }`}
                             >
                                 <ShoppingCart className="w-5 h-5 shrink-0" />
                                 <span className="whitespace-nowrap">{isAdded ? "Added to Cart!" : "Add to Cart"}</span>
-                            </Button>
+                            </button>
                         </div>
                     );
                 })}
@@ -226,7 +260,15 @@ const PricingSection = () => {
                     </div>
 
                     {/* Right side - Button */}
-                    <button className="bg-white border border-gray-300 hover:border-blue-500 text-gray-900 px-6 py-2.5 rounded-lg font-medium transition-all shrink-0">
+                    <button
+                        onClick={() => handleAddToCart({
+                            id: 'top-up-1000',
+                            name: 'Top-Up Credit',
+                            subtitle: '₹1,000 Universal Credit',
+                            price: 1000,
+                            features: ['Works with all products', 'No expiry', 'Instant credit']
+                        })}
+                        className="bg-white border border-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:border-transparent hover:text-white text-gray-900 px-6 py-2.5 rounded-lg font-medium transition-all shrink-0">
                         Add Top-Up
                     </button>
                 </div>
@@ -249,12 +291,18 @@ const PricingSection = () => {
             <div className="mt-12 text-center">
                 <p className="text-gray-600 mb-4">Need a custom solution for your enterprise?</p>
                 <Link to="/contact">
-                    <button className="bg-white border border-gray-300 hover:border-blue-500 text-gray-900 px-8 py-2.5 rounded-lg font-medium transition-all">
+                    <button className="bg-white border border-gray-300 hover:bg-blue-600 hover:border-blue-600 hover:text-white text-gray-900 px-8 py-2.5 rounded-lg font-medium transition-all">
                         Contact Sales
                     </button>
                 </Link>
             </div>
-        </SectionWrapper>
+
+            <AuthModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+                onSuccess={handleAuthSuccess}
+            />
+        </SectionWrapper >
     );
 };
 

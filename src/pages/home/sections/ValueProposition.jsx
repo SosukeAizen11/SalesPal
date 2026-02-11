@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import SectionWrapper from '../../../components/layout/SectionWrapper';
 import { Bot, Zap, Clock, TrendingUp } from 'lucide-react';
 
@@ -32,7 +33,13 @@ const ValueProposition = () => {
             <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-100/30 rounded-full blur-3xl pointer-events-none"></div>
             <div className="grid lg:grid-cols-2 gap-12 items-center">
                 {/* Left side - Orbit Graphic */}
-                <div className="relative h-96 hidden lg:flex items-center justify-center">
+                <motion.div
+                    initial={{ opacity: 0, x: -50 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    className="relative h-96 hidden lg:flex items-center justify-center"
+                >
                     {/* White container with soft shadow */}
                     <div className="absolute inset-0 bg-white rounded-3xl shadow-lg"></div>
 
@@ -81,10 +88,15 @@ const ValueProposition = () => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Right side - Content */}
-                <div>
+                <motion.div
+                    initial={{ opacity: 0, x: 50 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                >
                     <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-900">
                         AI That Actually <span className="bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent">Does The Work</span>
                     </h2>
@@ -107,7 +119,7 @@ const ValueProposition = () => {
                             );
                         })}
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             <style jsx>{`
@@ -123,7 +135,7 @@ const ValueProposition = () => {
                     animation: orbit 20s linear infinite;
                 }
             `}</style>
-        </SectionWrapper>
+        </SectionWrapper >
     );
 };
 

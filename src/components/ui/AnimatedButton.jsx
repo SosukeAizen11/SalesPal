@@ -24,7 +24,7 @@ const AnimatedButton = ({
 
     const variantClasses = {
         primary: "text-white",
-        secondary: "text-gray-900 border-2 border-gray-300"
+        secondary: "text-gray-900 border-2 border-gray-300 bg-transparent"
     };
 
     const variantStyles = {
@@ -32,9 +32,7 @@ const AnimatedButton = ({
             background: 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)',
             boxShadow: '0px 8px 20px rgba(59, 130, 246, 0.3)'
         },
-        secondary: {
-            background: 'transparent'
-        }
+        secondary: {}
     };
 
     const buttonVariants = {

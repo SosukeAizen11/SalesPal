@@ -81,21 +81,7 @@ const FinalCTA = () => {
 
                             <Link to="/contact">
                                 <button
-                                    className="px-8 py-3.5 rounded-xl font-semibold transition-all"
-                                    style={{
-                                        background: 'transparent',
-                                        border: '2px solid rgba(255,255,255,0.3)',
-                                        color: '#ffffff',
-                                        minHeight: '52px'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.border = '2px solid rgba(255,255,255,0.5)';
-                                        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.border = '2px solid rgba(255,255,255,0.3)';
-                                        e.currentTarget.style.background = 'transparent';
-                                    }}
+                                    className="px-8 py-3 rounded-xl font-semibold border-2 border-white/30 text-white bg-transparent hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:border-transparent transition-all duration-300"
                                 >
                                     Contact Sales
                                 </button>

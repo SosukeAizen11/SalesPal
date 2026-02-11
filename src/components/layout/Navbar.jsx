@@ -1,24 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { ShoppingCart } from 'lucide-react';
 import useReducedMotion from '../../hooks/useReducedMotion';
+import AuthModal from '../auth/AuthModal';
 
 const Navbar = () => {
     const { isAuthenticated, logout } = useAuth();
     const { cartCount } = useCart();
     const location = useLocation();
+    const navigate = useNavigate();
     const prefersReducedMotion = useReducedMotion();
 
     const [activeSection, setActiveSection] = useState('');
     const [isScrolled, setIsScrolled] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
             const sections = ['about', 'modules', 'how-it-works', 'pricing', 'contact'];
-            const scrollPosition = window.scrollY + 100;
+            const scrollPosition = window.scrollY + 150;
 
             // Update navbar style based on scroll
             setIsScrolled(window.scrollY > 20);
@@ -178,8 +181,9 @@ const Navbar = () => {
                             </button>
                         </>
                     ) : (
-                        <Link
-                            to="/signin"
+
+                        <button
+                            onClick={() => setShowAuthModal(true)}
                             className="px-5 py-2 text-sm font-semibold text-white rounded-lg transition-all hover:-translate-y-0.5"
                             style={{
                                 background: 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)',
@@ -187,11 +191,20 @@ const Navbar = () => {
                             }}
                         >
                             Sign In
-                        </Link>
+                        </button>
                     )}
                 </div>
             </div>
-        </motion.nav>
+
+            <AuthModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+                onSuccess={() => {
+                    navigate('/marketing');
+                    setShowAuthModal(false);
+                }}
+            />
+        </motion.nav >
     );
 };
 
