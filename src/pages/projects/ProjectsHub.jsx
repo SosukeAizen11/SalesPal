@@ -17,7 +17,7 @@ const ProjectsHub = () => {
 
     // Guard handled by router usually, but safety check
     if (!loading && !isAuthenticated) {
-        navigate('/signin');
+        navigate('/login');
         return null;
     }
 

@@ -167,10 +167,9 @@ export default function CampaignDetails() {
 
     return (
         <div className="min-h-screen bg-gray-50">
+            {/* 1. STATUS BAR - Scrolls naturally with content (PART 1 FIX) */}
             {/* ============================================ */}
-            {/* 1. STICKY STATUS BAR - Decision in 3 seconds */}
-            {/* ============================================ */}
-            <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+            <div className="relative bg-white border-b border-gray-200 shadow-sm transition-all duration-300">
                 <div className="max-w-7xl mx-auto px-6 py-3">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         {/* Left: Identity */}

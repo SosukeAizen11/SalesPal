@@ -11,6 +11,7 @@ import ProjectsHub from '../pages/projects/ProjectsHub';
 import ContactPage from '../pages/contact/ContactPage';
 import SignIn from '../pages/auth/SignIn';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
+import PurchaseSuccess from '../pages/PurchaseSuccess';
 import MarketingProduct from '../pages/products/MarketingProduct';
 import SalesProduct from '../pages/products/SalesProduct';
 import PostSaleProduct from '../pages/products/PostSaleProduct';
@@ -66,7 +67,6 @@ import {
 import ConnectPlatform from '../pages/auth/ConnectPlatform';
 
 import SubscriptionManagement from '../pages/subscription/SubscriptionManagement';
-import RevenueAnalytics from '../pages/marketing/analytics/RevenueAnalytics';
 import PlaceholderPage from '../pages/marketing/PlaceholderPage';
 
 export const router = createBrowserRouter([
@@ -83,12 +83,20 @@ export const router = createBrowserRouter([
                 element: <Home />,
             },
             {
+                path: "/login",
+                element: <SignIn />,
+            },
+            {
                 path: "/signin",
                 element: <SignIn />,
             },
             {
                 path: "/cart",
                 element: <Cart />,
+            },
+            {
+                path: "/purchase-success",
+                element: <PurchaseSuccess />,
             },
             {
                 path: "/contact",
@@ -202,7 +210,6 @@ export const router = createBrowserRouter([
                     { path: "calls", element: <PlaceholderPage title="Call History" description="View call logs and manage communication credits." /> },
                     { path: "whatsapp", element: <PlaceholderPage title="WhatsApp" description="Manage WhatsApp campaigns and message history." /> },
                     { path: "subscription", element: <SubscriptionManagement /> },
-                    { path: "financials", element: <RevenueAnalytics /> },
 
 
 

@@ -55,14 +55,14 @@ const AnalyticsSnapshot = () => {
             </div>
 
             <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between">
-                <div className="text-xs text-gray-400 italic">
+                <div className="text-xs text-gray-400 font-medium italic">
                     *Based on campaign performance data from Jan 1 - Feb 6.
                 </div>
                 <button
-                    onClick={() => window.location.hash = '#financials'} // In real app use navigation
-                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                    onClick={() => { }}
+                    className="text-xs font-bold text-gray-900 border-b-2 border-gray-900/10 hover:border-gray-900 transition-all pb-0.5"
                 >
-                    View Detailed Financials
+                    View All Metrics
                 </button>
             </div>
         </div>

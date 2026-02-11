@@ -17,12 +17,6 @@ export const marketingNav = [
         icon: Share2
     },
     {
-        name: 'Financials',
-        path: '/marketing/financials',
-        icon: BarChart3
-    },
-
-    {
         name: 'Settings',
         path: '/marketing/settings',
         icon: Settings
