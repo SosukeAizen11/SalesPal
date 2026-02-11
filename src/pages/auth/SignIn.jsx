@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
 import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
@@ -13,12 +13,18 @@ const SignIn = () => {
 
     const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Determine redirect path:
+    // 1. If redirected from ProtectedRoute (location.state?.from), go back there.
+    // 2. Otherwise default to /app as requested.
+    const from = location.state?.from?.pathname || '/app';
 
     React.useEffect(() => {
         if (isAuthenticated) {
-            navigate('/marketing');
+            navigate(from, { replace: true });
         }
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, navigate, from]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -27,7 +33,7 @@ const SignIn = () => {
 
         try {
             await login(email, password);
-            navigate('/marketing');
+            // Navigation handled by useEffect when isAuthenticated becomes true
         } catch (err) {
             setError(err.message);
         } finally {

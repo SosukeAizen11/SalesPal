@@ -68,12 +68,23 @@ import ConnectPlatform from '../pages/auth/ConnectPlatform';
 
 import SubscriptionManagement from '../pages/subscription/SubscriptionManagement';
 import PlaceholderPage from '../pages/marketing/PlaceholderPage';
+import ModuleGateway from '../pages/app/ModuleGateway';
+
+import ModuleAccessGuard from '../components/auth/ModuleAccessGuard';
 
 export const router = createBrowserRouter([
     {
         path: "/",
         element: <App />,
         children: [
+            {
+                path: "/app",
+                element: (
+                    <ProtectedRoute>
+                        <ModuleGateway />
+                    </ProtectedRoute>
+                )
+            },
             {
                 path: "/connect/:platformId",
                 element: <ConnectPlatform />
@@ -127,9 +138,11 @@ export const router = createBrowserRouter([
                 path: "/marketing",
                 element: (
                     <ProtectedRoute>
-                        <MarketingProvider>
-                            <MarketingLayout />
-                        </MarketingProvider>
+                        <ModuleAccessGuard moduleName="marketing">
+                            <MarketingProvider>
+                                <MarketingLayout />
+                            </MarketingProvider>
+                        </ModuleAccessGuard>
                     </ProtectedRoute>
                 ),
                 children: [

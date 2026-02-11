@@ -6,6 +6,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -13,6 +14,7 @@ export const AuthProvider = ({ children }) => {
         const storedAuth = localStorage.getItem('isActiveUser');
         if (storedAuth === 'true') {
             setIsAuthenticated(true);
+            setUser({ name: 'Demo User', email: 'demo@salespal.ai' });
         }
         setLoading(false);
     }, []);
@@ -23,6 +25,7 @@ export const AuthProvider = ({ children }) => {
             setTimeout(() => {
                 if (email === 'demo@salespal.ai' && password === 'demo123') {
                     setIsAuthenticated(true);
+                    setUser({ name: 'Demo User', email: email });
                     localStorage.setItem('isActiveUser', 'true');
                     resolve({ success: true });
                 } else {
@@ -34,11 +37,12 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         setIsAuthenticated(false);
+        setUser(null);
         localStorage.removeItem('isActiveUser');
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, login, logout, loading }}>
+        <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

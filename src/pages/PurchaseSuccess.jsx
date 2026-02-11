@@ -113,7 +113,7 @@ const PurchaseSuccess = () => {
                                                 </p>
                                                 <div className="flex items-center gap-3">
                                                     {item.type === 'subscription' ? (
-                                                        <Button variant="secondary" size="sm" onClick={() => navigate('/marketing')} className="text-[10px] flex-1">
+                                                        <Button variant="secondary" size="sm" onClick={() => navigate('/app')} className="text-[10px] flex-1">
                                                             Manage Plan
                                                         </Button>
                                                     ) : (
@@ -197,7 +197,7 @@ const PurchaseSuccess = () => {
                                 <Button
                                     variant="primary"
                                     icon={Rocket}
-                                    onClick={() => navigate('/marketing')}
+                                    onClick={() => navigate('/app')}
                                     className="w-full py-4 text-sm font-black"
                                 >
                                     GO TO DASHBOARD
