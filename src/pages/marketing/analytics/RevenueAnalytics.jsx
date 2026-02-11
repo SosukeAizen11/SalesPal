@@ -63,8 +63,8 @@ const RevenueAnalytics = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
-            {/* Header */}
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+            {/* Header - Scrolls naturally (PART 1 FIX) */}
+            <div className="bg-white border-b border-gray-200 relative">
                 <div className="max-w-[1600px] mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">

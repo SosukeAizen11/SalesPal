@@ -138,6 +138,7 @@ const HeroSection = () => {
                             </Link>
                             <AnimatedButton
                                 variant="secondary"
+                                className="hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:border-transparent hover:text-white transition-all duration-300"
                                 onClick={() => {
                                     const element = document.getElementById('modules');
                                     if (element) {
@@ -269,7 +270,7 @@ const HeroSection = () => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes float {
                     0%, 100% {
                         transform: translateY(0px);
