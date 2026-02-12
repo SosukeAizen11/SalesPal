@@ -76,10 +76,7 @@ export const router = createBrowserRouter([
         path: "/",
         element: <App />,
         children: [
-            {
-                index: true,
-                element: <Home />,
-            },
+
             {
                 path: "/app",
                 element: (
@@ -133,20 +130,7 @@ export const router = createBrowserRouter([
                 path: "/products/salespal-360",
                 element: <SalesPal360Product />,
             },
-            // Standalone Cart & Checkout Pages
-            {
-                element: (
-                    <ProtectedRoute>
-                        <MarketingProvider>
-                            <Outlet />
-                        </MarketingProvider>
-                    </ProtectedRoute>
-                ),
-                children: [
-                    { path: "/cart", element: <Cart /> },
-                    { path: "/purchase-success", element: <PurchaseSuccess /> },
-                ]
-            },
+
 
             // Marketing App Shell
             {
