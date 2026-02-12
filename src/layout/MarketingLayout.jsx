@@ -1,8 +1,7 @@
 import React from 'react';
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { marketingNav } from '../navigation/marketingNav';
-import logo from '../assets/logo.webp';
 import { LogOut, User } from 'lucide-react';
 import ProjectSwitcher from '../components/ProjectSwitcher';
 import Button from '../components/ui/Button';
@@ -25,9 +24,19 @@ const MarketingLayoutContent = () => {
     return (
         <div className="flex h-screen bg-gray-50 overflow-hidden">
             {/* Sidebar */}
-            <aside id="tour-sidebar" className="w-64 bg-primary border-r border-white/5 flex flex-col shrink-0 transition-all duration-300">
-                <div className="h-16 flex items-center px-6 border-b border-white/10 shrink-0">
-                    <img src={logo} alt="SalesPal" className="h-8 w-auto" />
+            <aside id="tour-sidebar" className="w-64 bg-[#0E2434] border-r border-[#0E2434] flex flex-col shrink-0 transition-all duration-300">
+                <div className="h-16 flex items-center justify-center px-6 border-b border-white/10 shrink-0 select-none">
+                    <Link
+                        to="/"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        className="block h-full py-0 flex items-center opacity-100 hover:opacity-90 transition-opacity duration-200"
+                    >
+                        <img
+                            src="/SalesPal Logo Footer.jpeg"
+                            alt="SalesPal"
+                            className="h-10 w-auto object-contain"
+                        />
+                    </Link>
                 </div>
 
                 <div className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
