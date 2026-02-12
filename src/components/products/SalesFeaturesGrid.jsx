@@ -114,7 +114,7 @@ const SalesFeaturesGrid = () => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes fadeInStagger {
                     from {
                         opacity: 0;

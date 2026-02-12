@@ -1,12 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '../../context/CartContext';
 import { LayoutGrid, TrendingUp, HeartHandshake, MessageSquare, Zap, CreditCard, ChevronRight } from 'lucide-react';
 import AppHeader from '../../components/layout/AppHeader';
 
+import { useSubscription } from '../../commerce/SubscriptionContext';
+
 const ModuleGateway = () => {
     const navigate = useNavigate();
-    const { ownedProducts } = useCart();
+    const { isModuleActive, subscriptions } = useSubscription();
 
     const modules = [
         {
@@ -26,7 +27,7 @@ const ModuleGateway = () => {
             productPath: '/products/sales'
         },
         {
-            id: 'post-sale',
+            id: 'postSale', // Changed from 'post-sale' to match config ID
             name: 'Post-Sales',
             description: 'Customer onboarding & retention',
             icon: HeartHandshake,
@@ -43,16 +44,21 @@ const ModuleGateway = () => {
         }
     ];
 
+    // Helper to get ANY active subscription for display
     const getActivePlan = () => {
-        return ownedProducts.find(p => p.type === 'subscription' && p.status === 'active');
+        const activeModuleId = modules.find(m => isModuleActive(m.id))?.id;
+        if (activeModuleId) {
+            return {
+                name: modules.find(m => m.id === activeModuleId).name,
+                renewalDate: subscriptions[activeModuleId]?.renewalDate ? new Date(subscriptions[activeModuleId].renewalDate).toLocaleDateString() : 'N/A',
+                usage: 45 // Mock for now until usage logic is granular
+            };
+        }
+        return null;
     };
 
     const activePlan = getActivePlan();
     const hasActiveSubscription = !!activePlan;
-
-    const isModuleActive = (moduleId) => {
-        return ownedProducts.some(p => p.id === moduleId && p.status === 'active');
-    };
 
     const handleModuleClick = (module) => {
         if (isModuleActive(module.id)) {

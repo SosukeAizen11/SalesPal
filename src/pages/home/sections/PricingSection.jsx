@@ -1,47 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext';
-import AuthModal from '../../../components/auth/AuthModal';
-import { useCart } from '../../../context/CartContext';
 import SectionWrapper from '../../../components/layout/SectionWrapper';
 import { Phone, Check, ShoppingCart, Layers, Plus, PhoneCall, MessageSquare, Image, Grid3x3, Video, Zap, Bot, UserCheck, Megaphone, Headphones } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 
+import { useCart } from '../../../commerce/CartContext';
+import { useSubscription } from '../../../commerce/SubscriptionContext';
+
 const PricingSection = () => {
-    const { addToCart, ownedProducts, cartItems } = useCart();
-    const [addedItems, setAddedItems] = useState({});
-
-    // Auth Modal State
-    const { isAuthenticated } = useAuth();
-    const [showAuthModal, setShowAuthModal] = useState(false);
-
-    const handleAddToCart = (product) => {
-        if (!isAuthenticated) {
-            setShowAuthModal(true);
-            return;
-        }
-
-        addToCart(product);
-        setAddedItems(prev => ({
-            ...prev,
-            [product.id]: true
-        }));
-
-        // Reset added state after 2 seconds
-        setTimeout(() => {
-            setAddedItems(prev => ({
-                ...prev,
-                [product.id]: false
-            }));
-        }, 2000);
-    };
-
-    const handleAuthSuccess = () => {
-        setShowAuthModal(false);
-    };
-
-    const isPlanOwned = (id) => ownedProducts?.some(p => p.id === id && p.status === 'active');
-    const isInCart = (id) => cartItems?.some(i => i.id === id);
+    const navigate = useNavigate();
+    const { addSubscription } = useCart();
+    const { isModuleActive } = useSubscription();
 
 
 
@@ -168,22 +137,13 @@ const PricingSection = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {products.filter(p => !p.isFlagship).map((product, idx) => {
                     const Icon = product.icon;
-                    const isOwned = isPlanOwned(product.id);
-                    const isAdded = addedItems[product.id] || isInCart(product.id);
 
                     return (
                         <div
                             key={idx}
-                            className={`p-6 rounded-2xl border transition-all relative overflow-hidden flex flex-col ${isOwned
-                                ? 'bg-blue-50/30 border-blue-200'
-                                : 'bg-white border-gray-100 shadow-lg hover:shadow-xl'
-                                }`}
+                            className={`p-6 rounded-2xl border transition-all relative overflow-hidden flex flex-col bg-white border-gray-100 shadow-lg hover:shadow-xl`}
                         >
-                            {isOwned && (
-                                <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-bl-xl shadow-sm">
-                                    Current Plan
-                                </div>
-                            )}
+
 
                             <div className={`w-14 h-14 ${product.iconBg} rounded-2xl flex items-center justify-center mb-6 ring-1 ring-white/10`}>
                                 <Icon className="w-6 h-6 text-white" />
@@ -206,49 +166,42 @@ const PricingSection = () => {
                                 ))}
                             </ul>
 
-                            <Button
-                                variant={isOwned ? "outline" : (isAdded ? "primary" : "outline")}
-                                className="w-full gap-2.5"
-                                onClick={() => !isOwned && handleAddToCart(product)}
-                                disabled={isOwned}
-                            >
-                                {isOwned ? (
-                                    <>
-                                        <Check className="w-5 h-5" />
-                                        <span>Active Plan</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        {isAdded ? (
-                                            <>
-                                                <Check className="w-5 h-5" />
-                                                <span>Plan in Cart</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ShoppingCart className="w-5 h-5 shrink-0" />
-                                                <span className="whitespace-nowrap">Add to Cart</span>
-                                            </>
-                                        )}
-                                    </>
-                                )}
-                            </Button>
+                            <div className="mt-8">
+                                <Button
+                                    onClick={() => {
+                                        if (isModuleActive(product.id)) {
+                                            // Do nothing or navigate to module
+                                            return;
+                                        }
+                                        addSubscription(product.id);
+                                        navigate('/cart');
+                                    }}
+                                    variant={isModuleActive(product.id) ? "outline" : "primary"}
+                                    className={`w-full gap-2.5 ${isModuleActive(product.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={isModuleActive(product.id)}
+                                >
+                                    {isModuleActive(product.id) ? (
+                                        <span>Current Plan</span>
+                                    ) : (
+                                        <>
+                                            <span>Add to Cart</span>
+                                            <ShoppingCart className="w-4 h-4" />
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
                         </div>
                     );
                 })}
 
                 {/* SalesPal 360 Flagship Plan - Spanning All Columns */}
                 {products.filter(p => p.isFlagship).map((product, idx) => {
-                    const isOwned = isPlanOwned(product.id);
-                    const isAdded = addedItems[product.id] || isInCart(product.id);
+
 
                     return (
                         <div
                             key={idx}
-                            className={`lg:col-span-4 p-8 md:p-12 rounded-[32px] border transition-all relative overflow-hidden group flex flex-col md:flex-row gap-12 items-center ${isOwned
-                                ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
-                                : 'bg-white border-blue-100 shadow-[0_20px_50px_rgba(59,130,246,0.12)] hover:border-blue-300'
-                                } mt-4`}
+                            className={`lg:col-span-4 p-8 md:p-12 rounded-[32px] border transition-all relative overflow-hidden group flex flex-col md:flex-row gap-12 items-center bg-white border-blue-100 shadow-[0_20px_50px_rgba(59,130,246,0.12)] hover:border-blue-300 mt-4`}
                         >
                             {/* Visual Accents */}
                             <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
@@ -282,18 +235,11 @@ const PricingSection = () => {
                                 </div>
 
                                 <Button
-                                    variant={isOwned ? "outline" : (isAdded ? "outline" : "primary")}
-                                    className={`w-full md:w-auto px-12 py-5 text-lg font-black rounded-2xl transition-all ${!isOwned && !isAdded ? 'bg-blue-600 hover:bg-black text-white shadow-2xl shadow-blue-500/20 active:scale-95' : ''}`}
-                                    onClick={() => !isOwned && handleAddToCart(product)}
-                                    disabled={isOwned}
+                                    variant="outline"
+                                    className="w-full md:w-auto px-12 py-5 text-lg font-black rounded-2xl opacity-50 cursor-not-allowed"
+                                    disabled
                                 >
-                                    {isOwned ? (
-                                        <><Check className="w-6 h-6" /> <span className="ml-2">Manage Plan</span></>
-                                    ) : (
-                                        <>{isAdded ? <Check className="w-6 h-6" /> : <Layers className="w-6 h-6 shrink-0" />}
-                                            <span className="ml-2">{isAdded ? "Plan in Cart" : "Get Started with 360"}</span>
-                                        </>
-                                    )}
+                                    <span>Coming Soon</span>
                                 </Button>
                             </div>
 
@@ -351,15 +297,9 @@ const PricingSection = () => {
 
                     {/* Right side - Button */}
                     <button
-                        onClick={() => handleAddToCart({
-                            id: 'top-up-1000',
-                            name: 'Top-Up Credit',
-                            subtitle: '₹1,000 Universal Credit',
-                            price: 1000,
-                            features: ['Works with all products', 'No expiry', 'Instant credit']
-                        })}
-                        className="bg-white border border-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:border-transparent hover:text-white text-gray-900 px-6 py-2.5 rounded-lg font-medium transition-all shrink-0">
-                        Add Top-Up
+                        disabled
+                        className="bg-white border border-gray-300 text-gray-400 px-6 py-2.5 rounded-lg font-medium cursor-not-allowed shrink-0">
+                        Coming Soon
                     </button>
                 </div>
 
@@ -387,11 +327,7 @@ const PricingSection = () => {
                 </Link>
             </div>
 
-            <AuthModal
-                isOpen={showAuthModal}
-                onClose={() => setShowAuthModal(false)}
-                onSuccess={handleAuthSuccess}
-            />
+
         </SectionWrapper >
     );
 };

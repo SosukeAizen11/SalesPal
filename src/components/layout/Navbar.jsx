@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext';
-import { ShoppingCart } from 'lucide-react';
 import useReducedMotion from '../../hooks/useReducedMotion';
 import AuthModal from '../auth/AuthModal';
+import { useCart } from '../../commerce/CartContext';
+import { ShoppingCart } from 'lucide-react';
 
 const Navbar = () => {
     const { isAuthenticated, logout } = useAuth();
-    const { cartCount } = useCart();
     const location = useLocation();
     const navigate = useNavigate();
     const prefersReducedMotion = useReducedMotion();
@@ -17,6 +16,7 @@ const Navbar = () => {
     const [activeSection, setActiveSection] = useState('');
     const [isScrolled, setIsScrolled] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const { cart } = useCart();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -74,15 +74,6 @@ const Navbar = () => {
                 }
             }
         }
-    };
-
-    const getLinkClasses = (sectionId) => {
-        const baseClasses = "hover:text-blue-600 transition-all py-1 border-b-2";
-        const activeClasses = activeSection === sectionId
-            ? "text-blue-600 border-blue-600"
-            : "text-gray-600 border-transparent";
-
-        return `${baseClasses} ${activeClasses}`;
     };
 
     return (
@@ -155,12 +146,14 @@ const Navbar = () => {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                    {/* Shopping Cart Icon with Badge */}
-                    <Link to="/cart" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group">
-                        <ShoppingCart className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" />
-                        {cartCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                                {cartCount > 9 ? '9+' : cartCount}
+                    <Link
+                        to="/cart"
+                        className="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-50 rounded-full transition-colors"
+                    >
+                        <ShoppingCart className="w-5 h-5" />
+                        {cart.length > 0 && (
+                            <span className="absolute top-1 right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full ring-2 ring-white">
+                                {cart.length}
                             </span>
                         )}
                     </Link>

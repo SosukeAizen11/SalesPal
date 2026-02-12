@@ -114,7 +114,7 @@ const SalesPal360Features = () => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes fadeInStagger {
                     from {
                         opacity: 0;
