@@ -1,4 +1,4 @@
-import { LayoutDashboard, Megaphone, BarChart3, Settings, Share2 } from 'lucide-react';
+import { LayoutDashboard, Megaphone, BarChart3, Settings, Share2, CreditCard } from 'lucide-react';
 
 export const marketingNav = [
     {
@@ -15,6 +15,11 @@ export const marketingNav = [
         name: 'Social',
         path: '/marketing/social',
         icon: Share2
+    },
+    {
+        name: 'Subscription',
+        path: '/marketing/subscription',
+        icon: CreditCard
     },
     {
         name: 'Settings',

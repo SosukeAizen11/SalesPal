@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import ProjectLayout from '../layout/ProjectLayout';
 import App from './App';
 import Dashboard from '../pages/dashboard/Dashboard';
@@ -77,6 +77,10 @@ export const router = createBrowserRouter([
         element: <App />,
         children: [
             {
+                index: true,
+                element: <Home />,
+            },
+            {
                 path: "/app",
                 element: (
                     <ProtectedRoute>
@@ -129,6 +133,21 @@ export const router = createBrowserRouter([
                 path: "/products/salespal-360",
                 element: <SalesPal360Product />,
             },
+            // Standalone Cart & Checkout Pages
+            {
+                element: (
+                    <ProtectedRoute>
+                        <MarketingProvider>
+                            <Outlet />
+                        </MarketingProvider>
+                    </ProtectedRoute>
+                ),
+                children: [
+                    { path: "/cart", element: <Cart /> },
+                    { path: "/purchase-success", element: <PurchaseSuccess /> },
+                ]
+            },
+
             // Marketing App Shell
             {
                 path: "/marketing",
