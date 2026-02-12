@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Minus, ShoppingBag, Check, Trash2 } from 'lucide-react';
+import { Plus, Minus, ShoppingBag, Check, Trash2, ShoppingCart } from 'lucide-react';
 import { useCart } from '../../../context/CartContext';
 
 const TopUpCard = ({ item, onBuy }) => {
@@ -15,68 +15,63 @@ const TopUpCard = ({ item, onBuy }) => {
         } else {
             onBuy({
                 ...item,
-                quantity: 1 // Default to 1 as per requirements
+                quantity: 1
             });
         }
     };
 
     return (
-        <div className={`p-6 rounded-3xl border transition-all flex flex-col h-full ring-1 ring-black/[0.02] ${isInCart ? 'bg-blue-50/30 border-blue-200' : 'bg-white border-gray-100 hover:border-amber-200 hover:shadow-lg hover:shadow-amber-500/5'
+        <div className={`p-6 rounded-2xl border transition-all flex flex-col h-full ${isInCart ? 'bg-blue-50/50 border-blue-200 ring-4 ring-blue-500/5' : 'bg-gray-50/30 border-gray-100 hover:border-blue-200 hover:bg-white'
             } group`}>
             <div className="flex items-start justify-between mb-4">
-                <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all ${isInCart ? 'bg-blue-100 border-blue-200 text-blue-600' : 'bg-gray-50 border-gray-100 text-gray-500 group-hover:bg-amber-50 group-hover:text-amber-600'
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isInCart ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white border border-gray-100 text-gray-400 group-hover:text-blue-600 group-hover:border-blue-200'
                     }`}>
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-5 h-5" />
                 </div>
                 <div className="text-right">
-                    <p className="text-xl font-black text-gray-900">₹{item.price.toLocaleString()}</p>
-                    {item.subtext && <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{item.subtext}</p>}
+                    <p className="text-lg font-black text-gray-900 tracking-tight">₹{item.price.toLocaleString()}</p>
+                    {item.subtext && <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest">{item.subtext}</p>}
                 </div>
             </div>
 
-            <h4 className="font-bold text-gray-900 mb-1">{item.name}</h4>
-            <p className="text-xs text-gray-500 mb-6 flex-1 italic">
-                {isInCart ? (
-                    <span className="text-blue-600 font-bold">✓ Selected for checkout</span>
-                ) : (
-                    <>Adds <strong className="text-gray-900">{item.quantity}</strong> to your balance.</>
-                )}
-            </p>
+            <h4 className="font-bold text-gray-900 text-sm mb-1">{item.name}</h4>
+            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1.5 mb-6">
+                <div className="w-1 h-1 rounded-full bg-blue-500" />
+                Add {item.quantity} Credits
+            </div>
 
             <div className="flex items-center gap-3 mt-auto">
                 {isInCart && (
-                    <div className="flex items-center bg-white rounded-xl p-1 border border-blue-100 shadow-sm animate-in fade-in slide-in-from-left-2 duration-300">
+                    <div className="flex items-center bg-white rounded-lg p-1 border border-blue-100 shadow-sm">
                         <button
                             onClick={() => updateQuantity(item.id, Number(quantity) - 1)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600 transition-all active:scale-90"
+                            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-50 text-blue-600 transition-all active:scale-90"
                         >
-                            <Minus className="w-4 h-4" />
+                            <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="w-8 text-center text-sm font-black text-gray-900">{quantity}</span>
+                        <span className="w-6 text-center text-xs font-black text-gray-900">{quantity}</span>
                         <button
                             onClick={() => updateQuantity(item.id, Number(quantity) + 1)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-blue-600 transition-all active:scale-90"
+                            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-blue-50 text-blue-600 transition-all active:scale-90"
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-3.5 h-3.5" />
                         </button>
                     </div>
                 )}
                 <button
                     onClick={handleBuy}
-                    className={`flex-1 text-xs font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 group/btn ${isInCart
-                            ? 'bg-blue-600 text-white hover:bg-red-500'
-                            : 'bg-gray-900 text-white hover:bg-gray-800'
+                    className={`flex-1 text-[10px] font-black uppercase tracking-widest py-3 px-4 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 group/btn ${isInCart ? 'bg-blue-600 text-white hover:bg-red-500' : 'bg-gray-900 text-white hover:bg-black'
                         }`}
                 >
                     {isInCart ? (
                         <>
-                            <span className="group-hover:hidden flex items-center gap-2"><Check className="w-4 h-4" /> Added</span>
-                            <span className="hidden group-hover:flex items-center gap-2"><Trash2 className="w-4 h-4" /> Remove</span>
+                            <span className="group-hover:hidden flex items-center gap-2"><Check className="w-3.5 h-3.5" /> Selected</span>
+                            <span className="hidden group-hover:flex items-center gap-2 text-white"><Trash2 className="w-3.5 h-3.5" /> Remove</span>
                         </>
                     ) : (
                         <>
-                            <ShoppingBag className="w-4 h-4" />
-                            Add to Cart
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                            Add Credit
                         </>
                     )}
                 </button>
