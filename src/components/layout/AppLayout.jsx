@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     Megaphone,
     DollarSign,
@@ -87,7 +87,9 @@ const AppLayout = () => {
             {/* Sidebar */}
             <aside className="w-[240px] bg-white border-r border-gray-200 flex flex-col fixed h-full z-20 shadow-sm">
                 <div className="flex items-center justify-center py-3 border-b border-gray-100 shrink-0 h-16">
-                    <img src="/BlackTextLogo.webp" alt="SalesPal" className="h-10 w-auto object-contain" />
+                    <Link to="/">
+                        <img src="/BlackTextLogo.webp" alt="SalesPal" className="h-10 w-auto object-contain" />
+                    </Link>
                 </div>
 
                 <nav className="flex-1 overflow-y-auto pt-5 px-3 space-y-1">
