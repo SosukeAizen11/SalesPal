@@ -9,6 +9,7 @@ import { ProjectProvider } from '../context/ProjectContext';
 import { IntegrationProvider } from '../context/IntegrationContext';
 import MiniCartDrawer from '../components/cart/MiniCartDrawer';
 import { ToastProvider } from '../components/ui/Toast';
+import ScrollToTop from '../components/common/ScrollToTop';
 
 const App = () => {
     return (
@@ -20,6 +21,7 @@ const App = () => {
                             <ProjectProvider>
                                 <ToastProvider>
                                     <ScrollRestoration />
+                                    <ScrollToTop />
                                     <Outlet />
                                     <MiniCartDrawer />
                                 </ToastProvider>
