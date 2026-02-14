@@ -10,7 +10,7 @@ const Sidebar = () => {
     if (!activeProject) return null;
 
     return (
-        <aside id="tour-sidebar" className="w-64 border-r border-white/5 bg-white/[0.02] hidden md:flex flex-col h-full">
+        <aside id="sidebar" className="w-64 border-r border-white/5 bg-white/2 hidden md:flex flex-col h-full">
             <div className="p-4 flex-1 space-y-1">
                 {sidebarConfig.map((item) => {
                     // Check visibility

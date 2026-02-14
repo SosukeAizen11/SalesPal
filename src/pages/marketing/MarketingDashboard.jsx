@@ -12,7 +12,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Filter, BarChart2, Globe, ChevronDown, HelpCircle } from 'lucide-react';
-import { useWalkthrough } from '../../walkthrough/WalkthroughProvider';
+import { useWalkthrough } from '../../context/WalkthroughContext';
 import { AnalyticsProvider, useAnalytics } from '../../context/AnalyticsContext';
 import { useMarketing } from '../../context/MarketingContext';
 import Modal from '../../components/ui/Modal';
@@ -37,9 +37,22 @@ const DashboardContent = ({ mode = 'page' }) => {
         setTimeRange, setChannelFilter, setCompareMode, compareMode, setProject
     } = useAnalytics();
     const { projects } = useMarketing();
+    const { startWalkthrough, isCompleted, restartWalkthrough } = useWalkthrough();
 
-    // Walkthrough restart functionality
-    const { restartWalkthrough } = useWalkthrough();
+    // Start walkthrough if not completed
+    React.useEffect(() => {
+        // We need to check if we are in the marketing dashboard and if the walkthrough hasn't been completed
+        // The context handles local storage check on mount, so isCompleted will be true if done.
+        // However, we want to ensure we only trigger this when the dashboard is actually viewed.
+        if (!isCompleted) {
+            // Small timeout to ensure elements are rendered
+            const timer = setTimeout(() => {
+                startWalkthrough();
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [isCompleted, startWalkthrough]);
+
 
     // UI State
     const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -239,7 +252,7 @@ const DashboardContent = ({ mode = 'page' }) => {
     return (
         <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-12">
             {/* HEADER & CONTROLS */}
-            <div id="tour-header" className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-2 border-b border-gray-100">
+            <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-2 border-b border-gray-100">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         Marketing Dashboard
@@ -255,7 +268,7 @@ const DashboardContent = ({ mode = 'page' }) => {
                 </div>
 
                 {/* CONTROLS AREA */}
-                <div className="flex flex-wrap items-center gap-3">
+                <div id="dashboard-filters" className="flex flex-wrap items-center gap-3">
 
                     {/* 1. Scope Selector */}
                     <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
@@ -320,14 +333,14 @@ const DashboardContent = ({ mode = 'page' }) => {
             <div className="p-6 max-w-[1600px] mx-auto space-y-6">
 
                 {/* A. THE PULSE (Financial Vitals) */}
-                <section id="tour-kpi" aria-label="Financial Vitals">
+                <section id="dashboard-kpis" aria-label="Financial Vitals">
                     <KPISummary data={dashboardData.kpis} onDetailClick={handleKPIClick} mode="pulse" />
                 </section>
 
                 {/* B. Efficiency & Allocation Grid */}
-                <div id="tour-performance" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Trend Health (2/3 width) */}
-                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <div id="trend-health" ref={trendsRef} className="lg:col-span-2 scroll-mt-24 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-gray-900">Trend Health</h3>
                             <p className="text-xs text-gray-500">7-Day Financial Stability</p>
@@ -336,13 +349,13 @@ const DashboardContent = ({ mode = 'page' }) => {
                     </div>
 
                     {/* Allocation Mix (1/3 width) */}
-                    <div className="lg:col-span-1 min-w-0">
+                    <div id="channel-mix" className="lg:col-span-1 min-w-0">
                         <ChannelPerformanceMix data={dashboardData.channelMix} />
                     </div>
                 </div>
 
                 {/* C. Action Feed (Anomalies Only) */}
-                <section id="tour-actions" aria-label="Action Feed">
+                <section aria-label="Action Feed">
                     <ActionFeed alerts={dashboardData.anomalies} />
                 </section>
             </div>

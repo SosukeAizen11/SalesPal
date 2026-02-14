@@ -3,8 +3,6 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../commerce/SubscriptionContext';
 import ProjectSwitcher from '../components/ProjectSwitcher';
-import { TourProvider } from '../context/TourContext';
-import TourOverlay from '../components/tour/TourOverlay';
 import GlobalCreditDisplay from '../components/GlobalCreditDisplay';
 import TopUpDrawer from '../components/credits/TopUpDrawer';
 
@@ -26,7 +24,7 @@ const MarketingLayoutContent = () => {
                     <div className="w-64">
                         <ProjectSwitcher />
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div id="credit-bar" className="flex items-center gap-4">
                         {showCredits && <GlobalCreditDisplay onTopUpClick={() => setIsTopUpOpen(true)} />}
                     </div>
                 </header>
@@ -39,8 +37,6 @@ const MarketingLayoutContent = () => {
                 </main>
             </div>
 
-            {/* Tour Global Overlay */}
-            <TourOverlay />
 
             {/* Top Up Drawer */}
             <TopUpDrawer isOpen={isTopUpOpen} onClose={() => setIsTopUpOpen(false)} />
@@ -50,9 +46,7 @@ const MarketingLayoutContent = () => {
 
 const MarketingLayout = () => {
     return (
-        <TourProvider>
-            <MarketingLayoutContent />
-        </TourProvider>
+        <MarketingLayoutContent />
     );
 };
 
