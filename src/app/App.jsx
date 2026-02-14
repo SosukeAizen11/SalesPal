@@ -7,8 +7,9 @@ import { MarketingProvider } from '../context/MarketingContext';
 
 import { ProjectProvider } from '../context/ProjectContext';
 import { IntegrationProvider } from '../context/IntegrationContext';
-import { WalkthroughProvider } from '../walkthrough/WalkthroughProvider';
-import WalkthroughOverlay from '../walkthrough/WalkthroughOverlay';
+import { WalkthroughProvider } from '../context/WalkthroughContext';
+import WalkthroughOverlay from '../components/walkthrough/WalkthroughOverlay';
+import { MARKETING_WALKTHROUGH_STEPS } from '../components/walkthrough/marketingWalkthroughSteps';
 import MiniCartDrawer from '../components/cart/MiniCartDrawer';
 import { ToastProvider } from '../components/ui/Toast';
 
@@ -20,13 +21,12 @@ const App = () => {
                     <IntegrationProvider>
                         <MarketingProvider>
                             <ProjectProvider>
-                                <WalkthroughProvider>
+                                <WalkthroughProvider steps={MARKETING_WALKTHROUGH_STEPS}>
                                     <ToastProvider>
                                         <ScrollRestoration />
                                         <Outlet />
-                                        {/* Walkthrough rendered at app root to prevent unmounts */}
-                                        <WalkthroughOverlay />
                                         <MiniCartDrawer />
+                                        <WalkthroughOverlay />
                                     </ToastProvider>
                                 </WalkthroughProvider>
                             </ProjectProvider>
