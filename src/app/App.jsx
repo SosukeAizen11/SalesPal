@@ -7,11 +7,9 @@ import { MarketingProvider } from '../context/MarketingContext';
 
 import { ProjectProvider } from '../context/ProjectContext';
 import { IntegrationProvider } from '../context/IntegrationContext';
-import { WalkthroughProvider } from '../context/WalkthroughContext';
-import WalkthroughOverlay from '../components/walkthrough/WalkthroughOverlay';
-import { MARKETING_WALKTHROUGH_STEPS } from '../components/walkthrough/marketingWalkthroughSteps';
 import MiniCartDrawer from '../components/cart/MiniCartDrawer';
 import { ToastProvider } from '../components/ui/Toast';
+import ScrollToTop from '../components/common/ScrollToTop';
 
 const App = () => {
     return (
@@ -21,14 +19,12 @@ const App = () => {
                     <IntegrationProvider>
                         <MarketingProvider>
                             <ProjectProvider>
-                                <WalkthroughProvider steps={MARKETING_WALKTHROUGH_STEPS}>
-                                    <ToastProvider>
-                                        <ScrollRestoration />
-                                        <Outlet />
-                                        <MiniCartDrawer />
-                                        <WalkthroughOverlay />
-                                    </ToastProvider>
-                                </WalkthroughProvider>
+                                <ToastProvider>
+                                    <ScrollRestoration />
+                                    <ScrollToTop />
+                                    <Outlet />
+                                    <MiniCartDrawer />
+                                </ToastProvider>
                             </ProjectProvider>
                         </MarketingProvider>
                     </IntegrationProvider>

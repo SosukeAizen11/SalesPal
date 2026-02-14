@@ -10,7 +10,7 @@ const Sidebar = () => {
     if (!activeProject) return null;
 
     return (
-        <aside id="sidebar" className="w-64 border-r border-white/5 bg-white/2 hidden md:flex flex-col h-full">
+        <aside className="w-64 border-r border-white/5 bg-white/2 hidden md:flex flex-col h-full">
             <div className="p-4 flex-1 space-y-1">
                 {sidebarConfig.map((item) => {
                     // Check visibility
