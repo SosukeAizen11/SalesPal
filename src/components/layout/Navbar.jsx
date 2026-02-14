@@ -78,16 +78,16 @@ const Navbar = () => {
 
     return (
         <motion.nav
-            className="fixed top-0 w-full z-50 border-b border-gray-200"
+            className={`fixed top-0 w-full z-50 ${isScrolled ? 'border-b border-gray-200' : ''}`}
             initial={prefersReducedMotion ? {} : { opacity: 0, y: -10, filter: 'blur(8px)' }}
             animate={prefersReducedMotion ? {} : {
                 opacity: 1,
                 y: 0,
                 filter: 'blur(0px)',
-                height: isScrolled ? '64px' : '80px',
-                backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(255, 255, 255, 0.95)',
+                height: isScrolled ? '72px' : '88px',
+                backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(249, 250, 251, 0.95)',
                 backdropFilter: isScrolled ? 'blur(16px)' : 'blur(12px)',
-                boxShadow: isScrolled ? '0 4px 12px rgba(0, 0, 0, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.05)'
+                boxShadow: isScrolled ? '0 4px 12px rgba(0, 0, 0, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.06)'
             }}
             transition={{
                 opacity: { duration: 0.5 },
@@ -99,7 +99,7 @@ const Navbar = () => {
                 boxShadow: { duration: 0.25 }
             }}
             style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                backgroundColor: 'rgba(249, 250, 251, 0.95)',
                 backdropFilter: 'blur(12px)'
             }}
         >
