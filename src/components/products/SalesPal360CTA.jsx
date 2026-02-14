@@ -87,7 +87,7 @@ const SalesPal360CTA = () => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes scaleIn {
                     from {
                         opacity: 0;

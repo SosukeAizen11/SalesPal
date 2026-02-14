@@ -436,13 +436,13 @@ const StepAdCreation = ({ onComplete, onBack, data }) => {
                             />
                         </div>
 
-                        <div>
+                        <div className="relative z-10">
                             <label className="text-sm font-medium text-gray-900 block mb-2">Call to Action</label>
                             <select
                                 value={copy.cta}
                                 onChange={(e) => setCopy(curr => ({ ...curr, cta: e.target.value }))}
                                 disabled={selectedPlatforms.length === 0}
-                                className="w-full h-11 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full h-11 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed relative z-10"
                             >
                                 {selectedPlatforms.length === 0 && <option>Select a platform first</option>}
 

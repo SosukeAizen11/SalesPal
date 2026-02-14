@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext';
-import { ShoppingCart } from 'lucide-react';
 import useReducedMotion from '../../hooks/useReducedMotion';
 import AuthModal from '../auth/AuthModal';
+import { useCart } from '../../commerce/CartContext';
+import { ShoppingCart } from 'lucide-react';
+import NavbarUserMenu from './NavbarUserMenu';
 
 const Navbar = () => {
     const { isAuthenticated, logout } = useAuth();
-    const { cartCount } = useCart();
     const location = useLocation();
     const navigate = useNavigate();
     const prefersReducedMotion = useReducedMotion();
@@ -17,6 +17,7 @@ const Navbar = () => {
     const [activeSection, setActiveSection] = useState('');
     const [isScrolled, setIsScrolled] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const { cart, openMiniCart } = useCart();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -76,27 +77,18 @@ const Navbar = () => {
         }
     };
 
-    const getLinkClasses = (sectionId) => {
-        const baseClasses = "hover:text-blue-600 transition-all py-1 border-b-2";
-        const activeClasses = activeSection === sectionId
-            ? "text-blue-600 border-blue-600"
-            : "text-gray-600 border-transparent";
-
-        return `${baseClasses} ${activeClasses}`;
-    };
-
     return (
         <motion.nav
-            className="fixed top-0 w-full z-50 border-b border-gray-200"
+            className={`fixed top-0 w-full z-50 ${isScrolled ? 'border-b border-gray-200' : ''}`}
             initial={prefersReducedMotion ? {} : { opacity: 0, y: -10, filter: 'blur(8px)' }}
             animate={prefersReducedMotion ? {} : {
                 opacity: 1,
                 y: 0,
                 filter: 'blur(0px)',
-                height: isScrolled ? '64px' : '80px',
-                backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(255, 255, 255, 0.95)',
+                height: isScrolled ? '72px' : '88px',
+                backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(249, 250, 251, 0.95)',
                 backdropFilter: isScrolled ? 'blur(16px)' : 'blur(12px)',
-                boxShadow: isScrolled ? '0 4px 12px rgba(0, 0, 0, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.05)'
+                boxShadow: isScrolled ? '0 4px 12px rgba(0, 0, 0, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.06)'
             }}
             transition={{
                 opacity: { duration: 0.5 },
@@ -108,14 +100,14 @@ const Navbar = () => {
                 boxShadow: { duration: 0.25 }
             }}
             style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                backgroundColor: 'rgba(249, 250, 251, 0.95)',
                 backdropFilter: 'blur(12px)'
             }}
         >
             <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
                 <Link to="/" className="flex items-center -ml-12">
                     <img
-                        src="/SalesPal Logo Navbar.png"
+                        src="/BlackTextLogo.webp"
                         alt="SalesPal Logo"
                         className="h-16 object-contain"
                     />
@@ -155,30 +147,29 @@ const Navbar = () => {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                    {/* Shopping Cart Icon with Badge */}
-                    <Link to="/cart" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group">
-                        <ShoppingCart className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" />
-                        {cartCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                                {cartCount > 9 ? '9+' : cartCount}
+                    <button
+                        type="button"
+                        onClick={openMiniCart}
+                        className="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-50 rounded-full transition-colors"
+                        aria-label="Open mini cart"
+                    >
+                        <ShoppingCart className="w-5 h-5" />
+                        {cart.length > 0 && (
+                            <span className="absolute top-1 right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full ring-2 ring-white">
+                                {cart.length}
                             </span>
                         )}
-                    </Link>
+                    </button>
 
                     {isAuthenticated ? (
                         <>
                             <Link
-                                to="/app"
+                                to="/marketing"
                                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                             >
                                 Dashboard
                             </Link>
-                            <button
-                                onClick={logout}
-                                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                            >
-                                Logout
-                            </button>
+                            <NavbarUserMenu />
                         </>
                     ) : (
 
@@ -200,7 +191,7 @@ const Navbar = () => {
                 isOpen={showAuthModal}
                 onClose={() => setShowAuthModal(false)}
                 onSuccess={() => {
-                    navigate('/app');
+                    navigate('/marketing');
                     setShowAuthModal(false);
                 }}
             />

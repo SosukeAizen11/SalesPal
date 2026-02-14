@@ -114,7 +114,7 @@ const PostSaleFeaturesGrid = () => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes fadeInStagger {
                     from {
                         opacity: 0;

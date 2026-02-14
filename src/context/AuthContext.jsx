@@ -39,6 +39,8 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(false);
         setUser(null);
         localStorage.removeItem('isActiveUser');
+        // Clear cart from localStorage
+        localStorage.removeItem('salespal_cart');
     };
 
     return (

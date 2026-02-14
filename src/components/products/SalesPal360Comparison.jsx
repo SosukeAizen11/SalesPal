@@ -105,7 +105,7 @@ const SalesPal360Comparison = () => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes fadeIn {
                     from {
                         opacity: 0;

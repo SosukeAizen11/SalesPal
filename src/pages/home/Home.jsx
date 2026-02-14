@@ -1,6 +1,6 @@
-import React from 'react';
-import Navbar from '../../components/layout/Navbar';
-import Footer from '../../components/layout/Footer';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+
 import HeroSection from './sections/HeroSection';
 import WhySalesPal from './sections/WhySalesPal';
 import ValueProposition from './sections/ValueProposition';
@@ -11,20 +11,26 @@ import FinalCTA from './sections/FinalCTA';
 
 
 const Home = () => {
-    return (
-        <div className="min-h-screen bg-primary">
-            <Navbar />
-            <main>
-                <HeroSection />
-                <WhySalesPal />
-                <ValueProposition />
-                <ModulesSection />
-                <HowItWorks />
-                <PricingSection />
-                <FinalCTA />
+    const location = useLocation();
 
-            </main>
-            <Footer />
+    useEffect(() => {
+        if (location.hash === '#pricing') {
+            const el = document.getElementById('pricing');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    }, [location]);
+
+    return (
+        <div className="bg-primary">
+            <HeroSection />
+            <WhySalesPal />
+            <ValueProposition />
+            <ModulesSection />
+            <HowItWorks />
+            <PricingSection />
+            <FinalCTA />
         </div>
     );
 };

@@ -122,7 +122,7 @@ const ValueProposition = () => {
                 </motion.div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes orbit {
                     0% {
                         transform: rotate(360deg);

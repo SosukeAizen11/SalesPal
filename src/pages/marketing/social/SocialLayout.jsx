@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, PlusCircle, FileText, Calendar, Send, BarChart2, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, FileText, Calendar, Send, BarChart2, MessageCircle, Facebook, Instagram, Linkedin } from 'lucide-react';
 import { useMarketing } from '../../../context/MarketingContext';
 import { useIntegrations } from '../../../context/IntegrationContext';
 import SocialCreate from './SocialCreate';
@@ -104,21 +104,24 @@ const SocialOverviewInline = ({ onNavigate }) => {
             id: 'facebook',
             name: 'Facebook Page',
             accountName: integrations.meta?.accountName || 'Not connected',
-            icon: '📘',
+            icon: Facebook,
+            iconBg: 'bg-[#1877F2]',
             connected: integrations.meta?.connected,
         },
         {
             id: 'instagram',
             name: 'Instagram Business',
             accountName: integrations.meta?.connected ? '@salespal_tech' : 'Not connected',
-            icon: '📸',
+            icon: Instagram,
+            iconBg: 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500',
             connected: integrations.meta?.connected,
         },
         {
             id: 'linkedin',
             name: 'LinkedIn Company',
             accountName: integrations.linkedin?.accountName || 'Not connected',
-            icon: '💼',
+            icon: Linkedin,
+            iconBg: 'bg-[#0077B5]',
             connected: integrations.linkedin?.connected,
         }
     ];
@@ -159,23 +162,28 @@ const SocialOverviewInline = ({ onNavigate }) => {
                     <span className="text-sm text-gray-500">{connectedCount} of {channels.length} connected</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {channels.map(channel => (
-                        <div
-                            key={channel.id}
-                            className={`p-4 bg-white rounded-xl border border-gray-200 flex items-center gap-4 ${!channel.connected ? 'opacity-60' : ''}`}
-                        >
-                            <div className="text-2xl">{channel.icon}</div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-gray-900">{channel.name}</h4>
-                                <p className="text-sm text-gray-500 truncate">{channel.accountName}</p>
+                    {channels.map(channel => {
+                        const Icon = channel.icon;
+                        return (
+                            <div
+                                key={channel.id}
+                                className={`p-4 bg-white rounded-xl border border-gray-200 flex items-center gap-4 ${!channel.connected ? 'opacity-60' : ''}`}
+                            >
+                                <div className={`w-10 h-10 ${channel.iconBg} text-white rounded-lg flex items-center justify-center`}>
+                                    <Icon className="w-6 h-6" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-medium text-gray-900">{channel.name}</h4>
+                                    <p className="text-sm text-gray-500 truncate">{channel.accountName}</p>
+                                </div>
+                                {channel.connected ? (
+                                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                                ) : (
+                                    <span className="text-xs font-medium text-blue-600">Connect</span>
+                                )}
                             </div>
-                            {channel.connected ? (
-                                <div className="w-2 h-2 bg-green-500 rounded-full" />
-                            ) : (
-                                <span className="text-xs font-medium text-blue-600">Connect</span>
-                            )}
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 

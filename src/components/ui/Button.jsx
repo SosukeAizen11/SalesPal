@@ -93,7 +93,7 @@ const Button = ({
             {...props}
         >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            <span>{children}</span>
+            {children}
             {showArrow && (
                 <motion.span
                     variants={prefersReducedMotion ? {} : arrowVariants}

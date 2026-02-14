@@ -14,7 +14,7 @@ const INTEGRATION_CONFIG = [
         icon: Facebook,
         description: 'Connect to manage Facebook and Instagram ad campaigns.',
         category: 'Advertising',
-        path: '/settings/integrations/meta'
+        path: '/marketing/settings/integrations/meta'
     },
     {
         id: 'google',

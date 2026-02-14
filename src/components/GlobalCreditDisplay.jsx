@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Image, Video, Phone, MessageSquare, Plus, AlertTriangle } from 'lucide-react';
+import { useMarketing } from '../context/MarketingContext';
 
 const CreditItem = ({ icon: Icon, label, count, usedToday, lowThreshold = 5, onClick }) => {
     const isLow = count <= lowThreshold;
@@ -43,15 +44,25 @@ const CreditItem = ({ icon: Icon, label, count, usedToday, lowThreshold = 5, onC
     );
 };
 
-const GlobalCreditDisplay = () => {
+const GlobalCreditDisplay = ({ onTopUpClick }) => {
     const navigate = useNavigate();
 
-    // Mock Data - In real app, consume from useAuth or useBilling context
+    const { creditState } = useMarketing();
+
+    // Derived State
     const credits = {
-        images: { count: 16, used: 34, label: 'Images' },
-        videos: { count: 3, used: 2, label: 'Videos' },
-        calls: { count: 550, used: 450, label: 'Calls' },
-        whatsapp: { count: 380, used: 120, label: 'WhatsApp' }
+        images: {
+            count: (creditState?.baseLimits?.images || 0) + (creditState?.extraCredits?.images || 0),
+            used: 0, // Not tracked yet
+            label: 'Images'
+        },
+        videos: {
+            count: (creditState?.baseLimits?.videos || 0) + (creditState?.extraCredits?.videos || 0),
+            used: 0,
+            label: 'Videos'
+        },
+        calls: { count: 550, used: 450, label: 'Calls' }, // Still Mocked
+        whatsapp: { count: 380, used: 120, label: 'WhatsApp' } // Still Mocked
     };
 
     return (
@@ -91,7 +102,7 @@ const GlobalCreditDisplay = () => {
             </div>
 
             <div
-                onClick={() => navigate('/marketing/subscription')}
+                onClick={() => onTopUpClick ? onTopUpClick() : navigate('/subscription')}
                 className="pl-2 pr-2 ml-1 border-l border-gray-100 flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg py-1.5 transition-colors"
                 title="Top Up Credits"
             >

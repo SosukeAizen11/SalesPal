@@ -39,7 +39,7 @@ const PerformanceTrends = ({ data, timeRange }) => {
     const isEmpty = !chartData.length || chartData.every(d => d.roas === 0 && d.cpa === 0);
 
     return (
-        <div className="h-72 w-full mt-4">
+        <div className="h-72 w-full mt-4" style={{ minWidth: '100px', minHeight: '100px' }}>
             {isEmpty ? (
                 <div className="h-full bg-gray-50 rounded-lg border border-dashed border-gray-200 flex flex-col items-center justify-center">
                     <p className="text-gray-500 font-medium text-sm">No data available</p>

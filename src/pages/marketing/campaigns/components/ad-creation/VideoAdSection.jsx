@@ -1,7 +1,20 @@
 import React from 'react';
 import { Upload, PlayCircle, Sparkles } from 'lucide-react';
+import { useSubscription } from '../../../../../commerce/SubscriptionContext';
 
 const VideoAdSection = () => {
+    const { canConsume, consume } = useSubscription();
+
+    const handleGenerateVideo = () => {
+        if (!canConsume('marketing', 'videos')) {
+            alert('You have reached your monthly video limit.');
+            return;
+        }
+
+        consume('marketing', 'videos');
+        // Existing video generation logic would run here
+    };
+
     return (
         <div className="space-y-4 animate-fade-in-up">
             <h4 className="text-sm font-semibold text-gray-900">Video Creatives</h4>
@@ -20,7 +33,10 @@ const VideoAdSection = () => {
                         <Upload className="w-6 h-6" />
                         <span className="text-xs font-medium">Upload Video</span>
                     </button>
-                    <button className="flex-1 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-dashed border-gray-300 hover:border-secondary hover:bg-secondary/5 transition-all text-gray-500 hover:text-secondary">
+                    <button
+                        className="flex-1 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-dashed border-gray-300 hover:border-secondary hover:bg-secondary/5 transition-all text-gray-500 hover:text-secondary"
+                        onClick={handleGenerateVideo}
+                    >
                         <Sparkles className="w-6 h-6" />
                         <span className="text-xs font-medium">Generate Video</span>
                     </button>

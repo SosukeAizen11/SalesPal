@@ -87,7 +87,7 @@ const ProductCTA = () => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes scaleIn {
                     from {
                         opacity: 0;

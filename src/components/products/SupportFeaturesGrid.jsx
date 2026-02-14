@@ -114,7 +114,7 @@ const SupportFeaturesGrid = () => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes fadeInStagger {
                     from {
                         opacity: 0;

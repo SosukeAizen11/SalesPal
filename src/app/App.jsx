@@ -1,27 +1,39 @@
 import React from 'react';
 import { Outlet, ScrollRestoration } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
-import { CartProvider } from '../context/CartContext';
+import { SubscriptionProvider } from '../commerce/SubscriptionContext';
+import { CartProvider } from '../commerce/CartContext';
+import { MarketingProvider } from '../context/MarketingContext';
+
 import { ProjectProvider } from '../context/ProjectContext';
 import { IntegrationProvider } from '../context/IntegrationContext';
 import { WalkthroughProvider } from '../walkthrough/WalkthroughProvider';
 import WalkthroughOverlay from '../walkthrough/WalkthroughOverlay';
+import MiniCartDrawer from '../components/cart/MiniCartDrawer';
+import { ToastProvider } from '../components/ui/Toast';
 
 const App = () => {
     return (
         <AuthProvider>
-            <CartProvider>
-                <IntegrationProvider>
-                    <ProjectProvider>
-                        <WalkthroughProvider>
-                            <ScrollRestoration />
-                            <Outlet />
-                            {/* Walkthrough rendered at app root to prevent unmounts */}
-                            <WalkthroughOverlay />
-                        </WalkthroughProvider>
-                    </ProjectProvider>
-                </IntegrationProvider>
-            </CartProvider>
+            <SubscriptionProvider>
+                <CartProvider>
+                    <IntegrationProvider>
+                        <MarketingProvider>
+                            <ProjectProvider>
+                                <WalkthroughProvider>
+                                    <ToastProvider>
+                                        <ScrollRestoration />
+                                        <Outlet />
+                                        {/* Walkthrough rendered at app root to prevent unmounts */}
+                                        <WalkthroughOverlay />
+                                        <MiniCartDrawer />
+                                    </ToastProvider>
+                                </WalkthroughProvider>
+                            </ProjectProvider>
+                        </MarketingProvider>
+                    </IntegrationProvider>
+                </CartProvider>
+            </SubscriptionProvider>
         </AuthProvider>
     );
 };

@@ -1,0 +1,33 @@
+export const MODULES = {
+    marketing: {
+        id: "marketing",
+        name: "Marketing",
+        price: 5999,
+        limits: {
+            images: 20,
+            videos: 4,
+            posts: 30
+        },
+        creditPacks: {
+            images: [
+                { amount: 10, price: 499 },
+                { amount: 25, price: 999 }
+            ]
+        }
+    },
+    sales: {
+        id: "sales",
+        name: "Sales",
+        price: 9999
+    },
+    postSale: {
+        id: "postSale",
+        name: "Post-Sales",
+        price: 9999
+    },
+    support: {
+        id: "support",
+        name: "Support",
+        price: 9999
+    }
+};
