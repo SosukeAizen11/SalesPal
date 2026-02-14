@@ -24,7 +24,7 @@ const MarketingLayoutContent = () => {
                     <div className="w-64">
                         <ProjectSwitcher />
                     </div>
-                    <div id="credit-bar" className="flex items-center gap-4">
+                    <div className="flex items-center gap-4">
                         {showCredits && <GlobalCreditDisplay onTopUpClick={() => setIsTopUpOpen(true)} />}
                     </div>
                 </header>
