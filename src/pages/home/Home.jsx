@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import HeroSection from './sections/HeroSection';
 import WhySalesPal from './sections/WhySalesPal';
@@ -10,6 +11,17 @@ import FinalCTA from './sections/FinalCTA';
 
 
 const Home = () => {
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.hash === '#pricing') {
+            const el = document.getElementById('pricing');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    }, [location]);
+
     return (
         <div className="bg-primary">
             <HeroSection />

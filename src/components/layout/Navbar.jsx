@@ -16,7 +16,7 @@ const Navbar = () => {
     const [activeSection, setActiveSection] = useState('');
     const [isScrolled, setIsScrolled] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
-    const { cart } = useCart();
+    const { cart, openMiniCart } = useCart();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -146,9 +146,11 @@ const Navbar = () => {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                    <Link
-                        to="/cart"
+                    <button
+                        type="button"
+                        onClick={openMiniCart}
                         className="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-50 rounded-full transition-colors"
+                        aria-label="Open mini cart"
                     >
                         <ShoppingCart className="w-5 h-5" />
                         {cart.length > 0 && (
@@ -156,7 +158,7 @@ const Navbar = () => {
                                 {cart.length}
                             </span>
                         )}
-                    </Link>
+                    </button>
 
                     {isAuthenticated ? (
                         <>

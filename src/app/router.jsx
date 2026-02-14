@@ -13,6 +13,7 @@ import SignIn from '../pages/auth/SignIn';
 import ConnectPlatform from '../pages/auth/ConnectPlatform';
 import MainLayout from '../layouts/MainLayout';
 import CartPage from '../pages/cart/CartPage';
+import PurchaseSuccess from '../pages/purchase/PurchaseSuccess';
 
 // ... (existing imports)
 
@@ -106,6 +107,10 @@ export const router = createBrowserRouter([
                     {
                         path: "/cart",
                         element: <CartPage />,
+                    },
+                    {
+                        path: "/purchase-success",
+                        element: <PurchaseSuccess />,
                     },
                 ]
             },

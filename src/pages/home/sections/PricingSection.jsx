@@ -1,23 +1,40 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import SectionWrapper from '../../../components/layout/SectionWrapper';
 import { Phone, Check, ShoppingCart, Layers, Plus, PhoneCall, MessageSquare, Image, Grid3x3, Video, Zap, Bot, UserCheck, Megaphone, Headphones } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 
 import { useCart } from '../../../commerce/CartContext';
 import { useSubscription } from '../../../commerce/SubscriptionContext';
+import { useToast } from '../../../components/ui/Toast';
+import { PRODUCTS } from '../../../config/products';
 
 const PricingSection = () => {
-    const navigate = useNavigate();
-    const { addSubscription, cart } = useCart();
+    const { addProductToCart, cart, openMiniCart } = useCart();
     const { isModuleActive } = useSubscription();
+    const { showToast } = useToast();
 
-    const isInCart = (productId) => {
-        return cart.some(item => item.moduleId === productId || item.id === productId);
+    const isProductInCart = (productConfig) => {
+        if (!productConfig) return false;
+        return cart.some(item =>
+            (item.productId && item.productId === productConfig.id) ||
+            (!item.productId && item.type === 'subscription' && item.moduleId === productConfig.module)
+        );
     };
 
-    const handleAddToCart = (product) => {
-        if (product.id === 'top-up-1000') {
+    const handleAddProductToCart = (productConfig) => {
+        // Prevent duplicates – CartContext also guards, but we short-circuit for UX
+        if (isProductInCart(productConfig)) {
+            openMiniCart();
+            showToast({
+                title: 'Already in Cart',
+                description: `${productConfig.name} is already in your cart.`,
+                duration: 3000
+            });
+            return;
+        }
+
+        if (productConfig.id === 'top-up-1000') {
             // For top-ups (Credits) - currently assuming generic credit for simplicity or mapping to specific resource
             // The prompt/UI implies a generic top-up, but CartContext expects resource/amount.
             // For now, let's map it to a default "credits" resource or similar if the context supports it, 
@@ -45,23 +62,31 @@ const PricingSection = () => {
             // wait, addCreditPack takes (moduleId, resource, amount, price).
             // I'll check if I can just add a subscription type item that is a "credit" type?
             // core cart context distinguishes by type='credit' or 'subscription'.
-            // I'll use addCreditPack('universal', 'credits', 1000, 1000).
-            navigate('/cart');
+            // TODO: Wire to addCreditPack when credit packs are finalized
+            openMiniCart();
+            showToast({
+                title: 'Added to Cart',
+                description: `${productConfig.name} has been added to your cart.`,
+                duration: 3000
+            });
             return;
         }
 
         // Standard Subscription
-        addSubscription(product.id);
-        navigate('/cart');
+        addProductToCart(productConfig);
+        openMiniCart();
+        showToast({
+            title: 'Added to Cart',
+            description: `${productConfig.name} has been added to your cart.`,
+            duration: 3000
+        });
     };
 
 
 
     const products = [
         {
-            id: 'marketing',
-            name: "SalesPal Marketing",
-            price: 5999,
+            config: PRODUCTS.marketing,
             subtitle: "AI-powered ad campaigns",
             icon: Megaphone,
             iconBg: "bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20",
@@ -75,9 +100,7 @@ const PricingSection = () => {
             ]
         },
         {
-            id: 'sales',
-            name: "SalesPal Sales",
-            price: 9999,
+            config: PRODUCTS.sales,
             subtitle: "Human-like conversations",
             icon: Phone,
             iconBg: "bg-gradient-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/20",
@@ -92,9 +115,7 @@ const PricingSection = () => {
             ]
         },
         {
-            id: 'post-sale',
-            name: "SalesPal Post-Sale",
-            price: 9999,
+            config: PRODUCTS.postSales,
             subtitle: "Automated customer success",
             icon: UserCheck,
             iconBg: "bg-gradient-to-br from-yellow-500 to-yellow-600 shadow-lg shadow-yellow-500/20",
@@ -109,9 +130,7 @@ const PricingSection = () => {
             ]
         },
         {
-            id: 'support',
-            name: "SalesPal Support",
-            price: 9999,
+            config: PRODUCTS.support,
             subtitle: "24/7 AI support",
             icon: Headphones,
             iconBg: "bg-gradient-to-br from-orange-500 to-red-500 shadow-lg shadow-red-500/20",
@@ -125,9 +144,7 @@ const PricingSection = () => {
             ]
         },
         {
-            id: 'salespal360',
-            name: "SalesPal 360",
-            price: 29999,
+            config: PRODUCTS.salesPal360,
             subtitle: "Complete AI revenue operating system",
             icon: Layers,
             iconBg: "bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-600/20",
@@ -180,8 +197,9 @@ const PricingSection = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {products.filter(p => !p.isFlagship).map((product, idx) => {
                     const Icon = product.icon;
-                    const isOwned = isModuleActive(product.id);
-                    const isAdded = isInCart(product.id);
+                    const config = product.config;
+                    const isOwned = config.type === 'subscription' ? isModuleActive(config.module) : false;
+                    const isAdded = isProductInCart(config);
 
                     return (
                         <div
@@ -194,11 +212,11 @@ const PricingSection = () => {
                                 <Icon className="w-6 h-6 text-white" />
                             </div>
 
-                            <h3 className="text-xl font-bold text-gray-900 mb-1">{product.name}</h3>
+                            <h3 className="text-xl font-bold text-gray-900 mb-1">{config.name}</h3>
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">{product.subtitle}</p>
 
                             <div className="mb-6">
-                                <span className="text-3xl font-bold text-gray-900">₹{product.price.toLocaleString()}</span>
+                                <span className="text-3xl font-bold text-gray-900">₹{config.price.toLocaleString()}</span>
                                 <span className="text-gray-600 text-sm">/mo</span>
                             </div>
 
@@ -215,30 +233,20 @@ const PricingSection = () => {
                                 className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${isOwned
                                     ? 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100'
                                     : isAdded
-                                        ? 'bg-green-50 text-green-600 border border-green-200'
+                                        ? 'bg-green-50 text-green-600 border border-green-200 cursor-not-allowed'
                                         : 'bg-white text-gray-700 border border-gray-200 hover:border-transparent hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:text-white shadow-sm hover:shadow-lg hover:shadow-blue-500/25'
                                     }`}
-                                onClick={() => !isOwned && handleAddToCart(product)}
-                                disabled={isOwned}
+                                onClick={() => !isOwned && !isAdded && handleAddProductToCart(config)}
+                                disabled={isOwned || isAdded}
                             >
                                 {isOwned ? (
-                                    <>
-                                        <Check className="w-5 h-5" />
-                                        <span>Active Plan</span>
-                                    </>
+                                    <span>Current Plan</span>
+                                ) : isAdded ? (
+                                    <span>Added ✓</span>
                                 ) : (
                                     <>
-                                        {isAdded ? (
-                                            <>
-                                                <Check className="w-5 h-5" />
-                                                <span>Plan in Cart</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ShoppingCart className="w-5 h-5 stroke-[2.5]" />
-                                                <span>Add to Cart</span>
-                                            </>
-                                        )}
+                                        <ShoppingCart className="w-5 h-5 stroke-[2.5]" />
+                                        <span>Add to Cart</span>
                                     </>
                                 )}
                             </button>
@@ -248,7 +256,9 @@ const PricingSection = () => {
 
                 {/* SalesPal 360 Flagship Plan */}
                 {products.filter(p => p.isFlagship).map((product, idx) => {
-                    const isOwned = isModuleActive(product.id);
+                    const config = product.config;
+                    const isOwned = config.type === 'subscription' ? isModuleActive(config.module) : false;
+                    const isAdded = isProductInCart(config);
 
                     return (
                         <div
@@ -269,24 +279,24 @@ const PricingSection = () => {
                                 </div>
 
                                 <h3 className="text-3xl font-bold text-gray-900 leading-tight mb-2">
-                                    {product.name}
+                                    {config.name}
                                 </h3>
                                 <p className="text-gray-500 text-base mb-6">{product.subtitle}</p>
 
                                 <div className="flex items-baseline gap-1 mb-8">
-                                    <span className="text-5xl font-bold text-gray-900 tracking-tight">₹{product.price.toLocaleString()}</span>
+                                    <span className="text-5xl font-bold text-gray-900 tracking-tight">₹{config.price.toLocaleString()}</span>
                                     <span className="text-gray-400 text-lg font-medium"> /month</span>
                                 </div>
 
                                 <button
-                                    onClick={() => !isOwned && handleAddToCart(product)}
-                                    disabled={isOwned}
-                                    className={`px-8 py-3.5 rounded-xl font-bold text-white shadow-lg shadow-blue-600/20 transition-all ${isOwned
+                                    onClick={() => !isOwned && !isAdded && handleAddProductToCart(config)}
+                                    disabled={isOwned || isAdded}
+                                    className={`px-8 py-3.5 rounded-xl font-bold text-white shadow-lg shadow-blue-600/20 transition-all ${isOwned || isAdded
                                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                         : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 hover:scale-[1.02]'
                                         }`}
                                 >
-                                    {isOwned ? "Active Plan" : "Get Started with 360"}
+                                    {isOwned ? "Current Plan" : isAdded ? "Added ✓" : "Get Started with 360"}
                                 </button>
                             </div>
 

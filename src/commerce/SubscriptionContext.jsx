@@ -4,9 +4,10 @@ import { MODULES } from './commerce.config';
 const SubscriptionContext = createContext();
 
 const STORAGE_KEY = 'salespal_subscriptions';
+const CART_STORAGE_KEY = 'salespal_cart';
 
 export const SubscriptionProvider = ({ children }) => {
-    // Structure: { [moduleId]: { active: boolean, renewalDate: string, usage: {}, extraCredits: {} } }
+    // Structure: { [moduleId]: { module: string, status: string, active: boolean, renewalDate: string, limits?: {}, usage: {}, extraCredits: {}, productId?: string } }
     const [subscriptions, setSubscriptions] = useState({});
     const [loading, setLoading] = useState(true);
 
@@ -31,24 +32,89 @@ export const SubscriptionProvider = ({ children }) => {
         }
     }, [subscriptions, loading]);
 
-    const activateSubscription = (moduleId) => {
+    const buildCounters = (existing, limits) => {
+        const usage = { ...(existing?.usage || {}) };
+        const extraCredits = { ...(existing?.extraCredits || {}) };
+
+        if (limits) {
+            Object.keys(limits).forEach((key) => {
+                if (typeof usage[key] !== 'number' || usage[key] < 0) {
+                    usage[key] = 0;
+                }
+                if (typeof extraCredits[key] !== 'number' || extraCredits[key] < 0) {
+                    extraCredits[key] = 0;
+                }
+            });
+        }
+
+        return { usage, extraCredits };
+    };
+
+    const internalActivateModule = (moduleId, sourceProductId) => {
         if (!MODULES[moduleId]) {
             console.error(`Invalid module ID: ${moduleId}`);
             return;
         }
 
-        const now = new Date();
-        const renewalDate = new Date(now.setDate(now.getDate() + 30)).toISOString();
-
-        setSubscriptions(prev => ({
-            ...prev,
-            [moduleId]: {
-                active: true,
-                renewalDate: renewalDate,
-                usage: {}, // Track usage against limits
-                extraCredits: {} // Purchased top-ups
+        setSubscriptions(prev => {
+            const existing = prev[moduleId];
+            if (existing?.active) {
+                return prev;
             }
-        }));
+
+            const now = new Date();
+            const renewalDate = new Date(now.setDate(now.getDate() + 30)).toISOString();
+            const limits = MODULES[moduleId].limits || existing?.limits || null;
+            const { usage, extraCredits } = buildCounters(existing, limits);
+
+            return {
+                ...prev,
+                [moduleId]: {
+                    ...existing,
+                    module: moduleId,
+                    status: 'active',
+                    active: true,
+                    renewalDate,
+                    limits,
+                    usage,
+                    extraCredits,
+                    productId: sourceProductId || existing?.productId
+                }
+            };
+        });
+    };
+
+    /**
+     * Activate subscriptions for a product or module.
+     * Supports:
+     * - moduleId string ("marketing")
+     * - cart item / product object with type/module/moduleId/productId
+     */
+    const activateSubscription = (input) => {
+        if (!input) return;
+
+        const moduleIds = [];
+        let sourceProductId = null;
+
+        if (typeof input === 'string') {
+            moduleIds.push(input);
+        } else {
+            const type = input.type;
+            const moduleKey = input.module || input.moduleId;
+            const productId = input.productId || input.id;
+            sourceProductId = productId || null;
+
+            // Bundle product (e.g. SalesPal 360) activates multiple modules
+            if (type === 'bundle' || moduleKey === 'bundle' || productId === 'salespal-360') {
+                moduleIds.push('marketing', 'sales', 'postSale', 'support');
+            } else if (moduleKey) {
+                moduleIds.push(moduleKey);
+            } else if (productId && MODULES[productId]) {
+                moduleIds.push(productId);
+            }
+        }
+
+        moduleIds.forEach((moduleId) => internalActivateModule(moduleId, sourceProductId));
     };
 
     const deactivateSubscription = (moduleId) => {
@@ -61,6 +127,10 @@ export const SubscriptionProvider = ({ children }) => {
 
     const isModuleActive = (moduleId) => {
         return !!subscriptions[moduleId]?.active;
+    };
+
+    const getSubscription = (moduleId) => {
+        return subscriptions[moduleId] || null;
     };
 
     const addCredits = (moduleId, resource, amount) => {
@@ -95,25 +165,123 @@ export const SubscriptionProvider = ({ children }) => {
         }));
     };
 
-    // --- TEMPORARY TESTING HELPER ---
-    useEffect(() => {
-        window.__activate = (moduleId) => {
-            console.log(`[TEST] Manually activating ${moduleId}...`);
-            activateSubscription(moduleId);
-            return `Activated ${moduleId}`;
-        };
+    const canConsume = (moduleId, type) => {
+        const sub = subscriptions[moduleId];
+        if (!sub || !sub.active || !sub.limits) return false;
 
-        window.__deactivate = (moduleId) => {
-            console.log(`[TEST] Manually deactivating ${moduleId}...`);
-            deactivateSubscription(moduleId);
-            return `Deactivated ${moduleId}`;
-        };
+        const limit = sub.limits[type];
+        if (typeof limit !== 'number') return false;
 
-        window.__status = () => {
-            console.log(subscriptions);
-            return subscriptions;
+        const used = (sub.usage && typeof sub.usage[type] === 'number') ? sub.usage[type] : 0;
+        const extra = (sub.extraCredits && typeof sub.extraCredits[type] === 'number') ? sub.extraCredits[type] : 0;
+
+        return used < limit || extra > 0;
+    };
+
+    const consume = (moduleId, type) => {
+        const sub = subscriptions[moduleId];
+        if (!sub || !sub.active || !sub.limits) return false;
+
+        const limit = sub.limits[type];
+        if (typeof limit !== 'number') return false;
+
+        const currentUsage = (sub.usage && typeof sub.usage[type] === 'number') ? sub.usage[type] : 0;
+        const currentExtra = (sub.extraCredits && typeof sub.extraCredits[type] === 'number') ? sub.extraCredits[type] : 0;
+
+        let nextUsage = currentUsage;
+        let nextExtra = currentExtra;
+
+        if (currentUsage < limit) {
+            nextUsage = currentUsage + 1;
+        } else if (currentExtra > 0) {
+            nextExtra = currentExtra - 1;
+        } else {
+            return false;
         }
-    }, [subscriptions]);
+
+        if (nextUsage < 0 || nextExtra < 0) {
+            return false;
+        }
+
+        setSubscriptions(prev => {
+            const existing = prev[moduleId];
+            if (!existing) return prev;
+
+            const limits = existing.limits || sub.limits || {};
+            const usage = { ...(existing.usage || {}), [type]: nextUsage };
+            const extraCredits = { ...(existing.extraCredits || {}), [type]: nextExtra };
+
+            return {
+                ...prev,
+                [moduleId]: {
+                    ...existing,
+                    limits,
+                    usage,
+                    extraCredits
+                }
+            };
+        });
+
+        return true;
+    };
+
+    const getRemaining = (moduleId, type) => {
+        const sub = subscriptions[moduleId];
+        if (!sub || !sub.active || !sub.limits) return 0;
+
+        const limit = sub.limits[type];
+        if (typeof limit !== 'number') return 0;
+
+        const used = (sub.usage && typeof sub.usage[type] === 'number') ? sub.usage[type] : 0;
+        const extra = (sub.extraCredits && typeof sub.extraCredits[type] === 'number') ? sub.extraCredits[type] : 0;
+
+        const remainingBase = Math.max(0, limit - used);
+        return remainingBase + Math.max(0, extra);
+    };
+
+    const resetIfRenewalPassed = (moduleId) => {
+        const sub = subscriptions[moduleId];
+        if (!sub || !sub.active || !sub.renewalDate) return;
+
+        const now = new Date();
+        const renewalDate = new Date(sub.renewalDate);
+
+        if (now <= renewalDate) return;
+
+        setSubscriptions(prev => {
+            const existing = prev[moduleId];
+            if (!existing) return prev;
+
+            const limits = existing.limits || null;
+            const usage = {};
+
+            if (limits) {
+                Object.keys(limits).forEach((key) => {
+                    usage[key] = 0;
+                });
+            }
+
+            const nextRenewal = new Date();
+            nextRenewal.setDate(nextRenewal.getDate() + 30);
+
+            return {
+                ...prev,
+                [moduleId]: {
+                    ...existing,
+                    usage,
+                    renewalDate: nextRenewal.toISOString()
+                }
+            };
+        });
+    };
+
+    const clearCartAfterPurchase = () => {
+        try {
+            localStorage.removeItem(CART_STORAGE_KEY);
+        } catch {
+            // Fail silently – do not surface storage errors to users
+        }
+    };
 
     return (
         <SubscriptionContext.Provider value={{
@@ -121,8 +289,14 @@ export const SubscriptionProvider = ({ children }) => {
             activateSubscription,
             deactivateSubscription,
             isModuleActive,
+            getSubscription,
             addCredits,
             resetMonthlyUsage,
+            canConsume,
+            consume,
+            getRemaining,
+            resetIfRenewalPassed,
+            clearCartAfterPurchase,
             loading
         }}>
             {children}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Upload, Globe, Sparkles } from 'lucide-react';
+import { useSubscription } from '../../../../../commerce/SubscriptionContext';
 
 const OptionCard = ({ icon: Icon, label, onClick }) => (
     <button
@@ -12,6 +13,18 @@ const OptionCard = ({ icon: Icon, label, onClick }) => (
 );
 
 const ImageAdSection = () => {
+    const { canConsume, consume } = useSubscription();
+
+    const handleGenerateImage = () => {
+        if (!canConsume('marketing', 'images')) {
+            alert('You have reached your monthly image limit.');
+            return;
+        }
+
+        consume('marketing', 'images');
+        // Existing image generation logic would run here
+    };
+
     return (
         <div className="space-y-4 animate-fade-in-up">
             <h4 className="text-sm font-semibold text-gray-900">Image Creatives</h4>
@@ -36,7 +49,7 @@ const ImageAdSection = () => {
 
                 {/* Action Cards */}
                 <OptionCard icon={Upload} label="Upload Image" />
-                <OptionCard icon={Sparkles} label="Generate New" />
+                <OptionCard icon={Sparkles} label="Generate New" onClick={handleGenerateImage} />
             </div>
         </div>
     );

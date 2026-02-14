@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Link } from 'react-router-dom';
 import { ChevronDown, User, LogOut, ShoppingCart } from 'lucide-react';
 import { useCart } from '../../commerce/CartContext';
 
 const AppHeader = () => {
     const { user, logout } = useAuth();
-    const { cart } = useCart();
+    const { cart, openMiniCart } = useCart();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -37,9 +36,11 @@ const AppHeader = () => {
 
             {/* Right side: User Profile */}
             <div className="flex items-center gap-4">
-                <Link
-                    to="/cart"
+                <button
+                    type="button"
+                    onClick={openMiniCart}
                     className="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-50 rounded-full transition-colors"
+                    aria-label="Open mini cart"
                 >
                     <ShoppingCart className="w-5 h-5" />
                     {cart.length > 0 && (
@@ -47,7 +48,7 @@ const AppHeader = () => {
                             {cart.length}
                         </span>
                     )}
-                </Link>
+                </button>
 
                 <div className="relative" ref={dropdownRef}>
                     <button

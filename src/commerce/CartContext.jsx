@@ -10,6 +10,7 @@ export const CartProvider = ({ children }) => {
     const { isModuleActive } = useSubscription();
     const [cart, setCart] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isMiniCartOpen, setIsMiniCartOpen] = useState(false);
 
     // Initialize from LocalStorage
     useEffect(() => {
@@ -31,6 +32,44 @@ export const CartProvider = ({ children }) => {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
         }
     }, [cart, loading]);
+
+    const addProductToCart = (product) => {
+        if (!product || !product.id) {
+            console.error('addProductToCart requires a product with an id');
+            return;
+        }
+
+        const { id, name, price, type, module: moduleId } = product;
+
+        // Prevent adding if already owned for subscription products
+        if (type === 'subscription' && moduleId && isModuleActive(moduleId)) {
+            console.warn(`User already owns module: ${moduleId}`);
+            return;
+        }
+
+        // Prevent duplicates in cart by product id or module id fallback
+        const exists = cart.some(item =>
+            (item.productId && item.productId === id) ||
+            (!item.productId && item.type === 'subscription' && moduleId && item.moduleId === moduleId)
+        );
+
+        if (exists) {
+            console.warn(`Product already in cart: ${id}`);
+            return;
+        }
+
+        const newItem = {
+            id: `prod_${id}_${Date.now()}`,
+            productId: id,
+            type: type === 'bundle' ? 'bundle' : 'subscription',
+            moduleId: moduleId || null,
+            name,
+            price,
+            quantity: 1
+        };
+
+        setCart(prev => [...prev, newItem]);
+    };
 
     const addSubscription = (moduleId) => {
         const moduleConfig = MODULES[moduleId];
@@ -108,15 +147,24 @@ export const CartProvider = ({ children }) => {
         return cart.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
     };
 
+    const openMiniCart = () => setIsMiniCartOpen(true);
+    const closeMiniCart = () => setIsMiniCartOpen(false);
+    const toggleMiniCart = () => setIsMiniCartOpen(prev => !prev);
+
     return (
         <CartContext.Provider value={{
             cart,
             loading,
+            isMiniCartOpen,
+            addProductToCart,
             addSubscription,
             addCreditPack,
             removeItem,
             clearCart,
-            getCartTotal
+            getCartTotal,
+            openMiniCart,
+            closeMiniCart,
+            toggleMiniCart
         }}>
             {children}
         </CartContext.Provider>

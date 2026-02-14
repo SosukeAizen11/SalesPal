@@ -8,6 +8,8 @@ import { ProjectProvider } from '../context/ProjectContext';
 import { IntegrationProvider } from '../context/IntegrationContext';
 import { WalkthroughProvider } from '../walkthrough/WalkthroughProvider';
 import WalkthroughOverlay from '../walkthrough/WalkthroughOverlay';
+import MiniCartDrawer from '../components/cart/MiniCartDrawer';
+import { ToastProvider } from '../components/ui/Toast';
 
 const App = () => {
     return (
@@ -17,10 +19,13 @@ const App = () => {
                     <IntegrationProvider>
                         <ProjectProvider>
                             <WalkthroughProvider>
-                                <ScrollRestoration />
-                                <Outlet />
-                                {/* Walkthrough rendered at app root to prevent unmounts */}
-                                <WalkthroughOverlay />
+                                <ToastProvider>
+                                    <ScrollRestoration />
+                                    <Outlet />
+                                    {/* Walkthrough rendered at app root to prevent unmounts */}
+                                    <WalkthroughOverlay />
+                                    <MiniCartDrawer />
+                                </ToastProvider>
                             </WalkthroughProvider>
                         </ProjectProvider>
                     </IntegrationProvider>
