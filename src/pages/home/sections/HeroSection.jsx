@@ -62,7 +62,7 @@ const HeroSection = () => {
     };
 
     return (
-        <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+        <section className="relative pt-16 pb-20 px-6 overflow-hidden">
             {/* Animated gradient background */}
             <motion.div
                 className="absolute inset-0 bg-gradient-to-b from-gray-50 via-white to-gray-50"

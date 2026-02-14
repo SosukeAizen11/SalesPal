@@ -1,28 +1,28 @@
 export const PRODUCTS = {
     marketing: {
         id: "marketing",
-        name: "SalesPal Marketing",
+        name: "Marketing",
         type: "subscription",
         price: 5999,
         module: "marketing"
     },
     sales: {
         id: "sales",
-        name: "SalesPal Sales",
+        name: "Sales",
         type: "subscription",
         price: 9999,
         module: "sales"
     },
     postSales: {
         id: "post-sales",
-        name: "SalesPal Post-Sale",
+        name: "Post-Sales",
         type: "subscription",
         price: 9999,
         module: "postSale"
     },
     support: {
         id: "support",
-        name: "SalesPal Support",
+        name: "Support",
         type: "subscription",
         price: 9999,
         module: "support"
@@ -35,4 +35,5 @@ export const PRODUCTS = {
         module: "bundle"
     }
 };
+
 

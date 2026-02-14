@@ -21,10 +21,10 @@ const SubscriptionPage = () => {
     };
 
     const modulesList = [
-        { key: 'marketing', label: 'Marketing Module' },
-        { key: 'sales', label: 'Sales Module' },
-        { key: 'postSale', label: 'Post-Sales Module' },
-        { key: 'support', label: 'Support Module' }
+        { key: 'marketing', label: 'Marketing' },
+        { key: 'sales', label: 'Sales Plan' },
+        { key: 'postSale', label: 'Post-Sales Plan' },
+        { key: 'support', label: 'Support Plan' }
     ];
 
     return (

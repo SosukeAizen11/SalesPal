@@ -10,13 +10,13 @@ const ModuleAccessWrapper = ({ moduleName, children, title = 'Module Locked' }) 
 
     // Mapping for friendlier display names if needed
     const moduleDisplayNames = {
-        marketing: 'Marketing Module',
-        sales: 'Sales Module',
-        postSale: 'Post-Sales Module',
-        support: 'Support Module',
+        marketing: 'Marketing',
+        sales: 'Sales Plan',
+        postSale: 'Post-Sales Plan',
+        support: 'Support Plan',
     };
 
-    const displayName = moduleDisplayNames[moduleName] || moduleName || 'Module';
+    const displayName = moduleDisplayNames[moduleName] || moduleName || 'Plan';
 
     if (loading) {
         return (
@@ -52,7 +52,7 @@ const ModuleAccessWrapper = ({ moduleName, children, title = 'Module Locked' }) 
                 </h1>
 
                 <p className="text-gray-500 mb-8 leading-relaxed">
-                    You do not have an active subscription for this module.
+                    You do not have an active subscription for this plan.
                     Unlock powerful features to supercharge your workflow.
                 </p>
 
@@ -71,7 +71,7 @@ const ModuleAccessWrapper = ({ moduleName, children, title = 'Module Locked' }) 
                     </Button>
 
                     <button
-                        onClick={() => navigate('/support')}
+                        onClick={() => navigate('/contact')}
                         className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
                     >
                         Contact Sales

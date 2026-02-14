@@ -281,15 +281,17 @@ const TopUpDrawer = ({ isOpen, onClose }) => {
                                         onClick={handleCheckout}
                                         className="bg-white text-gray-900 hover:bg-gray-100 border-none font-bold px-6"
                                     >
-                                        Checkout
-                                        <ArrowRight className="w-4 h-4 ml-2" />
+                                        <>
+                                            Checkout
+                                            <ArrowRight className="w-4 h-4 ml-2" />
+                                        </>
                                     </Button>
                                 </motion.div>
                             ) : (
                                 <div className="text-center">
                                     <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
                                         <Lock className="w-3 h-3" />
-                                        Secure payment via Stripe
+                                        Secure payment via Razorpay
                                     </p>
                                 </div>
                             )}

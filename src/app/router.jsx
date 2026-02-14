@@ -73,6 +73,7 @@ import {
     MarketingSettingsTracking,
     MarketingSettingsNotifications
 } from '../pages/marketing/settings/MarketingSettingsPlaceholders';
+import ProfilePage from '../pages/profile/ProfilePage';
 
 export const router = createBrowserRouter([
     {
@@ -212,6 +213,8 @@ export const router = createBrowserRouter([
                                 children: [
                                     { index: true, element: <Navigate to="integrations" replace /> },
                                     { path: "integrations", element: <MarketingSettingsIntegrations /> },
+                                    { path: "integrations/meta", element: <MetaIntegration /> },
+                                    { path: "integrations/linkedin", element: <MetaIntegration /> },
                                     { path: "defaults", element: <MarketingSettingsDefaults /> },
                                     { path: "tracking", element: <MarketingSettingsTracking /> },
                                     { path: "notifications", element: <MarketingSettingsNotifications /> }
@@ -253,6 +256,10 @@ export const router = createBrowserRouter([
                     {
                         path: "/subscription",
                         element: <SubscriptionPage />
+                    },
+                    {
+                        path: "/profile",
+                        element: <ProfilePage />
                     },
 
                     // Global Settings

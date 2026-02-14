@@ -7,18 +7,16 @@ import {
     Headphones,
     CreditCard,
     Settings,
-    LogOut,
     ChevronDown,
     ChevronRight,
     LayoutDashboard,
     FolderKanban,
     Share2
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import SidebarUserMenu from './SidebarUserMenu';
 
 const AppLayout = () => {
-    const { logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -57,14 +55,7 @@ const AppLayout = () => {
         { label: 'Settings', path: '/settings', icon: Settings },
     ];
 
-    const handleLogout = async () => {
-        try {
-            await logout();
-            navigate('/auth/signin');
-        } catch (error) {
-            console.error("Logout failed", error);
-        }
-    };
+
 
     const isChildActive = (item) => {
         if (!item.children) return false;
@@ -165,15 +156,7 @@ const AppLayout = () => {
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-gray-100 shrink-0">
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
-                    >
-                        <LogOut size={20} strokeWidth={1.5} className="shrink-0" />
-                        Logout
-                    </button>
-                </div>
+                <SidebarUserMenu />
             </aside>
 
             {/* Main Content */}

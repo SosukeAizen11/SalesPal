@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, ShoppingCart, Trash2, Package, CreditCard } from 'lucide-react';
+import { X, ShoppingCart, Trash2, Package, CreditCard, Megaphone, Phone, UserCheck, Headphones, Layers } from 'lucide-react';
 import { useCart } from '../../commerce/CartContext';
 import Button from '../ui/Button';
 
@@ -17,6 +17,20 @@ const MiniCartDrawer = () => {
     const navigate = useNavigate();
     const itemCount = cart.reduce((total, item) => total + (item.quantity || 1), 0);
     const subtotal = getCartTotal();
+
+    // Icon mapping for products
+    const getProductIcon = (iconKey) => {
+        const iconMap = {
+            'marketing': { Icon: Megaphone, bgColor: 'bg-blue-500' },
+            'sales': { Icon: Phone, bgColor: 'bg-green-500' },
+            'postSale': { Icon: UserCheck, bgColor: 'bg-yellow-500' },
+            'post-sales': { Icon: UserCheck, bgColor: 'bg-yellow-500' },
+            'support': { Icon: Headphones, bgColor: 'bg-orange-500' },
+            'bundle': { Icon: Layers, bgColor: 'bg-blue-600' },
+            'salespal-360': { Icon: Layers, bgColor: 'bg-blue-600' }
+        };
+        return iconMap[iconKey] || { Icon: Package, bgColor: 'bg-blue-500' };
+    };
 
     useEffect(() => {
         if (!isMiniCartOpen) return;
@@ -102,61 +116,55 @@ const MiniCartDrawer = () => {
                                     </p>
                                 </div>
                             ) : (
-                                cart.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className="flex items-start justify-between gap-3 border border-gray-100 rounded-lg px-3 py-3 bg-white shadow-sm"
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <div
-                                                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${item.type === 'subscription' || item.type === 'bundle'
-                                                    ? 'bg-blue-50 text-blue-600'
-                                                    : 'bg-green-50 text-green-600'
-                                                    }`}
-                                            >
-                                                {item.type === 'subscription' || item.type === 'bundle' ? (
-                                                    <Package className="w-4 h-4" />
-                                                ) : (
-                                                    <CreditCard className="w-4 h-4" />
-                                                )}
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <span
-                                                        className={`text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${item.type === 'subscription' || item.type === 'bundle'
-                                                            ? 'bg-blue-100 text-blue-700'
-                                                            : 'bg-green-100 text-green-700'
-                                                            }`}
-                                                    >
-                                                        {item.type === 'subscription' || item.type === 'bundle' ? 'Plan' : 'Credits'}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs font-medium text-gray-900 line-clamp-2">
-                                                    {item.name}
-                                                </p>
-                                                <p className="text-[11px] text-gray-500 mt-0.5">
-                                                    {item.type === 'subscription' || item.type === 'bundle'
-                                                        ? 'Billed monthly'
-                                                        : `${item.amount} ${item.resource} items`}
-                                                </p>
-                                            </div>
-                                        </div>
+                                cart.map((item) => {
+                                    const { Icon, bgColor } = getProductIcon(item.iconKey || item.moduleId || item.productId);
 
-                                        <div className="flex flex-col items-end gap-2">
-                                            <span className="text-sm font-semibold text-gray-900">
-                                                ₹{(item.price * (item.quantity || 1)).toLocaleString()}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeItem(item.id)}
-                                                className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-full transition-colors"
-                                            >
-                                                <Trash2 className="w-3 h-3" />
-                                                <span>Remove</span>
-                                            </button>
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className="flex items-start justify-between gap-3 border border-gray-100 rounded-lg px-3 py-3 bg-white shadow-sm"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div
+                                                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${item.type === 'credits'
+                                                        ? 'bg-green-50 text-green-600'
+                                                        : `${bgColor} text-white`
+                                                        }`}
+                                                >
+                                                    {item.type === 'credits' ? (
+                                                        <CreditCard className="w-5 h-5" />
+                                                    ) : (
+                                                        <Icon className="w-5 h-5" />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-gray-900 line-clamp-1 mb-0.5">
+                                                        {item.name}
+                                                    </p>
+                                                    <p className="text-[11px] text-gray-500">
+                                                        {item.type === 'subscription' || item.type === 'bundle'
+                                                            ? 'Billed monthly'
+                                                            : `${item.amount} ${item.resource} items`}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col items-end gap-2">
+                                                <span className="text-sm font-semibold text-gray-900">
+                                                    ₹{(item.price * (item.quantity || 1)).toLocaleString()}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeItem(item.id)}
+                                                    className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded-full transition-colors"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                    <span>Remove</span>
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
 
@@ -174,7 +182,7 @@ const MiniCartDrawer = () => {
                                     type="button"
                                     variant="ghost"
                                     size="md"
-                                    className="w-full justify-center text-gray-700 bg-gray-50 hover:bg-gray-100"
+                                    className="w-full justify-center text-gray-900 bg-gray-100 hover:bg-gray-200 font-semibold border border-gray-200"
                                     onClick={handleContinueShopping}
                                 >
                                     Continue Shopping

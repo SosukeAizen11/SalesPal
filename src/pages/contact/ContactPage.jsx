@@ -55,7 +55,7 @@ const ContactPage = () => {
     };
 
     return (
-        <div className="pt-32 pb-20 px-6 font-sans text-slate-900">
+        <div className="pt-16 pb-20 px-6 font-sans text-slate-900">
             <div className="max-w-7xl mx-auto">
 
                 {/* Header Section */}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Trash2, ArrowRight, ShieldCheck, CreditCard, Package, Megaphone, Phone, UserCheck, Headphones, Layers } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowRight, ShieldCheck, CreditCard, Package, Megaphone, Phone, UserCheck, Headphones, Layers, Loader, X, Check } from 'lucide-react';
 import { useCart } from '../../commerce/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../commerce/SubscriptionContext';
@@ -32,6 +32,100 @@ const CartPage = () => {
 
     const [paymentMethod, setPaymentMethod] = useState('card');
 
+    // Billing cycle state
+    const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
+
+    // Promo code state
+    const [promoCode, setPromoCode] = useState('');
+    const [appliedPromo, setAppliedPromo] = useState(null);
+    const [promoError, setPromoError] = useState('');
+    const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+
+    // Payment processing state
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // Valid promo codes (in production, this would be fetched from backend)
+    const validPromoCodes = {
+        'SAVE10': { discount: 0.10, type: 'percentage', description: '10% off' },
+        'SAVE20': { discount: 0.20, type: 'percentage', description: '20% off' },
+        'FLAT1000': { discount: 1000, type: 'fixed', description: '₹1,000 off' },
+        'WELCOME': { discount: 0.15, type: 'percentage', description: '15% off' }
+    };
+
+    // Calculate price based on billing cycle
+    const calculateItemPrice = (item) => {
+        if (item.type === 'credits') return item.price; // Credits don't have billing cycles
+
+        const monthlyPrice = item.price;
+        if (billingCycle === 'yearly') {
+            // Yearly = monthly * 12 * 0.85 (15% discount)
+            return Math.round(monthlyPrice * 12 * 0.85);
+        }
+        return monthlyPrice;
+    };
+
+    // Calculate subtotal based on billing cycle
+    const calculateSubtotal = () => {
+        return cart.reduce((total, item) => {
+            const itemPrice = calculateItemPrice(item);
+            return total + (itemPrice * (item.quantity || 1));
+        }, 0);
+    };
+
+    const subtotalWithCycle = calculateSubtotal();
+
+    // Calculate yearly discount amount (only for display)
+    const yearlyDiscountAmount = billingCycle === 'yearly'
+        ? cart.reduce((total, item) => {
+            if (item.type === 'credits') return total;
+            const monthlyPrice = item.price * (item.quantity || 1);
+            const yearlyPrice = monthlyPrice * 12;
+            const discountedYearlyPrice = Math.round(yearlyPrice * 0.85);
+            return total + (yearlyPrice - discountedYearlyPrice);
+        }, 0)
+        : 0;
+
+    // Calculate promo discount
+    const calculatePromoDiscount = () => {
+        if (!appliedPromo) return 0;
+        const promo = validPromoCodes[appliedPromo];
+        if (promo.type === 'percentage') {
+            return Math.round(subtotalWithCycle * promo.discount);
+        }
+        return promo.discount;
+    };
+
+    const promoDiscount = calculatePromoDiscount();
+    const finalTotal = Math.max(0, subtotalWithCycle - promoDiscount);
+
+    const handleApplyPromo = () => {
+        setIsApplyingPromo(true);
+        setPromoError('');
+
+        // Simulate API call
+        setTimeout(() => {
+            const upperPromo = promoCode.trim().toUpperCase();
+            if (validPromoCodes[upperPromo]) {
+                setAppliedPromo(upperPromo);
+                setPromoError('');
+                showToast({
+                    title: 'Promo Code Applied',
+                    description: `${validPromoCodes[upperPromo].description} discount applied successfully!`,
+                    duration: 3000
+                });
+            } else {
+                setPromoError('Invalid promo code. Please try again.');
+            }
+            setIsApplyingPromo(false);
+        }, 500);
+    };
+
+    const handleRemovePromo = () => {
+        setAppliedPromo(null);
+        setPromoCode('');
+        setPromoError('');
+    };
+
     const handleBillingChange = (field, value) => {
         setBillingDetails((prev) => ({
             ...prev,
@@ -58,7 +152,7 @@ const CartPage = () => {
 
     if (cart.length === 0) {
         return (
-            <div className="min-h-[70vh] bg-white flex flex-col items-center justify-center p-6 text-center">
+            <div className="min-h-[70vh] bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
                 <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-6">
                     <ShoppingCart className="w-8 h-8 text-gray-400" />
                 </div>
@@ -77,7 +171,7 @@ const CartPage = () => {
     }
 
     return (
-        <div className="min-h-[70vh] bg-white">
+        <div className="min-h-[70vh] bg-gray-50">
             <div className="max-w-6xl mx-auto px-6 py-10">
                 <div className="flex items-center justify-between mb-8">
                     <div>
@@ -161,19 +255,33 @@ const CartPage = () => {
                                                         </span>
                                                     </div>
                                                     <h3 className="text-sm font-semibold text-gray-900">{item.name}</h3>
-                                                    <p className="text-xs text-gray-500 mt-0.5">
-                                                        {item.type === 'subscription' || item.type === 'bundle'
-                                                            ? 'Billed monthly'
-                                                            : `${item.amount} ${item.resource} items`}
-                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <p className="text-xs text-gray-500">
+                                                            {item.type === 'subscription' || item.type === 'bundle'
+                                                                ? `Billed ${billingCycle}`
+                                                                : `${item.amount} ${item.resource} items`}
+                                                        </p>
+                                                        {billingCycle === 'yearly' && (item.type === 'subscription' || item.type === 'bundle') && (
+                                                            <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-green-50 text-green-700 rounded">
+                                                                15% yearly discount
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
 
                                             <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
                                                 <div className="text-right">
-                                                    <span className="block text-sm font-semibold text-gray-900">
-                                                        ₹{(item.price * (item.quantity || 1)).toLocaleString()}
-                                                    </span>
+                                                    <div className="flex items-center gap-2 justify-end">
+                                                        <span className="block text-sm font-semibold text-gray-900">
+                                                            ₹{(calculateItemPrice(item) * (item.quantity || 1)).toLocaleString()}
+                                                        </span>
+                                                        {item.type === 'credits' && (item.quantity || 1) > 1 && (
+                                                            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                                                x{item.quantity}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <button
                                                     onClick={() => removeItem(item.id)}
@@ -310,69 +418,217 @@ const CartPage = () => {
 
                     {/* Right: Order Summary */}
                     <div>
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm sticky top-32 space-y-4">
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm sticky top-32 space-y-5">
                             <div>
                                 <h2 className="text-lg font-semibold text-gray-900 mb-1">Order Summary</h2>
                                 <p className="text-xs text-gray-500">
-                                    Billed monthly • Renews automatically
+                                    Billed {billingCycle} • Renews automatically
                                 </p>
                             </div>
 
-                            <div className="space-y-3 pt-2">
-                                <div className="flex justify-between text-gray-600 text-sm">
-                                    <span>Subtotal</span>
-                                    <span>₹{subtotal.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-gray-400 text-sm">
-                                    <span>Taxes</span>
-                                    <span>Calculated at checkout</span>
-                                </div>
-                            </div>
-
+                            {/* Billing Cycle Toggle */}
                             <div className="border-t border-gray-100 pt-4">
-                                <div className="flex justify-between items-baseline">
-                                    <span className="text-base font-medium text-gray-900">Total due today</span>
-                                    <span className="text-2xl font-semibold text-gray-900">₹{subtotal.toLocaleString()}</span>
+                                <label className="block text-sm font-medium text-gray-700 mb-3">
+                                    Billing Cycle
+                                </label>
+                                <div className="relative bg-gray-100 rounded-lg p-1 flex gap-1">
+                                    <button
+                                        onClick={() => setBillingCycle('monthly')}
+                                        className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 ${billingCycle === 'monthly'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                            }`}
+                                    >
+                                        Monthly
+                                    </button>
+                                    <button
+                                        onClick={() => setBillingCycle('yearly')}
+                                        className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 flex items-center justify-center gap-2 ${billingCycle === 'yearly'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                            }`}
+                                    >
+                                        <span>Yearly</span>
+                                        <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-green-100 text-green-700 rounded whitespace-nowrap">
+                                            Save 15%
+                                        </span>
+                                    </button>
                                 </div>
                             </div>
 
+                            {/* Promo Code Section */}
+                            <div className="border-t border-gray-100 pt-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Promo Code
+                                </label>
+                                {appliedPromo ? (
+                                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
+                                        <div className="flex items-center gap-2">
+                                            <Check className="w-4 h-4 text-green-600" />
+                                            <span className="text-sm font-semibold text-green-700">{appliedPromo}</span>
+                                            <span className="text-xs text-green-600">({validPromoCodes[appliedPromo].description})</span>
+                                        </div>
+                                        <button
+                                            onClick={handleRemovePromo}
+                                            className="text-xs text-green-600 hover:text-green-800 font-medium flex items-center gap-1"
+                                        >
+                                            <X className="w-3 h-3" />
+                                            Remove
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Enter promo code"
+                                                value={promoCode}
+                                                onChange={(e) => setPromoCode(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && handleApplyPromo()}
+                                                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                            <button
+                                                onClick={handleApplyPromo}
+                                                disabled={!promoCode.trim() || isApplyingPromo}
+                                                className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                            >
+                                                {isApplyingPromo ? (
+                                                    <>
+                                                        <Loader className="w-4 h-4 animate-spin" />
+                                                        <span>Applying...</span>
+                                                    </>
+                                                ) : (
+                                                    'Apply'
+                                                )}
+                                            </button>
+                                        </div>
+                                        {promoError && (
+                                            <p className="mt-2 text-xs text-red-600 flex items-center gap-1">
+                                                <X className="w-3 h-3" />
+                                                {promoError}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Pricing Breakdown */}
+                            <div className="border-t border-gray-100 pt-4 space-y-3">
+                                <div className="flex justify-between text-sm text-gray-600">
+                                    <span>Subtotal</span>
+                                    <span className="font-medium">₹{subtotalWithCycle.toLocaleString()}</span>
+                                </div>
+
+                                {billingCycle === 'yearly' && yearlyDiscountAmount > 0 && (
+                                    <div className="flex justify-between text-sm text-green-600">
+                                        <span>Yearly discount (15%)</span>
+                                        <span className="font-medium">-₹{yearlyDiscountAmount.toLocaleString()}</span>
+                                    </div>
+                                )}
+
+                                {appliedPromo && promoDiscount > 0 && (
+                                    <div className="flex justify-between text-sm text-green-600">
+                                        <span>Promo ({validPromoCodes[appliedPromo].description})</span>
+                                        <span className="font-medium">-₹{promoDiscount.toLocaleString()}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between text-sm text-gray-400">
+                                    <span>Taxes</span>
+                                    <span className="text-xs">Calculated at checkout</span>
+                                </div>
+                            </div>
+
+                            {/* Total */}
+                            <div className="border-t border-gray-200 pt-4">
+                                <div className="flex justify-between items-baseline">
+                                    <span className="text-base font-semibold text-gray-900">Total due today</span>
+                                    <span className="text-2xl font-bold text-gray-900">₹{finalTotal.toLocaleString()}</span>
+                                </div>
+                            </div>
+
+                            {/* Complete Purchase Button */}
                             <Button
-                                className="w-full justify-center py-3 text-sm font-semibold shadow-none"
-                                onClick={() => {
-                                    if (!cart.length) return;
+                                className="w-full justify-center py-3.5 text-sm font-semibold shadow-none"
+                                onClick={async () => {
+                                    if (!cart.length || isProcessing) return;
 
-                                    // Process all items
-                                    cart.forEach((item) => {
-                                        if (item.type === 'subscription' || item.type === 'bundle') {
-                                            activateSubscription(item);
-                                        } else if (item.type === 'credits') {
-                                            // Handle cases where amount might be undefined (fallback to 0)
-                                            // Calculate total credits: credits_per_pack * quantity
-                                            const totalCredits = (item.amount || 0) * (item.quantity || 1);
-                                            if (totalCredits > 0) {
-                                                addCredits(item.moduleId, item.resource, totalCredits);
+                                    setIsProcessing(true);
+
+                                    try {
+                                        // Simulate payment processing
+                                        await new Promise(resolve => setTimeout(resolve, 2000));
+
+                                        // Process all items
+                                        cart.forEach((item) => {
+                                            if (item.type === 'subscription' || item.type === 'bundle') {
+                                                activateSubscription(item);
+                                            } else if (item.type === 'credits') {
+                                                // Calculate total credits: amount per pack * number of packs purchased
+                                                const creditsPerPack = item.amount || 0;
+                                                const packsPurchased = item.quantity || 1;
+                                                const totalCredits = creditsPerPack * packsPurchased;
+
+                                                if (totalCredits > 0 && item.resource) {
+                                                    // addCredits expects (type, quantity) where type is 'images' or 'videos'
+                                                    addCredits(item.resource, totalCredits);
+                                                }
                                             }
-                                        }
-                                    });
+                                        });
 
-                                    // Clear cart and redirect
-                                    clearCart();
-                                    clearCartAfterPurchase();
-                                    navigate('/purchase-success');
+                                        // Show success toast
+                                        showToast({
+                                            title: 'Payment Successful',
+                                            description: 'Your subscription has been activated successfully!',
+                                            duration: 3000
+                                        });
+
+                                        // Clear cart and redirect
+                                        clearCart();
+                                        clearCartAfterPurchase();
+                                        navigate('/purchase-success');
+                                    } catch (error) {
+                                        console.error('Payment failed:', error);
+                                        showToast({
+                                            title: 'Payment Failed',
+                                            description: 'There was an error processing your payment. Please try again.',
+                                            duration: 5000
+                                        });
+                                        setIsProcessing(false);
+                                    }
                                 }}
+                                disabled={cart.length === 0 || isProcessing}
                             >
-                                Complete Purchase
+                                {isProcessing ? (
+                                    <span className="flex items-center gap-2">
+                                        <Loader className="w-4 h-4 animate-spin" />
+                                        Processing...
+                                    </span>
+                                ) : (
+                                    'Complete Purchase'
+                                )}
                             </Button>
 
-                            <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-gray-500">
-                                <span className="flex items-center gap-1">
-                                    <ShieldCheck className="w-3 h-3" />
-                                    <span>Secure Checkout</span>
+                            {/* Recurring Billing Disclaimer */}
+                            <p className="text-xs text-gray-500 text-center leading-relaxed px-2">
+                                By clicking Complete Purchase, you agree to recurring monthly billing. Cancel anytime from Billing Settings.
+                            </p>
+
+                            {/* Trust Indicators */}
+                            <div className="border-t border-gray-100 pt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-gray-500">
+                                <span className="flex items-center gap-1.5">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                                    <span className="font-medium">Secure Checkout</span>
                                 </span>
                                 <span className="h-3 w-px bg-gray-200 hidden sm:inline-block" />
-                                <span>GST Invoice Available</span>
+                                <span className="flex items-center gap-1.5">
+                                    <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>Powered by Razorpay</span>
+                                </span>
                                 <span className="h-3 w-px bg-gray-200 hidden sm:inline-block" />
-                                <span>Cancel Anytime</span>
+                                <span className="font-medium">GST Invoice Available</span>
+                                <span className="h-3 w-px bg-gray-200 hidden sm:inline-block" />
+                                <span className="font-medium">Cancel Anytime</span>
                             </div>
                         </div>
                     </div>
@@ -418,7 +674,7 @@ const CartPage = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

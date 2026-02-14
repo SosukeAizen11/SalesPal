@@ -68,12 +68,22 @@ export const CartProvider = ({ children }) => {
         // Correctly mapping incoming product data to cart item structure
         const isCreditPack = type === 'credits';
 
+        // Map product IDs to clean display names
+        const displayNames = {
+            'marketing': 'Marketing',
+            'sales': 'Sales',
+            'post-sales': 'Post-Sales',
+            'support': 'Support',
+            'salespal-360': 'SalesPal 360'
+        };
+
         const newItem = {
             id: id, // Use standardized ID
             productId: id,
             type: type === 'bundle' ? 'bundle' : (isCreditPack ? 'credits' : 'subscription'),
             moduleId: moduleId || null,
-            name,
+            name: displayNames[id] || name, // Use clean display name
+            iconKey: moduleId || id, // Store icon key for mapping
             price,
             // For credits: `quantity` passed from TopUp is the amount of credits (e.g. 10).
             // We store that as `amount` for the logic.
@@ -117,11 +127,21 @@ export const CartProvider = ({ children }) => {
             return;
         }
 
+        // Map module IDs to clean display names
+        const displayNames = {
+            'marketing': 'Marketing',
+            'sales': 'Sales',
+            'postSale': 'Post-Sales',
+            'support': 'Support',
+            'bundle': 'SalesPal 360'
+        };
+
         const newItem = {
             id: `sub_${moduleId}_${Date.now()}`,
             type: 'subscription',
             moduleId: moduleId,
-            name: `SalesPal ${moduleConfig.name} Plan`,
+            name: displayNames[moduleId] || moduleConfig.name,
+            iconKey: moduleId, // Store icon key for mapping
             price: moduleConfig.price,
             quantity: 1
         };

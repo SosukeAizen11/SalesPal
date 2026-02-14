@@ -12,7 +12,7 @@ const PurchaseSuccess = () => {
                     Purchase Successful
                 </h1>
                 <p className="text-sm text-gray-500 mb-8">
-                    Your subscription is now active. You can start using your modules from the dashboard.
+                    Your subscription is now active. You can start using your plans from the dashboard.
                 </p>
                 <Button
                     className="w-full justify-center"
