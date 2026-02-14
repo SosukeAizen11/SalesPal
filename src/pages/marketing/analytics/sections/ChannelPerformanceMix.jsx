@@ -107,7 +107,7 @@ const ChannelPerformanceMix = ({ data }) => {
             </div>
 
             {/* Fixed height container for chart to prevent Recharts "width/height(-1)" error */}
-            <div className="h-64 w-full mt-4 ml-[-10px]">
+            <div className="h-64 w-full mt-4 ml-[-10px]" style={{ minWidth: '100px', minHeight: '100px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} layout="vertical" margin={{ top: 5, right: 10, left: 40, bottom: 5 }}>
                         <XAxis type="number" hide />

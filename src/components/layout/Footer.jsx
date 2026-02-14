@@ -18,7 +18,7 @@ const Footer = () => {
                         <div className="lg:col-span-1">
                             <Link to="/" className="flex items-center mb-4 -ml-5">
                                 <img
-                                    src="/SalesPal Logo Footer.jpeg"
+                                    src="/BlackTextLogo.webp"
                                     alt="SalesPal Logo"
                                     className="h-14 object-contain"
                                 />

@@ -39,7 +39,7 @@ export const CartProvider = ({ children }) => {
             return;
         }
 
-        const { id, name, price, type, module: moduleId } = product;
+        const { id, name, price, type, module: moduleId, creditType, quantity, cartQuantity } = product;
 
         // Prevent adding if already owned for subscription products
         if (type === 'subscription' && moduleId && isModuleActive(moduleId)) {
@@ -47,25 +47,51 @@ export const CartProvider = ({ children }) => {
             return;
         }
 
-        // Prevent duplicates in cart by product id or module id fallback
-        const exists = cart.some(item =>
-            (item.productId && item.productId === id) ||
-            (!item.productId && item.type === 'subscription' && moduleId && item.moduleId === moduleId)
-        );
+        // Check for existing item by ID
+        const existingItemIndex = cart.findIndex(item => item.id === id);
 
-        if (exists) {
-            console.warn(`Product already in cart: ${id}`);
-            return;
+        if (existingItemIndex > -1) {
+            // If credit pack exists, increment quantity (of packs)
+            if (type === 'credits') {
+                setCart(prev => prev.map((item, idx) =>
+                    idx === existingItemIndex
+                        ? { ...item, quantity: (item.quantity || 1) + (cartQuantity || 1) }
+                        : item
+                ));
+                return;
+            } else {
+                console.warn(`Product already in cart: ${id}`);
+                return;
+            }
         }
 
+        // Correctly mapping incoming product data to cart item structure
+        const isCreditPack = type === 'credits';
+
         const newItem = {
-            id: `prod_${id}_${Date.now()}`,
+            id: id, // Use standardized ID
             productId: id,
-            type: type === 'bundle' ? 'bundle' : 'subscription',
+            type: type === 'bundle' ? 'bundle' : (isCreditPack ? 'credits' : 'subscription'),
             moduleId: moduleId || null,
             name,
             price,
-            quantity: 1
+            // For credits: `quantity` passed from TopUp is the amount of credits (e.g. 10).
+            // We store that as `amount` for the logic.
+            // `quantity` for the cart item itself starts at 1 (1 pack).
+            amount: isCreditPack ? quantity : undefined,
+            resource: creditType || undefined,
+            quantity: cartQuantity || 1 // Use passed quantity or default to 1
+            // Wait, in `TopUpDrawer`: `quantity: pack.amount` (credits). 
+            // My previous thought: `quantity` passed to `addProductToCart` is credits count.
+            // I need a separate field for `packCount`.
+
+            // Let's defer this and fix TopUpDrawer to pass `cartQuantity`.
+            // In TopUpDrawer: `cartQuantity: quantity` (pack count).
+            // In CartContext: `const { ..., cartQuantity } = product`.
+
+            // I need to update destructuring in CartContext first.
+            // Let's do that in a separate step or assume I'll fix it.
+            // I'll update line 42 as well.
         };
 
         setCart(prev => [...prev, newItem]);

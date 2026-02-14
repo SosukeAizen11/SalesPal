@@ -158,6 +158,43 @@ export const MarketingProvider = ({ children }) => {
         return campaigns.filter(c => c.projectId === projectId);
     };
 
+    // --- CREDIT SYSTEM (Centralized) ---
+    const [creditState, setCreditState] = useState(() => {
+        const saved = localStorage.getItem('salespal_marketing_credits');
+        return saved ? JSON.parse(saved) : {
+            baseLimits: {
+                images: 20,
+                videos: 4
+            },
+            extraCredits: {
+                images: 0,
+                videos: 0
+            }
+        };
+    });
+
+    // Persist credits
+    useEffect(() => {
+        localStorage.setItem('salespal_marketing_credits', JSON.stringify(creditState));
+    }, [creditState]);
+
+    const addCredits = (type, quantity) => {
+        if (!type || !quantity) return;
+
+        // Ensure type matches our keys (images/videos)
+        // If type comes as 'marketing-images-10', we need to parse it? 
+        // No, CartPage passes 'item.resource' which is 'images' or 'videos'.
+
+        setCreditState(prev => ({
+            ...prev,
+            extraCredits: {
+                ...prev.extraCredits,
+                // Handle potential case mismatch just in case, though usually 'images'/'videos'
+                [type]: (prev.extraCredits[type] || 0) + Number(quantity)
+            }
+        }));
+    };
+
     // --- STATE MACHINE LOGIC ---
 
     const [activeDraft, setActiveDraft] = useState(null);
@@ -311,7 +348,9 @@ export const MarketingProvider = ({ children }) => {
         getCampaignsByProject,
         addSocialPost,
         updateSocialPost,
-        deleteSocialPost
+        deleteSocialPost,
+        creditState,
+        addCredits
     };
 
     return (

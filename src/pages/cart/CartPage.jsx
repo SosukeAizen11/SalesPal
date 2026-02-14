@@ -4,6 +4,7 @@ import { ShoppingCart, Trash2, ArrowRight, ShieldCheck, CreditCard, Package, Meg
 import { useCart } from '../../commerce/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../commerce/SubscriptionContext';
+import { useMarketing } from '../../context/MarketingContext';
 import { MODULES } from '../../commerce/commerce.config';
 import { useToast } from '../../components/ui/Toast';
 import Button from '../../components/ui/Button';
@@ -11,7 +12,8 @@ import Button from '../../components/ui/Button';
 const CartPage = () => {
     const { cart, removeItem, getCartTotal, addSubscription, openMiniCart, clearCart } = useCart();
     const { isAuthenticated, user } = useAuth();
-    const { isModuleActive, activateSubscription, addCredits, clearCartAfterPurchase } = useSubscription();
+    const { isModuleActive, activateSubscription, clearCartAfterPurchase } = useSubscription();
+    const { addCredits } = useMarketing();
     const { showToast } = useToast();
     const navigate = useNavigate();
     const subtotal = getCartTotal();
@@ -135,7 +137,7 @@ const CartPage = () => {
                                                 iconBg = 'bg-blue-50 text-blue-600';
                                                 Icon = Package;
                                         }
-                                    } else if (item.type === 'credit') {
+                                    } else if (item.type === 'credits') {
                                         iconBg = 'bg-green-100 text-green-600';
                                         Icon = CreditCard;
                                     }
@@ -339,15 +341,21 @@ const CartPage = () => {
                                 onClick={() => {
                                     if (!cart.length) return;
 
-                                    // Simulated successful payment + subscription activation
+                                    // Process all items
                                     cart.forEach((item) => {
                                         if (item.type === 'subscription' || item.type === 'bundle') {
                                             activateSubscription(item);
-                                        } else if (item.type === 'credit') {
-                                            addCredits(item.moduleId, item.resource, (item.amount || 0) * (item.quantity || 1));
+                                        } else if (item.type === 'credits') {
+                                            // Handle cases where amount might be undefined (fallback to 0)
+                                            // Calculate total credits: credits_per_pack * quantity
+                                            const totalCredits = (item.amount || 0) * (item.quantity || 1);
+                                            if (totalCredits > 0) {
+                                                addCredits(item.moduleId, item.resource, totalCredits);
+                                            }
                                         }
                                     });
 
+                                    // Clear cart and redirect
                                     clearCart();
                                     clearCartAfterPurchase();
                                     navigate('/purchase-success');

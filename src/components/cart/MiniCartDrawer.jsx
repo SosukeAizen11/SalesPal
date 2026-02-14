@@ -15,7 +15,7 @@ const MiniCartDrawer = () => {
     } = useCart();
 
     const navigate = useNavigate();
-    const itemCount = cart.length;
+    const itemCount = cart.reduce((total, item) => total + (item.quantity || 1), 0);
     const subtotal = getCartTotal();
 
     useEffect(() => {
@@ -109,12 +109,12 @@ const MiniCartDrawer = () => {
                                     >
                                         <div className="flex items-start gap-3">
                                             <div
-                                                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${item.type === 'subscription'
+                                                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${item.type === 'subscription' || item.type === 'bundle'
                                                     ? 'bg-blue-50 text-blue-600'
                                                     : 'bg-green-50 text-green-600'
                                                     }`}
                                             >
-                                                {item.type === 'subscription' ? (
+                                                {item.type === 'subscription' || item.type === 'bundle' ? (
                                                     <Package className="w-4 h-4" />
                                                 ) : (
                                                     <CreditCard className="w-4 h-4" />
@@ -123,19 +123,19 @@ const MiniCartDrawer = () => {
                                             <div>
                                                 <div className="flex items-center gap-2 mb-0.5">
                                                     <span
-                                                        className={`text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${item.type === 'subscription'
+                                                        className={`text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${item.type === 'subscription' || item.type === 'bundle'
                                                             ? 'bg-blue-100 text-blue-700'
                                                             : 'bg-green-100 text-green-700'
                                                             }`}
                                                     >
-                                                        {item.type === 'subscription' ? 'Plan' : 'Credits'}
+                                                        {item.type === 'subscription' || item.type === 'bundle' ? 'Plan' : 'Credits'}
                                                     </span>
                                                 </div>
                                                 <p className="text-xs font-medium text-gray-900 line-clamp-2">
                                                     {item.name}
                                                 </p>
                                                 <p className="text-[11px] text-gray-500 mt-0.5">
-                                                    {item.type === 'subscription'
+                                                    {item.type === 'subscription' || item.type === 'bundle'
                                                         ? 'Billed monthly'
                                                         : `${item.amount} ${item.resource} items`}
                                                 </p>

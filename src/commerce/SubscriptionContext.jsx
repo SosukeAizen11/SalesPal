@@ -134,10 +134,11 @@ export const SubscriptionProvider = ({ children }) => {
     };
 
     const addCredits = (moduleId, resource, amount) => {
-        if (!isModuleActive(moduleId)) return;
+        if (!isModuleActive(moduleId)) return false;
 
         setSubscriptions(prev => {
             const moduleState = prev[moduleId];
+            // Ensure counters exist
             const currentExtra = moduleState.extraCredits?.[resource] || 0;
 
             return {
@@ -145,12 +146,13 @@ export const SubscriptionProvider = ({ children }) => {
                 [moduleId]: {
                     ...moduleState,
                     extraCredits: {
-                        ...moduleState.extraCredits,
+                        ...(moduleState.extraCredits || {}),
                         [resource]: currentExtra + amount
                     }
                 }
             };
         });
+        return true;
     };
 
     const resetMonthlyUsage = (moduleId) => {

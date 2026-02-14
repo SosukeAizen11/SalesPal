@@ -16,7 +16,7 @@ const PurchaseSuccess = () => {
                 </p>
                 <Button
                     className="w-full justify-center"
-                    onClick={() => navigate('/app')}
+                    onClick={() => navigate('/marketing')}
                 >
                     Go to Dashboard
                 </Button>

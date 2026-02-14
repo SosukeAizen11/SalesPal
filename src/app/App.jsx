@@ -3,6 +3,7 @@ import { Outlet, ScrollRestoration } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import { SubscriptionProvider } from '../commerce/SubscriptionContext';
 import { CartProvider } from '../commerce/CartContext';
+import { MarketingProvider } from '../context/MarketingContext';
 
 import { ProjectProvider } from '../context/ProjectContext';
 import { IntegrationProvider } from '../context/IntegrationContext';
@@ -17,17 +18,19 @@ const App = () => {
             <SubscriptionProvider>
                 <CartProvider>
                     <IntegrationProvider>
-                        <ProjectProvider>
-                            <WalkthroughProvider>
-                                <ToastProvider>
-                                    <ScrollRestoration />
-                                    <Outlet />
-                                    {/* Walkthrough rendered at app root to prevent unmounts */}
-                                    <WalkthroughOverlay />
-                                    <MiniCartDrawer />
-                                </ToastProvider>
-                            </WalkthroughProvider>
-                        </ProjectProvider>
+                        <MarketingProvider>
+                            <ProjectProvider>
+                                <WalkthroughProvider>
+                                    <ToastProvider>
+                                        <ScrollRestoration />
+                                        <Outlet />
+                                        {/* Walkthrough rendered at app root to prevent unmounts */}
+                                        <WalkthroughOverlay />
+                                        <MiniCartDrawer />
+                                    </ToastProvider>
+                                </WalkthroughProvider>
+                            </ProjectProvider>
+                        </MarketingProvider>
                     </IntegrationProvider>
                 </CartProvider>
             </SubscriptionProvider>

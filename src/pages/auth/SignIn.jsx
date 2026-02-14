@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
 import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
-import logo from '../../assets/logo.webp';
+
 
 const SignIn = () => {
     const [email, setEmail] = useState('');
@@ -18,7 +18,7 @@ const SignIn = () => {
     // Determine redirect path:
     // 1. If redirected from ProtectedRoute (location.state?.from), go back there.
     // 2. Otherwise default to /app as requested.
-    const from = location.state?.from?.pathname || '/app';
+    const from = location.state?.from?.pathname || '/marketing';
 
     React.useEffect(() => {
         if (isAuthenticated) {
@@ -45,7 +45,7 @@ const SignIn = () => {
         <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6">
             <div className="w-full max-w-md">
                 <div className="text-center mb-10">
-                    <img src={logo} alt="SalesPal" className="h-16 mx-auto mb-6" />
+                    <img src="/BlackTextLogo.webp" alt="SalesPal" className="h-16 mx-auto mb-6" />
                     <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
                     <p className="text-gray-400">Sign in to access your AI workforce</p>
                 </div>

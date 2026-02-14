@@ -106,7 +106,7 @@ const Navbar = () => {
             <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
                 <Link to="/" className="flex items-center -ml-12">
                     <img
-                        src="/SalesPal Logo Navbar.png"
+                        src="/BlackTextLogo.webp"
                         alt="SalesPal Logo"
                         className="h-16 object-contain"
                     />
@@ -163,7 +163,7 @@ const Navbar = () => {
                     {isAuthenticated ? (
                         <>
                             <Link
-                                to="/app"
+                                to="/marketing"
                                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                             >
                                 Dashboard
@@ -195,7 +195,7 @@ const Navbar = () => {
                 isOpen={showAuthModal}
                 onClose={() => setShowAuthModal(false)}
                 onSuccess={() => {
-                    navigate('/app');
+                    navigate('/marketing');
                     setShowAuthModal(false);
                 }}
             />
