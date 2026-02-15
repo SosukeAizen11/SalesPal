@@ -56,6 +56,14 @@ const Navbar = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    useEffect(() => {
+        if (location.state?.openAuth && !isAuthenticated) {
+            setShowAuthModal(true);
+            // innovative clean up of history state without reload
+            window.history.replaceState({}, document.title);
+        }
+    }, [location, isAuthenticated]);
+
     const scrollToSection = (id) => {
         if (location.pathname !== '/') {
             window.location.href = `/#${id}`;
@@ -85,6 +93,7 @@ const Navbar = () => {
                 opacity: 1,
                 y: 0,
                 filter: 'blur(0px)',
+                height: isScrolled ? '72px' : '88px',
                 height: isScrolled ? '72px' : '88px',
                 backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(249, 250, 251, 0.95)',
                 backdropFilter: isScrolled ? 'blur(16px)' : 'blur(12px)',
