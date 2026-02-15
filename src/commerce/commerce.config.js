@@ -29,5 +29,15 @@ export const MODULES = {
         id: "support",
         name: "Support",
         price: 9999
+    },
+    salespal360: {
+        id: "salespal360",
+        name: "SalesPal 360",
+        price: 29999,
+        limits: {
+            images: 100,
+            videos: 20,
+            posts: 150
+        }
     }
 };
