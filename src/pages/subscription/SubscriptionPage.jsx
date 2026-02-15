@@ -1,19 +1,45 @@
 import React from 'react';
 import { useSubscription } from '../../commerce/SubscriptionContext';
 import { MODULES } from '../../commerce/commerce.config';
-import { CheckCircle, XCircle, CreditCard, Calendar, AlertTriangle } from 'lucide-react';
+import { Megaphone, Phone, UserCheck, Headphones, ExternalLink, Sparkles, Layers } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
+import PlanCard from '../../components/subscription/PlanCard';
+import { motion } from 'framer-motion';
 
 const SubscriptionPage = () => {
-    const { subscriptions, deactivateSubscription, isModuleActive } = useSubscription();
+    const {
+        subscriptions,
+        deactivateSubscription,
+        pauseSubscription,
+        resumeSubscription,
+        isModuleActive
+    } = useSubscription();
     const { addToast } = useToast();
 
+    // Map keys to Icons and Colors
+    const MODULE_CONFIG = {
+        marketing: { icon: Megaphone, color: 'blue' },
+        sales: { icon: Phone, color: 'green' },
+        postSale: { icon: UserCheck, color: 'purple' }, // "UserCheck" as requested
+        support: { icon: Headphones, color: 'orange' }, // "Headphones" as requested
+        salespal360: { icon: Layers, color: 'indigo' } // "Layers" as requested
+    };
+
     const handleCancel = (moduleId, moduleName) => {
-        if (window.confirm(`Are you sure you want to cancel your ${moduleName} subscription?`)) {
-            deactivateSubscription(moduleId);
-            addToast(`Subscription for ${moduleName} cancelled successfully.`, 'success');
-        }
+        deactivateSubscription(moduleId);
+        // Toast is handled by the interaction usually, but let's confirm here
+        addToast(`Subscription for ${moduleName} cancelled. Access remains until end of cycle.`, 'info');
+    };
+
+    const handlePause = (moduleId, months) => {
+        pauseSubscription(moduleId, months);
+        addToast('Subscription paused successfully.', 'success');
+    };
+
+    const handleResume = (moduleId) => {
+        resumeSubscription(moduleId); // Works for re-subscribing too if logic allows
+        addToast('Subscription resumed.', 'success');
     };
 
     const handlePurchase = () => {
@@ -21,137 +47,112 @@ const SubscriptionPage = () => {
     };
 
     const modulesList = [
-        { key: 'marketing', label: 'Marketing' },
+        { key: 'marketing', label: 'Marketing Plan' },
         { key: 'sales', label: 'Sales Plan' },
         { key: 'postSale', label: 'Post-Sales Plan' },
-        { key: 'support', label: 'Support Plan' }
+        { key: 'support', label: 'Support Plan' },
+        { key: 'salespal360', label: 'SalesPal 360' }
     ];
 
+    // Calculate active count for Upsell logic
+    const is360Active = isModuleActive('salespal360');
+    // Only count individual modules, not the bundle itself
+    const activeCount = modulesList.filter(m => m.key !== 'salespal360' && isModuleActive(m.key)).length;
+
     return (
-        <div className="max-w-5xl mx-auto py-8 px-4">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900">Subscription Management</h1>
-                <p className="text-gray-500 mt-1">Manage your active plans and billing status.</p>
+        <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+                <div>
+                    <motion.h1
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-3xl font-bold text-gray-900 tracking-tight"
+                    >
+                        Subscription Management
+                    </motion.h1>
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className="text-gray-500 mt-2 text-lg"
+                    >
+                        Manage your active plans, usage, and billing status.
+                    </motion.p>
+                </div>
+                <motion.div
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <Button variant="outline" className="text-gray-600 border-gray-300 hover:border-gray-400">
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Billing Portal
+                    </Button>
+                </motion.div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {modulesList.map((mod) => {
-                    const isActive = isModuleActive(mod.key);
+            {/* SalesPal 360 Upsell Banner */}
+            {activeCount >= 2 && !is360Active && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mb-10 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl p-6 md:p-8 text-white shadow-xl shadow-indigo-200 relative overflow-hidden"
+                >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                                <Sparkles className="w-8 h-8 text-yellow-300" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold mb-1">Upgrade to SalesPal 360</h3>
+                                <p className="text-indigo-100 max-w-xl leading-relaxed">
+                                    You have multiple active plans. Consolidate them into SalesPal 360 to get all modules,
+                                    unified billing, and exclusive premium features at a better rate.
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            className="bg-white text-indigo-600 hover:bg-indigo-50 border-transparent font-semibold shadow-lg whitespace-nowrap"
+                            onClick={() => window.location.href = '/#pricing'}
+                        >
+                            View SalesPal 360
+                        </Button>
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Plans Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-8 mb-12">
+                {modulesList.map((mod, index) => {
                     const subData = subscriptions[mod.key];
                     const config = MODULES[mod.key] || {};
-
-                    // Format renewal date if available
-                    const renewalDate = subData?.renewalDate
-                        ? new Date(subData.renewalDate).toLocaleDateString(undefined, {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        })
-                        : null;
+                    const { icon: Icon, color } = MODULE_CONFIG[mod.key] || { icon: Layers, color: 'gray' };
 
                     return (
-                        <div
-                            key={mod.key}
-                            className={`bg-white rounded-lg border ${isActive ? 'border-gray-200' : 'border-gray-200 bg-gray-50/50'} p-6 shadow-sm transition-shadow hover:shadow-md`}
-                        >
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-900">{mod.label}</h3>
-                                    <div className="flex items-center mt-2">
-                                        {isActive ? (
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                <CheckCircle className="w-3 h-3 mr-1" />
-                                                Active
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                                                <XCircle className="w-3 h-3 mr-1" />
-                                                Not Active
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className={`p-2 rounded-full ${isActive ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
-                                    <CreditCard className="w-5 h-5" />
-                                </div>
-                            </div>
-
-                            {isActive ? (
-                                <div className="space-y-4">
-                                    {renewalDate && (
-                                        <div className="flex items-center text-sm text-gray-600">
-                                            <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                                            <span>Renews on <span className="font-medium text-gray-900">{renewalDate}</span></span>
-                                        </div>
-                                    )}
-
-                                    {/* Usage Summary (If available in context/config) */}
-                                    {config.limits && (
-                                        <div className="pt-4 border-t border-gray-100">
-                                            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Monthly Usage</p>
-                                            <div className="space-y-2">
-                                                {Object.entries(config.limits).map(([limitKey, limitVal]) => {
-                                                    const used = subData?.usage?.[limitKey] || 0;
-                                                    const percentage = Math.min(100, Math.round((used / limitVal) * 100));
-
-                                                    return (
-                                                        <div key={limitKey}>
-                                                            <div className="flex justify-between text-xs mb-1">
-                                                                <span className="capitalize">{limitKey}</span>
-                                                                <span className="text-gray-500">{used} / {limitVal}</span>
-                                                            </div>
-                                                            <div className="w-full bg-gray-100 rounded-full h-1.5">
-                                                                <div
-                                                                    className={`h-1.5 rounded-full ${percentage > 90 ? 'bg-red-500' : 'bg-blue-500'}`}
-                                                                    style={{ width: `${percentage}%` }}
-                                                                ></div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="pt-4 mt-auto">
-                                        <Button
-                                            variant="outline"
-                                            className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 justify-center"
-                                            onClick={() => handleCancel(mod.key, mod.label)}
-                                        >
-                                            Cancel Subscription
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    <p className="text-sm text-gray-500">
-                                        Subscribe to unlock features and supercharge your workflow with our {mod.label}.
-                                    </p>
-                                    <div className="pt-4">
-                                        <Button
-                                            className="w-full justify-center"
-                                            onClick={handlePurchase}
-                                        >
-                                            Purchase Plan
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
+                        <div key={mod.key} style={{ animationDelay: `${index * 100}ms` }}>
+                            <PlanCard
+                                moduleKey={mod.key}
+                                label={mod.label}
+                                subData={subData}
+                                config={config}
+                                icon={Icon}
+                                color={color}
+                                onPause={months => handlePause(mod.key, months)}
+                                onResume={() => handleResume(mod.key)}
+                                onCancel={() => handleCancel(mod.key, mod.label)}
+                            />
                         </div>
                     );
                 })}
             </div>
 
-            <div className="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-100 flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                    <h4 className="text-sm font-medium text-blue-900">Need help with your billing?</h4>
-                    <p className="text-sm text-blue-700 mt-1">
-                        If you have questions about charges or need to update your payment method,
-                        please contact our support team.
-                    </p>
-                </div>
+            {/* Support Note */}
+            <div className="mt-12 text-center border-t border-gray-100 pt-8">
+                <p className="text-sm text-gray-500">
+                    Need help with your invoice? <a href="#" className="text-blue-600 font-medium hover:underline">Contact Support</a>
+                </p>
             </div>
         </div>
     );

@@ -7,7 +7,7 @@ const STORAGE_KEY = 'salespal_subscriptions';
 const CART_STORAGE_KEY = 'salespal_cart';
 
 export const SubscriptionProvider = ({ children }) => {
-    // Structure: { [moduleId]: { module: string, status: string, active: boolean, renewalDate: string, limits?: {}, usage: {}, extraCredits: {}, productId?: string } }
+    // Structure: { [moduleId]: { module: string, status: 'active'|'paused'|'cancelled_pending', active: boolean, renewalDate: string, pausedUntil?: string, cancellationDate?: string, limits?: {}, usage: {}, extraCredits: {}, productId?: string } }
     const [subscriptions, setSubscriptions] = useState({});
     const [loading, setLoading] = useState(true);
 
@@ -106,7 +106,7 @@ export const SubscriptionProvider = ({ children }) => {
 
             // Bundle product (e.g. SalesPal 360) activates multiple modules
             if (type === 'bundle' || moduleKey === 'bundle' || productId === 'salespal-360') {
-                moduleIds.push('marketing', 'sales', 'postSale', 'support');
+                moduleIds.push('marketing', 'sales', 'postSale', 'support', 'salespal360');
             } else if (moduleKey) {
                 moduleIds.push(moduleKey);
             } else if (productId && MODULES[productId]) {
@@ -119,9 +119,80 @@ export const SubscriptionProvider = ({ children }) => {
 
     const deactivateSubscription = (moduleId) => {
         setSubscriptions(prev => {
-            const next = { ...prev };
-            delete next[moduleId];
-            return next;
+            const existing = prev[moduleId];
+            if (!existing) return prev;
+
+            // In a real app, this might set a "cancel_at_period_end" flag.
+            // For now, we'll simulate a "cancelled_pending" state if it's active,
+            // or just remove it if it's already past due or inactive.
+
+            // If we want to simulate immediate cancellation (old behavior):
+            // const next = { ...prev };
+            // delete next[moduleId];
+            // return next;
+
+            // New "Premium" behavior: Cancel at end of cycle
+            // We'll calculate the end of the current billing cycle based on renewalDate
+            const cancellationDate = existing.renewalDate;
+
+            return {
+                ...prev,
+                [moduleId]: {
+                    ...existing,
+                    status: 'cancelled',
+                    active: true, // Still active until the date
+                    cancellationDate
+                }
+            };
+        });
+    };
+
+    const pauseSubscription = (moduleId, months) => {
+        setSubscriptions(prev => {
+            const existing = prev[moduleId];
+            if (!existing) return prev;
+
+            const now = new Date();
+            let pausedUntil = new Date();
+
+            if (months === 'next_billing') {
+                pausedUntil = new Date(existing.renewalDate);
+            } else {
+                pausedUntil.setMonth(now.getMonth() + months);
+            }
+
+            return {
+                ...prev,
+                [moduleId]: {
+                    ...existing,
+                    status: 'paused',
+                    active: false, // Paused means inactive for usage
+                    pausedUntil: pausedUntil.toISOString()
+                }
+            };
+        });
+    };
+
+    const resumeSubscription = (moduleId) => {
+        setSubscriptions(prev => {
+            const existing = prev[moduleId];
+            if (!existing) return prev;
+
+            // When resuming, we ideally adjust the renewal date.
+            // For simplicity, we just set it back to active and keep the old renewal date
+            // or reset it if it expired. 
+            // Let's just switch status back to active.
+
+            return {
+                ...prev,
+                [moduleId]: {
+                    ...existing,
+                    status: 'active',
+                    active: true,
+                    pausedUntil: null,
+                    cancellationDate: null
+                }
+            };
         });
     };
 
@@ -299,6 +370,8 @@ export const SubscriptionProvider = ({ children }) => {
             getRemaining,
             resetIfRenewalPassed,
             clearCartAfterPurchase,
+            pauseSubscription,
+            resumeSubscription,
             loading
         }}>
             {children}

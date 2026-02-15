@@ -23,6 +23,7 @@ const Button = ({
         outline: "bg-white border text-gray-700 hover:bg-blue-50 hover:border-blue-400 focus:ring-blue-200",
         ghost: "bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900",
         destructive: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-600",
+        warning: "bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-600 shadow-md",
         link: "text-blue-600 underline-offset-4 hover:underline p-0 h-auto"
     };
 
