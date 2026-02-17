@@ -1,31 +1,82 @@
 import React from 'react';
-import { Users, DollarSign, TrendingUp, BarChart, MousePointer, Target, Activity, AlertTriangle } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, BarChart, MousePointer, Target, Activity, AlertTriangle, ArrowUp, ArrowDown } from 'lucide-react';
+import { AreaChart, Area, ResponsiveContainer, LineChart, Line, YAxis } from 'recharts';
 
-const KPICard = ({ title, value, trend, icon: Icon, color, onClick, isWarning }) => (
-    <div
-        onClick={onClick}
-        className={`bg-white p-5 rounded-xl border cursor-pointer hover:shadow-lg transition-all group relative overflow-hidden ${isWarning ? 'border-amber-200 bg-amber-50/30' : 'border-gray-200 hover:border-blue-300'}`}
-    >
-        <div className="flex items-start justify-between mb-4">
-            <div className={`p-2 rounded-lg ${color} group-hover:scale-110 transition-transform duration-200`}>
-                <Icon className="w-5 h-5 text-gray-800" />
+const KPICard = ({ title, value, trend, percentageChange, isPositive, sparklineData, icon: Icon, color, onClick, isWarning, invertColor }) => {
+
+    // Determination of color for trend indicator
+    // Standard: Up = Green (Good), Down = Red (Bad)
+    // Inverted (CPA): Down = Green (Good), Up = Red (Bad)
+
+    // However, the `isPositive` prop passed from parent already handles the logic of "is this good?"
+    // So if isPositive is true -> Green. If false -> Red.
+
+    // But we also need the arrow direction.
+    // Trend string starts with '+' for up, '-' for down (usually).
+    const isUp = trend && trend.startsWith('+');
+
+    const trendColor = isPositive
+        ? 'text-emerald-600 bg-emerald-50'
+        : 'text-rose-600 bg-rose-50';
+
+    const ArrowIcon = isUp ? ArrowUp : ArrowDown;
+
+    return (
+        <div
+            onClick={onClick}
+            className={`
+                relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-white p-5 cursor-pointer
+                transition-all duration-300 hover:shadow-lg hover:-translate-y-1
+                ${isWarning ? 'border-amber-200 bg-amber-50/30' : 'border-gray-200 hover:border-indigo-100'}
+            `}
+            style={{ height: '160px' }} // Fixed height for consistency
+        >
+            {/* Header: Icon & Trend */}
+            <div className="flex items-start justify-between mb-2">
+                <div className={`p-2 rounded-lg ${color} bg-opacity-50 text-gray-700`}>
+                    <Icon className="w-5 h-5" />
+                </div>
+
+                {isWarning ? (
+                    <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700">
+                        <AlertTriangle className="w-3 h-3" /> Fatigue
+                    </span>
+                ) : (percentageChange !== undefined) && (
+                    <div className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold ${trendColor}`}>
+                        <ArrowIcon className="w-3 h-3" />
+                        <span>{percentageChange}%</span>
+                    </div>
+                )}
             </div>
-            {isWarning ? (
-                <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> High Fatigue
-                </span>
-            ) : trend && (
-                <span className={`text-xs font-bold px-2 py-1 rounded-full ${trend.startsWith('+') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                    {trend}
-                </span>
+
+            {/* Main Value */}
+            <div className="relative z-10">
+                <h3 className="text-3xl font-extrabold text-gray-900 tracking-tight">{value}</h3>
+                <p className="mt-1 text-xs font-medium text-gray-500 uppercase tracking-wider">{title}</p>
+                <p className="text-[10px] text-gray-400 font-medium mt-0.5">vs last 7 days</p>
+            </div>
+
+            {/* Sparkline Chart (Absolute Bottom) */}
+            {sparklineData && sparklineData.length > 0 && (
+                <div className="absolute bottom-0 left-0 right-0 h-8 opacity-90 pointer-events-none" style={{ zIndex: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={sparklineData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+                            <YAxis hide domain={['dataMin', 'dataMax']} />
+                            <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke={isPositive ? "#10b981" : "#f43f5e"}
+                                strokeWidth={2}
+                                dot={false}
+                                isAnimationActive={false}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
             )}
         </div>
-        <div>
-            <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-1">{title}</p>
-        </div>
-    </div>
-);
+    );
+};
 
 const KPISummary = ({ data, onDetailClick, mode = 'full' }) => {
     // Helper to render card if data exists
@@ -37,10 +88,14 @@ const KPISummary = ({ data, onDetailClick, mode = 'full' }) => {
                 title={title}
                 value={data[key].value}
                 trend={data[key].trend}
+                percentageChange={data[key].percentageChange}
+                isPositive={data[key].isPositive}
+                sparklineData={data[key].sparkline}
                 icon={icon}
                 color={color}
                 onClick={() => onDetailClick(key, label || title)}
                 isWarning={data[key].isFatigue}
+                invertColor={data[key].invertColor}
             />
         );
     };
@@ -67,7 +122,7 @@ const KPISummary = ({ data, onDetailClick, mode = 'full' }) => {
             {mode !== 'pulse' && (
                 <>
                     {renderCard('totalConversions', 'Conversions', Users, 'bg-purple-100', 'Total Conversions')}
-                    {renderCard('frequency', 'Frequency', Activity, data.frequency?.isFatigue ? "bg-amber-100" : "bg-orange-100", 'Ad Frequency')}
+                    {renderCard('frequency', 'Frequency', Activity, "bg-orange-100", 'Ad Frequency')}
                 </>
             )}
         </div>

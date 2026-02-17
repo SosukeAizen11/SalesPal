@@ -102,13 +102,34 @@ export const calculateLandingPageCVR = (conversions, linkClicks) => {
  * Useful for mocking trend lines where only a total is known.
  * @param {number} total The total value to distribute
  * @param {number} count The number of parts to distribute into
+ * @param {string|number} seed Optional seed for deterministic distribution
  * @returns {number[]} Array of distributed values
  */
-export const distribute = (total, count) => {
+export const distribute = (total, count, seed = null) => {
     if (!count || count <= 0) return [];
     if (!total || total <= 0) return Array(count).fill(0);
 
-    let parts = Array.from({ length: count }, () => Math.random());
-    let sumParts = parts.reduce((a, b) => a + b, 0);
+    const getRand = (index) => {
+        if (seed !== null) {
+            // Simple deterministic PRNG based on seed + index
+            // sin(input) is a common way to get "random-looking" deterministic numbers
+            const base = (typeof seed === 'string')
+                ? seed.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                : seed;
+            const x = Math.sin(base + index) * 10000;
+            return x - Math.floor(x);
+        }
+        // Fallback to strict 0.5 if no seed (to simulate flat) or Math.random if you really want random.
+        // But user requested deterministic. Let's use total as implicit seed if not provided?
+        // Let's default to Math.random() ONLY if explicitly intended, but for safety in this task, 
+        // let's try to be stable.
+        const x = Math.sin(total + index) * 10000;
+        return x - Math.floor(x);
+    };
+
+    let parts = Array.from({ length: count }, (_, i) => getRand(i));
+    const sumParts = parts.reduce((a, b) => a + b, 0);
+
+    // Normalize to match total
     return parts.map(p => Math.floor((p / sumParts) * total));
 };

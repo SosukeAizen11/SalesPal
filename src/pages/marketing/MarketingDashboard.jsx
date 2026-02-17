@@ -19,7 +19,8 @@ import Modal from '../../components/ui/Modal';
 // Sections
 // Sections
 import KPISummary from './analytics/sections/KPISummary';
-import PerformanceTrends from './analytics/sections/PerformanceTrends';
+import AIStrategicInsights from './analytics/sections/AIStrategicInsights';
+import PerformanceStability from './analytics/sections/ROASTrend';
 import ChannelPerformanceMix from './analytics/sections/ChannelPerformanceMix';
 import ActionFeed from './analytics/sections/ActionFeed';
 import CampaignDetailView from './analytics/sections/CampaignDetailView';
@@ -87,9 +88,9 @@ const DashboardContent = ({ mode = 'page' }) => {
         const labels = Array.from({ length: dayCount }, (_, i) => `Day ${i + 1}`);
 
         // Helper to distribute total into array (Mock distribution)
-        const spendTrend = distribute(totals.spend, dayCount);
-        const revTrend = distribute(totals.revenue, dayCount);
-        const convTrend = distribute(totals.conversions, dayCount);
+        const spendTrend = distribute(totals.spend, dayCount, 'spend-seed');
+        const revTrend = distribute(totals.revenue, dayCount, 'revenue-seed');
+        const convTrend = distribute(totals.conversions, dayCount, 'conversions-seed');
 
         // Recalculate ROAS trend point-by-point
         const roasTrend = spendTrend.map((s, i) => s > 0 ? (revTrend[i] / s).toFixed(2) : 0);
@@ -167,13 +168,62 @@ const DashboardContent = ({ mode = 'page' }) => {
             });
         }
 
+        // Helper to get formatted sparkline data
+        const toSparkline = (dataArray) => dataArray.map((val, i) => ({ value: parseFloat(val) || 0 }));
+
+        // Helper for percentage change (mocking based on first vs last for demo, or random)
+        const getPctChange = (arr) => {
+            if (arr.length < 2) return 0;
+            const first = parseFloat(arr[0]) || 0;
+            const last = parseFloat(arr[arr.length - 1]) || 0;
+            if (first === 0) return 0;
+            return ((last - first) / first * 100).toFixed(0);
+        };
+
+        const roasPct = getPctChange(roasTrend);
+        const spendPct = getPctChange(spendTrend);
+        const revPct = getPctChange(revTrend);
+        const cpaPct = getPctChange(cpaTrend);
+
         return {
             // High-Level KPIs (Financial Health Focus)
             kpis: {
-                roas: { value: roas.toFixed(2) + 'x', trend: null },
-                totalSpend: { value: formatCurrency(totals.spend), trend: null },
-                totalRevenue: { value: formatCurrency(totals.revenue), trend: null },
-                cpa: { value: formatCurrency(cpa), trend: null },
+                roas: {
+                    value: roas.toFixed(2) + 'x',
+                    trend: roasPct > 0 ? '+' + roasPct + '%' : roasPct + '%',
+                    percentageChange: Math.abs(roasPct),
+                    isPositive: roasPct >= 0,
+                    sparkline: toSparkline(roasTrend)
+                },
+                totalSpend: {
+                    value: formatCurrency(totals.spend),
+                    trend: spendPct > 0 ? '+' + spendPct + '%' : spendPct + '%',
+                    percentageChange: Math.abs(spendPct),
+                    isPositive: spendPct <= 0, // Lower spend trend might be considered good or neutral, but usually for spend we just show direction. Let's say higher spend is strictly "more scale" so neutral? 
+                    // User requirement: "Green upward arrow if positive improvement."
+                    // For Spend: usually increasing spend is neutral/good if ROAS holds. 
+                    // Let's treat "increase" as green for Spend (scaling) unless user specified otherwise. 
+                    // Actually, usually lower spend is "saving money" but in growth, higher spend is "scaling".
+                    // Let's stick to Green = Up for Revenue/ROAS/Spend, Red = Down.
+                    // EXCEPT CPA: Lower is good (Green).
+                    isPositive: spendPct >= 0,
+                    sparkline: toSparkline(spendTrend)
+                },
+                totalRevenue: {
+                    value: formatCurrency(totals.revenue),
+                    trend: revPct > 0 ? '+' + revPct + '%' : revPct + '%',
+                    percentageChange: Math.abs(revPct),
+                    isPositive: revPct >= 0,
+                    sparkline: toSparkline(revTrend)
+                },
+                cpa: {
+                    value: formatCurrency(cpa),
+                    trend: cpaPct > 0 ? '+' + cpaPct + '%' : cpaPct + '%',
+                    percentageChange: Math.abs(cpaPct),
+                    isPositive: cpaPct <= 0, // Lower CPA is good (Green)
+                    sparkline: toSparkline(cpaTrend),
+                    invertColor: true // Special flag for CPA
+                },
             },
             // Charts
             trends: {
@@ -314,15 +364,19 @@ const DashboardContent = ({ mode = 'page' }) => {
                     <KPISummary data={dashboardData.kpis} onDetailClick={handleKPIClick} mode="pulse" />
                 </section>
 
-                {/* B. Efficiency & Allocation Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Trend Health (2/3 width) */}
-                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-bold text-gray-900">Trend Health</h3>
-                            <p className="text-xs text-gray-500">7-Day Financial Stability</p>
-                        </div>
-                        <PerformanceTrends data={dashboardData.trends} timeRange={timeRange} />
+                {/* B. Priority Alerts — Immediately below KPIs */}
+                <section aria-label="Priority Alerts">
+                    <ActionFeed alerts={dashboardData.anomalies} />
+                </section>
+
+                {/* C. AI Strategic Insights */}
+                <AIStrategicInsights />
+
+                {/* C. Efficiency & Allocation Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                    {/* Performance Stability (2/3 width) */}
+                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24 min-w-0">
+                        <PerformanceStability data={dashboardData.trends} />
                     </div>
 
                     {/* Allocation Mix (1/3 width) */}
@@ -331,10 +385,7 @@ const DashboardContent = ({ mode = 'page' }) => {
                     </div>
                 </div>
 
-                {/* C. Action Feed (Anomalies Only) */}
-                <section aria-label="Action Feed">
-                    <ActionFeed alerts={dashboardData.anomalies} />
-                </section>
+
             </div>
 
             {/* DETAIL MODAL */}
