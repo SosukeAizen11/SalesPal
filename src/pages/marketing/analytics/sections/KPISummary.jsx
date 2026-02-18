@@ -1,6 +1,7 @@
 import React from 'react';
-import { Users, DollarSign, TrendingUp, BarChart, MousePointer, Target, Activity, AlertTriangle, ArrowUp, ArrowDown } from 'lucide-react';
+import { Users, TrendingUp, BarChart, MousePointer, Target, Activity, AlertTriangle, ArrowUp, ArrowDown } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, LineChart, Line, YAxis } from 'recharts';
+import CurrencyIcon from '../../../../components/ui/CurrencyIcon';
 
 const KPICard = ({ title, value, trend, percentageChange, isPositive, sparklineData, icon: Icon, color, onClick, isWarning, invertColor }) => {
 
@@ -113,7 +114,7 @@ const KPISummary = ({ data, onDetailClick, mode = 'full' }) => {
             {renderCard('totalRevenue', 'Total Revenue', TrendingUp, 'bg-emerald-100', 'Total Revenue')}
 
             {/* 3. Total Spend (Financial Health) */}
-            {renderCard('totalSpend', 'Total Spend', DollarSign, 'bg-red-100', 'Total Ad Spend')}
+            {renderCard('totalSpend', 'Total Spend', CurrencyIcon, 'bg-red-100', 'Total Ad Spend')}
 
             {/* 4. CPA (Efficiency) - NEW */}
             {renderCard('cpa', 'Avg CPA', MousePointer, 'bg-blue-100', 'Cost Per Acquisition')}

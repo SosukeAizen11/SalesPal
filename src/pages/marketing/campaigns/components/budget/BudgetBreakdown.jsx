@@ -1,6 +1,8 @@
 import React from 'react';
+import { usePreferences } from '../../../../../context/PreferencesContext';
 
 const BudgetBreakdown = ({ platforms, dailyBudget }) => {
+    const { formatCurrency } = usePreferences();
     if (platforms.length === 0) return null;
 
     // Mock logic to split budget
@@ -20,7 +22,7 @@ const BudgetBreakdown = ({ platforms, dailyBudget }) => {
                             <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
                                 <div className="h-full bg-secondary" style={{ width: `${share}%` }}></div>
                             </div>
-                            <span className="font-medium text-gray-900">₹{amount.toLocaleString()}</span>
+                            <span className="font-medium text-gray-900">{formatCurrency(amount)}</span>
                         </div>
                     </div>
                 ))}

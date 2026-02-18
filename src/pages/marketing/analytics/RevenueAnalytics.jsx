@@ -1,22 +1,25 @@
 import React, { useMemo, useState } from 'react';
-import { Calendar, Filter, TrendingUp, DollarSign, CreditCard, PieChart, Sparkles } from 'lucide-react';
+import { Calendar, Filter, TrendingUp, CreditCard, PieChart, Sparkles } from 'lucide-react';
+import CurrencyIcon from '../../../components/ui/CurrencyIcon';
 import RevenueImpact from './sections/RevenueImpact';
 import CreditTrends from './sections/CreditTrends';
 import FinancialKPIs from './sections/FinancialKPIs';
 import PlatformROI from './sections/PlatformROI';
 import AIFinancialInsights from './sections/AIFinancialInsights';
+import { usePreferences } from '../../../context/PreferencesContext';
 
 const RevenueAnalytics = () => {
     const [timeRange, setTimeRange] = useState('30d');
+    const { formatCurrency } = usePreferences();
 
     // Mock general financial data
     const financialData = useMemo(() => {
         return {
             kpis: {
-                totalRevenue: { value: '₹14,50,000', trend: '+12.5%', icon: DollarSign, color: 'bg-green-100 text-green-700' },
+                totalRevenue: { value: formatCurrency(1450000), trend: '+12.5%', icon: CurrencyIcon, color: 'bg-green-100 text-green-700' },
                 avgROI: { value: '4.8x', trend: '+0.4x', icon: TrendingUp, color: 'bg-blue-100 text-blue-700' },
                 creditEfficiency: { value: '92%', trend: '+5%', icon: CreditCard, color: 'bg-purple-100 text-purple-700' },
-                customerAcqCost: { value: '₹420', trend: '-₹35', icon: PieChart, color: 'bg-amber-100 text-amber-700' }
+                customerAcqCost: { value: formatCurrency(420), trend: `-${formatCurrency(35)}`, icon: PieChart, color: 'bg-amber-100 text-amber-700' }
             },
             monthlyRevenue: [
                 { month: 'Jan', revenue: 850000, cost: 210000 },
@@ -42,7 +45,7 @@ const RevenueAnalytics = () => {
                 {
                     type: 'opportunity',
                     title: 'Revenue Opportunity',
-                    description: 'Increasing Meta ad spend by 15% on high-performing carousels could boost revenue by ₹1.2L next month.',
+                    description: `Increasing Meta ad spend by 15% on high-performing carousels could boost revenue by ${formatCurrency(120000)} next month.`,
                     impact: 'High'
                 },
                 {

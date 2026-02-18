@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
+import { usePreferences } from '../../../context/PreferencesContext';
 
 const PricingCard = ({
     title,
@@ -10,6 +11,7 @@ const PricingCard = ({
     isPopular = false,
     isMint = false
 }) => {
+    const { formatCurrency } = usePreferences();
     return (
         <div className={`relative p-8 rounded-2xl border transition-all duration-300 flex flex-col h-full ${isPopular
             ? 'bg-white/5 border-secondary shadow-[0_0_40px_rgba(118,247,197,0.1)] transform md:-translate-y-4'
@@ -26,7 +28,7 @@ const PricingCard = ({
                     {title}
                 </h3>
                 <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-4xl font-bold text-white">₹{price.toLocaleString('en-IN')}</span>
+                    <span className="text-4xl font-bold text-white">{formatCurrency(price)}</span>
                     <span className="text-sm text-[#A8B3BD]">/ month</span>
                 </div>
                 <p className="text-[10px] text-[#7C8A96] mt-2 font-medium">(Exclusive of GST & convenience fee)</p>

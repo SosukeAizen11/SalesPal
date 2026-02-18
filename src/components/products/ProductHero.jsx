@@ -4,10 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Megaphone, ArrowRight } from 'lucide-react';
 import StaggerContainer, { StaggerItem } from '../animations/StaggerContainer';
 import useReducedMotion from '../../hooks/useReducedMotion';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const ProductHero = () => {
     const navigate = useNavigate();
     const prefersReducedMotion = useReducedMotion();
+    const { formatCurrency } = usePreferences();
 
     const scrollToFeatures = () => {
         const element = document.getElementById('powerful-features');
@@ -71,7 +73,7 @@ const ProductHero = () => {
 
                         <StaggerItem>
                             <p className="text-3xl font-bold text-gray-900 mb-6">
-                                ₹5,999<span className="text-lg font-normal text-gray-600">/month</span>
+                                {formatCurrency(5999)}<span className="text-lg font-normal text-gray-600">/month</span>
                             </p>
                         </StaggerItem>
 

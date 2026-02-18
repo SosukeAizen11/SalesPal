@@ -7,6 +7,7 @@ import { useSubscription } from '../../commerce/SubscriptionContext';
 import { useMarketing } from '../../context/MarketingContext';
 import { MODULES } from '../../commerce/commerce.config';
 import { useToast } from '../../components/ui/Toast';
+import { usePreferences } from '../../context/PreferencesContext';
 import Button from '../../components/ui/Button';
 
 const CartPage = () => {
@@ -15,6 +16,7 @@ const CartPage = () => {
     const { isModuleActive, activateSubscription, clearCartAfterPurchase } = useSubscription();
     const { addCredits } = useMarketing();
     const { showToast } = useToast();
+    const { formatCurrency } = usePreferences();
     const navigate = useNavigate();
     const subtotal = getCartTotal();
 
@@ -48,7 +50,7 @@ const CartPage = () => {
     const validPromoCodes = {
         'SAVE10': { discount: 0.10, type: 'percentage', description: '10% off' },
         'SAVE20': { discount: 0.20, type: 'percentage', description: '20% off' },
-        'FLAT1000': { discount: 1000, type: 'fixed', description: '₹1,000 off' },
+        'FLAT1000': { discount: 1000, type: 'fixed', description: `${formatCurrency(1000)} off` },
         'WELCOME': { discount: 0.15, type: 'percentage', description: '15% off' }
     };
 
@@ -274,7 +276,7 @@ const CartPage = () => {
                                                 <div className="text-right">
                                                     <div className="flex items-center gap-2 justify-end">
                                                         <span className="block text-sm font-semibold text-gray-900">
-                                                            ₹{(calculateItemPrice(item) * (item.quantity || 1)).toLocaleString()}
+                                                            {formatCurrency(calculateItemPrice(item) * (item.quantity || 1))}
                                                         </span>
                                                         {item.type === 'credits' && (item.quantity || 1) > 1 && (
                                                             <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
@@ -409,7 +411,7 @@ const CartPage = () => {
                             {/* Subscription terms */}
                             <div className="mt-6 rounded-md border border-gray-200 bg-gray-50 px-4 py-3">
                                 <p className="text-xs text-gray-600 leading-relaxed">
-                                    You will be charged <span className="font-semibold">₹{subtotal.toLocaleString()}</span> today.
+                                    You will be charged <span className="font-semibold">{formatCurrency(subtotal)}</span> today.
                                     This is a recurring monthly subscription. You can cancel anytime from Billing Settings.
                                 </p>
                             </div>
@@ -516,20 +518,20 @@ const CartPage = () => {
                             <div className="border-t border-gray-100 pt-4 space-y-3">
                                 <div className="flex justify-between text-sm text-gray-600">
                                     <span>Subtotal</span>
-                                    <span className="font-medium">₹{subtotalWithCycle.toLocaleString()}</span>
+                                    <span className="font-medium">{formatCurrency(subtotalWithCycle)}</span>
                                 </div>
 
                                 {billingCycle === 'yearly' && yearlyDiscountAmount > 0 && (
                                     <div className="flex justify-between text-sm text-green-600">
                                         <span>Yearly discount (15%)</span>
-                                        <span className="font-medium">-₹{yearlyDiscountAmount.toLocaleString()}</span>
+                                        <span className="font-medium">-{formatCurrency(yearlyDiscountAmount)}</span>
                                     </div>
                                 )}
 
                                 {appliedPromo && promoDiscount > 0 && (
                                     <div className="flex justify-between text-sm text-green-600">
                                         <span>Promo ({validPromoCodes[appliedPromo].description})</span>
-                                        <span className="font-medium">-₹{promoDiscount.toLocaleString()}</span>
+                                        <span className="font-medium">-{formatCurrency(promoDiscount)}</span>
                                     </div>
                                 )}
 
@@ -543,7 +545,7 @@ const CartPage = () => {
                             <div className="border-t border-gray-200 pt-4">
                                 <div className="flex justify-between items-baseline">
                                     <span className="text-base font-semibold text-gray-900">Total due today</span>
-                                    <span className="text-2xl font-bold text-gray-900">₹{finalTotal.toLocaleString()}</span>
+                                    <span className="text-2xl font-bold text-gray-900">{formatCurrency(finalTotal)}</span>
                                 </div>
                             </div>
 
@@ -657,7 +659,7 @@ const CartPage = () => {
                                             SalesPal {module.name}
                                         </h3>
                                         <p className="text-sm text-gray-500">
-                                            ₹{module.price.toLocaleString()} / month
+                                            {formatCurrency(module.price)} / month
                                         </p>
                                     </div>
 

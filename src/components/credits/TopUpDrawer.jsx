@@ -5,6 +5,7 @@ import { X, ShoppingCart, Image as ImageIcon, Video, Lock, ArrowRight, Check } f
 import { useSubscription } from '../../commerce/SubscriptionContext';
 import { useCart } from '../../commerce/CartContext';
 import { useMarketing } from '../../context/MarketingContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import Button from '../ui/Button';
 import { useToast } from '../ui/Toast';
 
@@ -13,6 +14,7 @@ const TopUpDrawer = ({ isOpen, onClose }) => {
     const { addProductToCart } = useCart();
     const { creditState } = useMarketing();
     const navigate = useNavigate();
+    const { formatCurrency } = usePreferences();
 
     // Define packs first so they are available for state calculations
     const packs = [
@@ -221,7 +223,7 @@ const TopUpDrawer = ({ isOpen, onClose }) => {
                                                                 </div>
                                                             </div>
                                                             <div className="text-right">
-                                                                <div className="font-bold text-gray-900">₹{pack.price}</div>
+                                                                <div className="font-bold text-gray-900">{formatCurrency(pack.price)}</div>
                                                             </div>
                                                         </div>
 
@@ -274,7 +276,7 @@ const TopUpDrawer = ({ isOpen, onClose }) => {
                                             {totalItems} item{totalItems > 1 ? 's' : ''} added
                                         </span>
                                         <span className="font-bold text-lg leading-none">
-                                            ₹{totalPrice.toLocaleString()}
+                                            {formatCurrency(totalPrice)}
                                         </span>
                                     </div>
                                     <Button

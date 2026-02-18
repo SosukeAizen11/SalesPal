@@ -10,27 +10,30 @@ import { IntegrationProvider } from '../context/IntegrationContext';
 import MiniCartDrawer from '../components/cart/MiniCartDrawer';
 import { ToastProvider } from '../components/ui/Toast';
 import ScrollToTop from '../components/common/ScrollToTop';
+import { PreferencesProvider } from '../context/PreferencesContext';
 
 const App = () => {
     return (
-        <AuthProvider>
-            <SubscriptionProvider>
-                <CartProvider>
-                    <IntegrationProvider>
-                        <MarketingProvider>
-                            <ProjectProvider>
-                                <ToastProvider>
-                                    <ScrollRestoration />
-                                    <ScrollToTop />
-                                    <Outlet />
-                                    <MiniCartDrawer />
-                                </ToastProvider>
-                            </ProjectProvider>
-                        </MarketingProvider>
-                    </IntegrationProvider>
-                </CartProvider>
-            </SubscriptionProvider>
-        </AuthProvider>
+        <PreferencesProvider>
+            <AuthProvider>
+                <SubscriptionProvider>
+                    <CartProvider>
+                        <IntegrationProvider>
+                            <MarketingProvider>
+                                <ProjectProvider>
+                                    <ToastProvider>
+                                        <ScrollRestoration />
+                                        <ScrollToTop />
+                                        <Outlet />
+                                        <MiniCartDrawer />
+                                    </ToastProvider>
+                                </ProjectProvider>
+                            </MarketingProvider>
+                        </IntegrationProvider>
+                    </CartProvider>
+                </SubscriptionProvider>
+            </AuthProvider>
+        </PreferencesProvider>
     );
 };
 

@@ -1,8 +1,10 @@
 import React from 'react';
 import { IndianRupee } from 'lucide-react';
+import { usePreferences } from '../../../../../context/PreferencesContext';
 
 const BudgetCard = ({ dailyBudget, setDailyBudget }) => {
     const monthlyEstimate = dailyBudget * 30.41;
+    const { formatCurrency, currentCurrency } = usePreferences();
 
     return (
         <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
@@ -19,7 +21,7 @@ const BudgetCard = ({ dailyBudget, setDailyBudget }) => {
                         className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-secondary focus:border-secondary text-lg font-semibold text-gray-900"
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 font-medium sm:text-sm">
-                        INR / day
+                        {currentCurrency.code} / day
                     </div>
                 </div>
                 <input
@@ -36,7 +38,7 @@ const BudgetCard = ({ dailyBudget, setDailyBudget }) => {
             <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-sm text-gray-500">Est. Monthly Spend</span>
                 <span className="text-base font-bold text-gray-900">
-                    ₹{monthlyEstimate.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    {formatCurrency(monthlyEstimate, { decimals: 0 })}
                 </span>
             </div>
         </div>

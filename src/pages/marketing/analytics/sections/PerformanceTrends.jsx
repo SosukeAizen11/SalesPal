@@ -4,8 +4,9 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Legend
 } from 'recharts';
+import { usePreferences } from '../../../../context/PreferencesContext';
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, formatCurrency }) => {
     if (!active || !payload?.length) return null;
 
     return (
@@ -16,7 +17,7 @@ const CustomTooltip = ({ active, payload, label }) => {
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
                     <span className="text-sm font-semibold text-gray-700 capitalize w-16">{entry.name}:</span>
                     <span className="text-sm font-bold text-gray-900">
-                        {entry.name === 'ROAS' ? `${entry.value}x` : `$${entry.value}`}
+                        {entry.name === 'ROAS' ? `${entry.value}x` : formatCurrency(entry.value)}
                     </span>
                 </div>
             ))}
@@ -25,6 +26,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const PerformanceTrends = ({ data, timeRange }) => {
+    const { formatCurrency } = usePreferences();
     // Transform data for Recharts
     const chartData = useMemo(() => {
         if (!data?.dates || !data?.roas || !data?.cpa) return [];
@@ -73,11 +75,11 @@ const PerformanceTrends = ({ data, timeRange }) => {
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 11, fill: '#9ca3af' }}
-                            tickFormatter={(v) => `$${v}`}
+                            tickFormatter={(v) => formatCurrency(v, { compact: true })}
                             dx={10}
                             label={{ value: 'CPA', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fill: '#3b82f6', fontSize: 11 } }}
                         />
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
                         <Legend iconType="circle" />
                         <Line
                             yAxisId="left"

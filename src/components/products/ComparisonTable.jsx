@@ -4,8 +4,9 @@ import { X, Check } from 'lucide-react';
 import { ScrollRevealHeading, ScrollRevealSubheading, ScrollRevealScale } from '../animations/ScrollReveal';
 import useScrollReveal from '../../hooks/useScrollReveal';
 import useReducedMotion from '../../hooks/useReducedMotion';
+import { usePreferences } from '../../context/PreferencesContext';
 
-const comparisonData = [
+const STATIC_COMPARISON_DATA = [
     {
         aspect: "Ad Creation Time",
         traditional: "4-8 hours per campaign",
@@ -26,16 +27,22 @@ const comparisonData = [
         traditional: "Weekly reviews",
         salespal: "Real-time AI optimization"
     },
-    {
-        aspect: "Monthly Cost",
-        traditional: "₹50,000+ (agency)",
-        salespal: "₹5,999/month"
-    }
+    // Monthly Cost row is computed dynamically — see ComparisonTable component
 ];
 
 const ComparisonTable = () => {
     const { ref, isVisible } = useScrollReveal({ threshold: 0.1 });
     const prefersReducedMotion = useReducedMotion();
+    const { formatCurrency } = usePreferences();
+
+    const comparisonData = [
+        ...STATIC_COMPARISON_DATA,
+        {
+            aspect: 'Monthly Cost',
+            traditional: `${formatCurrency(50000)}+ (agency)`,
+            salespal: `${formatCurrency(5999)}/month`,
+        },
+    ];
 
     const containerVariants = {
         hidden: { opacity: 0 },

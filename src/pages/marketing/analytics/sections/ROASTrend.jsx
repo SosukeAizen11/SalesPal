@@ -10,8 +10,10 @@ import {
     ReferenceDot
 } from 'recharts';
 import { Activity, Zap, TrendingUp, AlertTriangle } from 'lucide-react';
+import { usePreferences } from '../../../../context/PreferencesContext';
 
 const PerformanceStability = ({ data }) => {
+    const { formatCurrency } = usePreferences();
     // data format: { dates: [], roas: [], cpa: [] }
 
     // Process data for Recharts
@@ -164,7 +166,7 @@ const PerformanceStability = ({ data }) => {
                             labelStyle={{ color: '#111827', fontWeight: 'bold', marginBottom: '4px' }}
                             itemStyle={{ fontSize: '12px', fontWeight: '500' }}
                             formatter={(value, name) => [
-                                name === 'cpa' ? `$${value}` : `${value}x`,
+                                name === 'cpa' ? formatCurrency(value) : `${value}x`,
                                 name === 'cpa' ? 'CPA' : 'ROAS'
                             ]}
                         />

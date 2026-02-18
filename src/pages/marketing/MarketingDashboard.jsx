@@ -9,7 +9,7 @@
  * 4. Links to Layer 2 (CampaignDetailView) for optimization context.
  */
 import React, { useState, useMemo, useRef } from 'react';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { usePreferences } from '../../context/PreferencesContext';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Filter, BarChart2, Globe, ChevronDown, HelpCircle } from 'lucide-react';
 import { AnalyticsProvider, useAnalytics } from '../../context/AnalyticsContext';
@@ -37,6 +37,7 @@ const DashboardContent = ({ mode = 'page' }) => {
         setTimeRange, setChannelFilter, setCompareMode, compareMode, setProject
     } = useAnalytics();
     const { projects } = useMarketing();
+    const { formatCurrency } = usePreferences();
 
 
     // UI State

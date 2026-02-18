@@ -1,8 +1,10 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, ComposedChart } from 'recharts';
 import AnalyticsSection from '../AnalyticsSection';
+import { usePreferences } from '../../../../context/PreferencesContext';
 
 const RevenueImpact = ({ data }) => {
+    const { formatCurrency } = usePreferences();
     return (
         <AnalyticsSection
             title="Revenue vs Marketing Cost"
@@ -23,11 +25,11 @@ const RevenueImpact = ({ data }) => {
                             axisLine={false}
                             tickLine={false}
                             tick={{ fill: '#9ca3af', fontSize: 12 }}
-                            tickFormatter={(value) => `₹${(value / 100000).toFixed(1)}L`}
+                            tickFormatter={(value) => formatCurrency(value, { compact: true })}
                         />
                         <Tooltip
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                            formatter={(value) => [`₹${value.toLocaleString()}`, '']}
+                            formatter={(value) => [formatCurrency(value), '']}
                         />
                         <Legend verticalAlign="top" height={36} />
                         <Bar
@@ -53,7 +55,7 @@ const RevenueImpact = ({ data }) => {
             <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-center justify-between">
                 <div>
                     <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">Net Profit Impact</p>
-                    <p className="text-xl font-bold text-blue-900 mt-1">₹8,45,000 <span className="text-sm font-normal text-blue-600">this month</span></p>
+                    <p className="text-xl font-bold text-blue-900 mt-1">{formatCurrency(845000)} <span className="text-sm font-normal text-blue-600">this month</span></p>
                 </div>
                 <div className="text-right">
                     <p className="text-xs font-medium text-blue-600">ROI Efficiency</p>

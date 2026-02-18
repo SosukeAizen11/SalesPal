@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Pause, Play, Edit, AlertTriangle, TrendingUp, TrendingDown,
-    DollarSign, Target, Users, MousePointerClick, Activity, ChevronDown,
+    Target, Users, MousePointerClick, Activity, ChevronDown,
     ChevronUp, Facebook, Chrome, Linkedin, Smartphone, Monitor, Tablet,
     Eye, AlertCircle, CheckCircle, XCircle, ArrowRight, X
 } from 'lucide-react';
@@ -14,7 +14,8 @@ import { useMarketing } from '../../../context/MarketingContext';
 import { useIntegrations } from '../../../context/IntegrationContext';
 import { canLaunchCampaign } from '../../../utils/campaignGuard';
 import { getProjectsBackRoute, getCampaignEditRoute } from '../../../utils/navigationUtils';
-import { formatCurrency } from '../../../utils/formatCurrency';
+import { usePreferences } from '../../../context/PreferencesContext';
+import CurrencyIcon from '../../../components/ui/CurrencyIcon';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import Card from '../../../components/ui/Card';
@@ -23,8 +24,8 @@ import Card from '../../../components/ui/Card';
 // DECISION-FIRST CAMPAIGN CONTROL PANEL
 // ============================================
 
-// Custom Tooltip
-const CustomTooltip = ({ active, payload, label }) => {
+// Custom Tooltip — accepts formatCurrency as a prop so it uses the context-aware formatter
+const CustomTooltip = ({ active, payload, label, formatCurrency }) => {
     if (active && payload && payload.length) {
         return (
             <div className="bg-white p-3 border border-gray-100 shadow-lg rounded-lg text-xs">
@@ -35,7 +36,7 @@ const CustomTooltip = ({ active, payload, label }) => {
                         <span className="text-gray-500 capitalize">{entry.name}:</span>
                         <span className="font-semibold text-gray-900">
                             {entry.name === 'ROAS' ? `${entry.value}x` :
-                                entry.name === 'CPA' ? formatCurrency(entry.value) : entry.value}
+                                entry.name === 'CPA' ? (formatCurrency ? formatCurrency(entry.value) : entry.value) : entry.value}
                         </span>
                     </div>
                 ))}
@@ -58,6 +59,7 @@ export default function CampaignDetails() {
     const navigate = useNavigate();
     const { getCampaignById, updateCampaign } = useMarketing();
     const { integrations } = useIntegrations();
+    const { formatCurrency } = usePreferences();
 
     const [campaign, setCampaign] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -187,7 +189,7 @@ export default function CampaignDetails() {
                                 <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
                                     {platforms?.map(p => <span key={p} className="flex items-center gap-1">{getPlatformIcon(p)} {p}</span>)}
                                     <span>•</span>
-                                    <span>Budget: {dailyBudget}/day</span>
+                                    <span>Budget: {typeof dailyBudget === 'number' ? formatCurrency(dailyBudget) : dailyBudget}/day</span>
                                     <span>•</span>
                                     <span>Today: {formatCurrency(rawSpend / 7)} spent</span>
                                 </div>
@@ -237,8 +239,8 @@ export default function CampaignDetails() {
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         {[
                             { label: 'ROAS', kpiKey: 'roas', value: `${roasValue.toFixed(2)}x`, icon: TrendingUp, color: roasValue >= 3 ? 'text-emerald-600' : roasValue >= 2 ? 'text-blue-600' : 'text-red-600', threshold: roasValue >= 3 ? 'Excellent' : roasValue >= 2 ? 'Good' : 'Low' },
-                            { label: 'Revenue', kpiKey: 'revenue', value: formatCurrency(rawRevenue), icon: DollarSign, color: 'text-emerald-600', threshold: '' },
-                            { label: 'Spend', kpiKey: 'spend', value: formatCurrency(rawSpend), icon: DollarSign, color: 'text-gray-600', threshold: '' },
+                            { label: 'Revenue', kpiKey: 'revenue', value: formatCurrency(rawRevenue), icon: CurrencyIcon, color: 'text-emerald-600', threshold: '' },
+                            { label: 'Spend', kpiKey: 'spend', value: formatCurrency(rawSpend), icon: CurrencyIcon, color: 'text-gray-600', threshold: '' },
                             { label: 'CPA', kpiKey: 'cpa', value: formatCurrency(cpaValue), icon: Target, color: cpaValue <= 300 ? 'text-emerald-600' : 'text-amber-600', threshold: cpaValue <= 300 ? 'Efficient' : 'High' },
                             { label: 'Conv. Value', kpiKey: 'convValue', value: formatCurrency(convValue), icon: Users, color: 'text-indigo-600', threshold: '' },
                         ].map((kpi, i) => (
@@ -269,8 +271,8 @@ export default function CampaignDetails() {
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
                                     {activeKPI === 'roas' && <TrendingUp className="w-5 h-5 text-white" />}
-                                    {activeKPI === 'revenue' && <DollarSign className="w-5 h-5 text-white" />}
-                                    {activeKPI === 'spend' && <DollarSign className="w-5 h-5 text-white" />}
+                                    {activeKPI === 'revenue' && <CurrencyIcon className="w-5 h-5 text-white" />}
+                                    {activeKPI === 'spend' && <CurrencyIcon className="w-5 h-5 text-white" />}
                                     {activeKPI === 'cpa' && <Target className="w-5 h-5 text-white" />}
                                     {activeKPI === 'convValue' && <Users className="w-5 h-5 text-white" />}
                                 </div>
@@ -469,7 +471,7 @@ export default function CampaignDetails() {
                                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                                 <YAxis yAxisId="left" orientation="left" stroke="#6366f1" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}x`} />
                                 <YAxis yAxisId="right" orientation="right" stroke="#f43f5e" tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrency(v)} />
-                                <Tooltip content={<CustomTooltip />} />
+                                <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
                                 <Area yAxisId="left" type="monotone" dataKey="roas" stroke="#6366f1" fill="#e0e7ff" fillOpacity={0.4} strokeWidth={2} name="ROAS" />
                                 <Line yAxisId="right" type="monotone" dataKey="cpa" stroke="#f43f5e" strokeWidth={2} dot={{ r: 3 }} name="CPA" />
                             </ComposedChart>

@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Headphones, ArrowRight } from 'lucide-react';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const SupportProductHero = () => {
+    const { formatCurrency } = usePreferences();
     const scrollToFeatures = () => {
         const element = document.getElementById('powerful-features');
         if (element) {
@@ -54,7 +56,7 @@ const SupportProductHero = () => {
                         </p>
 
                         <p className="text-3xl font-bold text-gray-900 mb-6">
-                            ₹9,999<span className="text-lg font-normal text-gray-600">/month</span>
+                            {formatCurrency(9999)}<span className="text-lg font-normal text-gray-600">/month</span>
                         </p>
 
                         <p className="text-base text-gray-600 leading-relaxed mb-8 max-w-2xl">

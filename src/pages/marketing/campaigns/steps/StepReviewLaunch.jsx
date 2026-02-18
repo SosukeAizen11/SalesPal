@@ -4,6 +4,7 @@ import { Rocket, ArrowLeft, Building2, Layout, Edit2, CheckSquare, Square, Alert
 import { useIntegrations } from '../../../../context/IntegrationContext';
 import { useMarketing } from '../../../../context/MarketingContext';
 import { canLaunchCampaign, getIntegrationErrors } from '../../../../utils/campaignGuard';
+import { usePreferences } from '../../../../context/PreferencesContext';
 
 const WIZARD_STATE_KEY = 'salespal_campaign_wizard_state';
 
@@ -14,6 +15,7 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
     const [isLaunching, setIsLaunching] = useState(false);
     const { integrations, initiateConnection } = useIntegrations();
     const { activeDraft } = useMarketing();
+    const { formatCurrency } = usePreferences();
 
     // Derive platforms from budget split data
     // StepPlatformBudget stores: budget.split.meta (%) and budget.split.google (%)
@@ -186,11 +188,11 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
                     <div className="space-y-3">
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-600">Daily Budget</span>
-                            <span className="font-semibold text-gray-900">₹{data?.budget?.daily || 3500}</span>
+                            <span className="font-semibold text-gray-900">{formatCurrency(data?.budget?.daily || 3500)}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-600">Monthly Estimate</span>
-                            <span className="font-semibold text-gray-900">₹{((data?.budget?.daily || 3500) * 30).toLocaleString()}</span>
+                            <span className="font-semibold text-gray-900">{formatCurrency((data?.budget?.daily || 3500) * 30)}</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden mt-2 flex">
                             <div className="bg-blue-600 h-full w-[60%]" title="Meta 60%" />
