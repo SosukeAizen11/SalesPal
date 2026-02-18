@@ -68,10 +68,12 @@ export const MarketingProvider = ({ children }) => {
 
         switch (actionType) {
             case 'SCALE_CAMPAIGN':
-                // Increase budget by 20%
-                const currentBudget = parseInt(campaign.dailyBudget.replace(/[^0-9]/g, '')) || 0;
+                // Increase budget by 20% — store as raw number so formatCurrency works everywhere
+                const currentBudget = typeof campaign.dailyBudget === 'number'
+                    ? campaign.dailyBudget
+                    : parseInt(String(campaign.dailyBudget).replace(/[^0-9]/g, '')) || 0;
                 const newBudget = Math.floor(currentBudget * 1.2);
-                updates = { dailyBudget: `₹${newBudget.toLocaleString()}` };
+                updates = { dailyBudget: newBudget };
                 break;
             case 'OPTIMIZE_BUDGET':
                 // Mock update - maybe reorder platforms mock or just set a flag

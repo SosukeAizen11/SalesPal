@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Check } from 'lucide-react';
+import { usePreferences } from '../../context/PreferencesContext';
 
-const comparisonData = [
+const STATIC_COMPARISON_DATA = [
     {
         aspect: "Tools Needed",
         traditional: "5-10 different tools",
@@ -17,11 +18,7 @@ const comparisonData = [
         traditional: "10+ people full funnel",
         salespal: "2-3 people with AI"
     },
-    {
-        aspect: "Total Cost",
-        traditional: "₹50,000-1,00,000/mo",
-        salespal: "₹29,999/month"
-    },
+    // Total Cost row is computed dynamically
     {
         aspect: "Setup Time",
         traditional: "3-6 months",
@@ -32,6 +29,17 @@ const comparisonData = [
 const SalesPal360Comparison = () => {
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef(null);
+    const { formatCurrency } = usePreferences();
+
+    const comparisonData = [
+        ...STATIC_COMPARISON_DATA.slice(0, 3),
+        {
+            aspect: 'Total Cost',
+            traditional: `${formatCurrency(50000)}-${formatCurrency(100000)}/mo`,
+            salespal: `${formatCurrency(29999)}/month`,
+        },
+        STATIC_COMPARISON_DATA[STATIC_COMPARISON_DATA.length - 1],
+    ];
 
     useEffect(() => {
         const observer = new IntersectionObserver(

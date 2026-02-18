@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
-import { formatCurrency } from '../../../../utils/formatCurrency';
+import { usePreferences } from '../../../../context/PreferencesContext';
 import AnalyticsSection from '../AnalyticsSection';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, ReferenceLine
 } from 'recharts';
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, formatCurrency }) => {
     if (!active || !payload?.length) return null;
 
     return (
@@ -21,6 +21,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const SpendAnalysis = ({ data }) => {
+    const { formatCurrency } = usePreferences();
     // Generate daily spend data for chart - DETERMINISTIC based on dailyAvg
     const chartData = useMemo(() => {
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -93,7 +94,7 @@ const SpendAnalysis = ({ data }) => {
                                 tick={{ fontSize: 11, fill: '#9ca3af' }}
                                 tickFormatter={(v) => formatCurrency(v, { compact: true })}
                             />
-                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+                            <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
                             <ReferenceLine
                                 y={avgSpend}
                                 stroke="#f43f5e"

@@ -52,6 +52,7 @@ import SocialPostDetails from '../pages/marketing/social/SocialPostDetails';
 // Settings Pages
 import SettingsLayout from '../pages/settings/SettingsLayout';
 import SettingsIntegrations from '../pages/settings/SettingsIntegrations';
+import SettingsPreferences from '../pages/settings/SettingsPreferences';
 import {
     SettingsAccount,
     SettingsTeam,
@@ -274,7 +275,8 @@ export const router = createBrowserRouter([
                             { path: "integrations", element: <SettingsIntegrations /> },
                             { path: "marketing", element: <SettingsMarketing /> },
                             { path: "notifications", element: <SettingsNotifications /> },
-                            { path: "security", element: <SettingsSecurity /> }
+                            { path: "security", element: <SettingsSecurity /> },
+                            { path: "preferences", element: <SettingsPreferences /> }
                         ]
                     },
 

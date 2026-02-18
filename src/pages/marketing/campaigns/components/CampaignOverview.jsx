@@ -1,14 +1,25 @@
-import React from 'react';
-import { DollarSign, Users, TrendingUp, Target } from 'lucide-react';
+import { Users, TrendingUp, Target } from 'lucide-react';
+import { usePreferences } from '../../../../context/PreferencesContext';
+import CurrencyIcon from '../../../../components/ui/CurrencyIcon';
 
 export default function CampaignOverview({ campaign }) {
     const { dailyBudget, leads, totalSpend, cpl } = campaign || {};
+    const { formatCurrency } = usePreferences();
+
+    // Helper: if value is a number format it; if it's a pre-formatted string pass through; else show zero
+    const fmtMoney = (val) => {
+        if (val === null || val === undefined) return formatCurrency(0);
+        if (typeof val === 'number') return formatCurrency(val);
+        // Pre-formatted string (e.g. "₹5,000") — extract number and reformat
+        const num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+        return isNaN(num) ? formatCurrency(0) : formatCurrency(num);
+    };
 
     const metrics = [
         {
             label: 'Daily Budget',
-            value: dailyBudget || '₹0',
-            icon: DollarSign,
+            value: fmtMoney(dailyBudget),
+            icon: CurrencyIcon,
             color: 'text-blue-600',
             bg: 'bg-blue-50'
         },
@@ -21,14 +32,14 @@ export default function CampaignOverview({ campaign }) {
         },
         {
             label: 'Spend So Far',
-            value: totalSpend || '₹0',
+            value: fmtMoney(totalSpend),
             icon: TrendingUp,
             color: 'text-purple-600',
             bg: 'bg-purple-50'
         },
         {
             label: 'Cost Per Lead',
-            value: cpl || '₹0',
+            value: fmtMoney(cpl),
             icon: Target,
             color: 'text-amber-600',
             bg: 'bg-amber-50'

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { User, Users, Link as LinkIcon, Megaphone, Bell, Shield } from 'lucide-react';
+import { User, Users, Link as LinkIcon, Megaphone, Bell, Shield, SlidersHorizontal } from 'lucide-react';
 
 const SettingsLayout = () => {
     const navItems = [
@@ -10,6 +10,7 @@ const SettingsLayout = () => {
         { path: '/settings/marketing', label: 'Marketing Defaults', icon: Megaphone },
         { path: '/settings/notifications', label: 'Notifications', icon: Bell },
         { path: '/settings/security', label: 'Security', icon: Shield },
+        { path: '/settings/preferences', label: 'Preferences', icon: SlidersHorizontal },
     ];
 
     return (

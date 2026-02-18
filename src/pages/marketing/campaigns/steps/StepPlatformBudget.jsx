@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IndianRupee, PieChart, TrendingUp, Wallet, CheckCircle2, Facebook, Linkedin, Instagram, Twitter, Check, Info, AlertCircle } from 'lucide-react';
 import StepNavigation from '../components/StepNavigation';
+import { usePreferences } from '../../../../context/PreferencesContext';
 
 // Mock Google Icon
 const GoogleIcon = ({ className }) => (
@@ -22,6 +23,7 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
     const [dailyBudget, setDailyBudget] = useState(data?.budget?.daily || 3500);
     const [metaSplit, setMetaSplit] = useState(data?.budget?.split?.meta || 60);
     const [showError, setShowError] = useState(false);
+    const { formatCurrency, currentCurrency } = usePreferences();
 
     // Initialize selected platforms from data or default to recommended
     const [selectedPlatforms, setSelectedPlatforms] = useState(() => {
@@ -79,7 +81,7 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
 
         if (!dailyBudget || Number(dailyBudget) < 100) {
             setShowError(true);
-            alert('Please enter a valid daily budget (minimum ₹100).');
+            alert(`Please enter a valid daily budget (minimum ${currentCurrency.symbol}100).`);
             return;
         }
 
@@ -141,7 +143,7 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
 
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <span className="text-gray-400 text-lg font-medium">₹</span>
+                                <span className="text-gray-400 text-lg font-medium">{currentCurrency.symbol}</span>
                             </div>
                             <input
                                 type="number"
@@ -328,7 +330,7 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                                         <div>
                                             <label className="text-xs text-gray-600 mb-1 block">Daily Amount</label>
                                             <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">₹</span>
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{currentCurrency.symbol}</span>
                                                 <input
                                                     type="number"
                                                     value={metaSpend}
@@ -366,7 +368,7 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                                         <div>
                                             <label className="text-xs text-gray-600 mb-1 block">Daily Amount</label>
                                             <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">₹</span>
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{currentCurrency.symbol}</span>
                                                 <input
                                                     type="number"
                                                     value={googleSpend}
@@ -407,11 +409,11 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                             <div className="space-y-4">
                                 <div className="flex justify-between items-baseline pb-4 border-b border-gray-100">
                                     <span className="text-sm text-gray-600">Daily Spend</span>
-                                    <span className="text-xl font-bold text-gray-900">₹{dailyBudget}</span>
+                                    <span className="text-xl font-bold text-gray-900">{formatCurrency(dailyBudget)}</span>
                                 </div>
                                 <div className="flex justify-between items-baseline pb-4 border-b border-gray-100">
                                     <span className="text-sm text-gray-600">Monthly Estimate</span>
-                                    <span className="text-xl font-bold text-gray-500">₹{monthlyBudget.toLocaleString()}</span>
+                                    <span className="text-xl font-bold text-gray-500">{formatCurrency(monthlyBudget)}</span>
                                 </div>
 
                                 <div className="pt-2">

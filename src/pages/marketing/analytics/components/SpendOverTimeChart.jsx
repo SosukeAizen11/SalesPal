@@ -1,7 +1,9 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { usePreferences } from '../../../../context/PreferencesContext';
 
 export default function SpendOverTimeChart({ data }) {
+    const { formatCurrency } = usePreferences();
     if (!data || data.length === 0) {
         return <div className="h-64 flex items-center justify-center text-slate-400">No data available</div>;
     }
@@ -28,10 +30,10 @@ export default function SpendOverTimeChart({ data }) {
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#64748B', fontSize: 12 }}
-                        tickFormatter={(value) => `₹${value}`}
+                        tickFormatter={(value) => formatCurrency(value, { compact: true })}
                     />
                     <Tooltip
-                        formatter={(value) => [`₹${value}`, 'Spend']}
+                        formatter={(value) => [formatCurrency(value), 'Spend']}
                         contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         itemStyle={{ color: '#1E293B' }}
                     />

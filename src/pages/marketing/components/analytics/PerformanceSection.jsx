@@ -1,8 +1,10 @@
 import React from 'react';
 import { Facebook, Chrome, Search } from 'lucide-react';
 import CampaignStatusBadge from '../CampaignStatusBadge';
+import { usePreferences } from '../../../../context/PreferencesContext';
 
 const PerformanceSection = () => {
+    const { formatCurrency } = usePreferences();
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -39,7 +41,7 @@ const PerformanceSection = () => {
                                     <Chrome className="w-4 h-4 text-[#EA4335]" />
                                 </div>
                             </td>
-                            <td className="px-6 py-4 text-right">₹3,450</td>
+                            <td className="px-6 py-4 text-right">{formatCurrency(3450)}</td>
                             <td className="px-6 py-4 text-right font-semibold text-green-600">8</td>
                             <td className="px-6 py-4 text-right text-gray-600">2.1%</td>
                         </tr>

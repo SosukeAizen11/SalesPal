@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { MoreHorizontal, ExternalLink, Facebook, Chrome, Linkedin, Pause, Play, Trash, Copy, Edit, Rocket, AlertCircle } from 'lucide-react';
 import { useIntegrations } from '../../../context/IntegrationContext';
 import { canLaunchCampaign } from '../../../utils/campaignGuard';
+import { usePreferences } from '../../../context/PreferencesContext';
 import CampaignStatusBadge from './CampaignStatusBadge';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
@@ -10,6 +11,7 @@ import Dropdown from '../../../components/ui/Dropdown';
 const CampaignCard = ({ campaign = {}, onToggleStatus, onEdit, onDelete }) => {
     const navigate = useNavigate();
     const { integrations } = useIntegrations();
+    const { formatCurrency } = usePreferences();
     const { id, name, status = 'draft', platforms = [], dailyBudget, leads, projectId } = campaign;
 
     // Build campaign object for guard check
@@ -176,7 +178,13 @@ const CampaignCard = ({ campaign = {}, onToggleStatus, onEdit, onDelete }) => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-6">
                 <div>
                     <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">Daily Spend</span>
-                    <span className="text-base font-semibold text-gray-900">{dailyBudget || '₹0'}</span>
+                    <span className="text-base font-semibold text-gray-900">
+                        {formatCurrency(
+                            typeof dailyBudget === 'number'
+                                ? dailyBudget
+                                : parseFloat(String(dailyBudget || '0').replace(/[^0-9.]/g, '')) || 0
+                        )}
+                    </span>
                 </div>
                 <div>
                     <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">Est. Leads</span>
