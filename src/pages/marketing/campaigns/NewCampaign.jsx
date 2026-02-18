@@ -22,7 +22,14 @@ const STEPS = [
     {
         label: 'Business',
         title: 'Tell SalesPal AI About Your Business',
-        subtitle: 'Share your business details via text, website, or PDF. Include your location for automatic currency detection.'
+        subtitle: (
+            <>
+                Share your business details via text, website, or PDF. Include your location for automatic currency detection.
+                <span className="block mt-2 text-sm text-gray-400">
+                    Adding more information about your product will make your ads more accurate.
+                </span>
+            </>
+        )
     },
     {
         label: 'Analysis', title: 'AI Business Analysis', subtitle: "Here's what SalesPal AI understood about your business."
