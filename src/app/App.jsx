@@ -4,13 +4,13 @@ import { AuthProvider } from '../context/AuthContext';
 import { SubscriptionProvider } from '../commerce/SubscriptionContext';
 import { CartProvider } from '../commerce/CartContext';
 import { MarketingProvider } from '../context/MarketingContext';
-
 import { ProjectProvider } from '../context/ProjectContext';
 import { IntegrationProvider } from '../context/IntegrationContext';
 import MiniCartDrawer from '../components/cart/MiniCartDrawer';
 import { ToastProvider } from '../components/ui/Toast';
 import ScrollToTop from '../components/common/ScrollToTop';
 import { PreferencesProvider } from '../context/PreferencesContext';
+import { NotificationProvider } from '../context/NotificationContext';
 
 const App = () => {
     return (
@@ -21,12 +21,14 @@ const App = () => {
                         <IntegrationProvider>
                             <MarketingProvider>
                                 <ProjectProvider>
-                                    <ToastProvider>
-                                        <ScrollRestoration />
-                                        <ScrollToTop />
-                                        <Outlet />
-                                        <MiniCartDrawer />
-                                    </ToastProvider>
+                                    <NotificationProvider>
+                                        <ToastProvider>
+                                            <ScrollRestoration />
+                                            <ScrollToTop />
+                                            <Outlet />
+                                            <MiniCartDrawer />
+                                        </ToastProvider>
+                                    </NotificationProvider>
                                 </ProjectProvider>
                             </MarketingProvider>
                         </IntegrationProvider>

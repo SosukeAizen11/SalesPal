@@ -6,7 +6,9 @@ export const MODULES = {
         limits: {
             images: 20,
             videos: 4,
-            posts: 30
+            posts: 30,
+            calls: 500,
+            whatsapp: 300
         },
         creditPacks: {
             images: [
@@ -37,7 +39,9 @@ export const MODULES = {
         limits: {
             images: 100,
             videos: 20,
-            posts: 150
+            posts: 150,
+            calls: 1000,
+            whatsapp: 500
         }
     }
 };
