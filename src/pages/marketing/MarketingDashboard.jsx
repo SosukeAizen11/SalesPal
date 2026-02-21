@@ -23,6 +23,7 @@ import AIStrategicInsights from './analytics/sections/AIStrategicInsights';
 import PerformanceStability from './analytics/sections/ROASTrend';
 import ChannelPerformanceMix from './analytics/sections/ChannelPerformanceMix';
 import ActionFeed from './analytics/sections/ActionFeed';
+import AcquisitionIntelligence from './analytics/sections/AcquisitionIntelligence';
 import CampaignDetailView from './analytics/sections/CampaignDetailView';
 
 import {
@@ -369,6 +370,9 @@ const DashboardContent = ({ mode = 'page' }) => {
                 <section aria-label="Priority Alerts">
                     <ActionFeed alerts={dashboardData.anomalies} />
                 </section>
+
+                {/* Acquisition Intelligence */}
+                <AcquisitionIntelligence />
 
                 {/* C. AI Strategic Insights */}
                 <AIStrategicInsights />

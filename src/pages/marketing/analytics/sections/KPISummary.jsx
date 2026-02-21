@@ -1,9 +1,8 @@
 import React from 'react';
-import { Users, TrendingUp, BarChart, MousePointer, Target, Activity, AlertTriangle, ArrowUp, ArrowDown } from 'lucide-react';
-import { AreaChart, Area, ResponsiveContainer, LineChart, Line, YAxis } from 'recharts';
+import { Users, TrendingUp, MousePointer, Target, Activity, AlertTriangle, ArrowUp, ArrowDown } from 'lucide-react';
 import CurrencyIcon from '../../../../components/ui/CurrencyIcon';
 
-const KPICard = ({ title, value, trend, percentageChange, isPositive, sparklineData, icon: Icon, color, onClick, isWarning, invertColor }) => {
+const KPICard = ({ title, value, trend, percentageChange, isPositive, icon: Icon, color, onClick, isWarning }) => {
 
     // Determination of color for trend indicator
     // Standard: Up = Green (Good), Down = Red (Bad)
@@ -50,31 +49,11 @@ const KPICard = ({ title, value, trend, percentageChange, isPositive, sparklineD
                 )}
             </div>
 
-            {/* Main Value */}
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col justify-center flex-1 mt-2">
                 <h3 className="text-3xl font-extrabold text-gray-900 tracking-tight">{value}</h3>
                 <p className="mt-1 text-xs font-medium text-gray-500 uppercase tracking-wider">{title}</p>
                 <p className="text-[10px] text-gray-400 font-medium mt-0.5">vs last 7 days</p>
             </div>
-
-            {/* Sparkline Chart (Absolute Bottom) */}
-            {sparklineData && sparklineData.length > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 h-8 opacity-90 pointer-events-none" style={{ zIndex: 0 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={sparklineData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-                            <YAxis hide domain={['dataMin', 'dataMax']} />
-                            <Line
-                                type="monotone"
-                                dataKey="value"
-                                stroke={isPositive ? "#10b981" : "#f43f5e"}
-                                strokeWidth={2}
-                                dot={false}
-                                isAnimationActive={false}
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            )}
         </div>
     );
 };
@@ -91,12 +70,10 @@ const KPISummary = ({ data, onDetailClick, mode = 'full' }) => {
                 trend={data[key].trend}
                 percentageChange={data[key].percentageChange}
                 isPositive={data[key].isPositive}
-                sparklineData={data[key].sparkline}
                 icon={icon}
                 color={color}
                 onClick={() => onDetailClick(key, label || title)}
                 isWarning={data[key].isFatigue}
-                invertColor={data[key].invertColor}
             />
         );
     };

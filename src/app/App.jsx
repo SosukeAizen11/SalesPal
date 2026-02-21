@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, ScrollRestoration } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
+import { OrgProvider } from '../context/OrgContext';
 import { SubscriptionProvider } from '../commerce/SubscriptionContext';
 import { CartProvider } from '../commerce/CartContext';
 import { MarketingProvider } from '../context/MarketingContext';
@@ -16,27 +17,30 @@ const App = () => {
     return (
         <PreferencesProvider>
             <AuthProvider>
-                <SubscriptionProvider>
-                    <CartProvider>
-                        <IntegrationProvider>
-                            <MarketingProvider>
-                                <ProjectProvider>
-                                    <NotificationProvider>
-                                        <ToastProvider>
-                                            <ScrollRestoration />
-                                            <ScrollToTop />
-                                            <Outlet />
-                                            <MiniCartDrawer />
-                                        </ToastProvider>
-                                    </NotificationProvider>
-                                </ProjectProvider>
-                            </MarketingProvider>
-                        </IntegrationProvider>
-                    </CartProvider>
-                </SubscriptionProvider>
+                <OrgProvider>
+                    <SubscriptionProvider>
+                        <CartProvider>
+                            <IntegrationProvider>
+                                <MarketingProvider>
+                                    <ProjectProvider>
+                                        <NotificationProvider>
+                                            <ToastProvider>
+                                                <ScrollRestoration />
+                                                <ScrollToTop />
+                                                <Outlet />
+                                                <MiniCartDrawer />
+                                            </ToastProvider>
+                                        </NotificationProvider>
+                                    </ProjectProvider>
+                                </MarketingProvider>
+                            </IntegrationProvider>
+                        </CartProvider>
+                    </SubscriptionProvider>
+                </OrgProvider>
             </AuthProvider>
         </PreferencesProvider>
     );
 };
 
 export default App;
+

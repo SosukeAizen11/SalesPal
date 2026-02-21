@@ -1,150 +1,191 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getCampaigns, addCampaign, updateCampaign, getProjects, addProject, saveCampaigns, saveProjects } from '../utils/storage';
-import { seedProjects, seedCampaigns } from '../utils/seedData';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { useOrg } from './OrgContext';
 
 const MarketingContext = createContext();
 
 export const MarketingProvider = ({ children }) => {
-    const [campaigns, setCampaigns] = useState([]);
+    const { orgId } = useOrg();
+
+    // ─── Projects (Supabase-backed) ───
     const [projects, setProjects] = useState([]);
+    const [projectsLoading, setProjectsLoading] = useState(true);
     const [selectedProjectId, setSelectedProjectId] = useState(null);
 
-    // Load campaigns and projects on init
-    useEffect(() => {
-        let storedCampaigns = getCampaigns();
-        let storedProjects = getProjects();
+    const fetchProjects = useCallback(async () => {
+        if (!orgId) { setProjects([]); setProjectsLoading(false); return; }
+        setProjectsLoading(true);
+        const { data } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('org_id', orgId)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false });
+        setProjects(data || []);
+        setProjectsLoading(false);
+    }, [orgId]);
 
-        // SEEDING LOGIC: Ensure Demo Data Exists
-        const hasDemoConfig = storedProjects.some(p => p.id === 'proj_acme_re');
-
-        if (!hasDemoConfig) {
-            console.log("Seeding Demo Data (Acme & Zenith)...");
-            // Merge seed data with existing data to avoid data loss
-            storedProjects = [...storedProjects, ...seedProjects];
-            storedCampaigns = [...storedCampaigns, ...seedCampaigns];
-
-            saveProjects(storedProjects);
-            saveCampaigns(storedCampaigns);
-        }
-
-        setCampaigns(storedCampaigns);
-        setProjects(storedProjects);
-
-        // Load persisted project selection
-        const savedProjectId = localStorage.getItem('salespal_active_project_id');
-        if (savedProjectId && savedProjectId !== 'null' && storedProjects.find(p => p.id === savedProjectId)) {
-            setSelectedProjectId(savedProjectId);
-        }
-        // Don't auto-select first project - allow All Projects Overview
-    }, []);
+    useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
     const selectProject = (projectId) => {
         setSelectedProjectId(projectId);
-        if (projectId === null) {
-            localStorage.removeItem('salespal_active_project_id');
-        } else {
-            localStorage.setItem('salespal_active_project_id', projectId);
+    };
+
+    const createProject = async (projectData) => {
+        if (!orgId) return null;
+        const { data: user } = await supabase.auth.getUser();
+        const { data, error } = await supabase
+            .from('projects')
+            .insert({ name: projectData.name, org_id: orgId, status: 'active', created_by: user?.user?.id })
+            .select()
+            .single();
+        if (!error && data) setProjects(prev => [data, ...prev]);
+        return data;
+    };
+
+    const getProjectById = (id) => projects.find(p => p.id === id) || null;
+
+    const updateProject = async (projectId, updates) => {
+        const { data, error } = await supabase
+            .from('projects')
+            .update(updates)
+            .eq('id', projectId)
+            .select()
+            .single();
+        if (!error && data) setProjects(prev => prev.map(p => p.id === projectId ? data : p));
+        return data;
+    };
+
+    const deleteProject = async (projectId) => {
+        const { error } = await supabase
+            .from('projects')
+            .update({ status: 'archived' })
+            .eq('id', projectId);
+        if (!error) {
+            setProjects(prev => prev.filter(p => p.id !== projectId));
+            if (selectedProjectId === projectId) setSelectedProjectId(null);
         }
     };
 
-    const createCampaign = (campaignData) => {
-        const newCampaign = addCampaign({
-            ...campaignData,
-            projectId: campaignData.projectId || selectedProjectId // Fallback to selected
-        });
-        setCampaigns(prev => [newCampaign, ...prev]);
-        return newCampaign;
+    // ─── Campaigns (Supabase-backed) ───
+    const [campaigns, setCampaigns] = useState([]);
+    const [campaignsLoading, setCampaignsLoading] = useState(true);
+
+    const fetchCampaigns = useCallback(async () => {
+        if (!orgId) { setCampaigns([]); setCampaignsLoading(false); return; }
+        setCampaignsLoading(true);
+        const { data } = await supabase
+            .from('campaigns')
+            .select('*')
+            .eq('org_id', orgId)
+            .order('created_at', { ascending: false });
+        setCampaigns(data || []);
+        setCampaignsLoading(false);
+    }, [orgId]);
+
+    useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
+
+    const createCampaign = async (campaignData) => {
+        if (!orgId) return null;
+        const { data: user } = await supabase.auth.getUser();
+        const projectId = campaignData.projectId || campaignData.project_id || selectedProjectId;
+
+        const { data, error } = await supabase
+            .from('campaigns')
+            .insert({
+                name: campaignData.name,
+                org_id: orgId,
+                project_id: projectId,
+                platform: campaignData.platform || 'meta',
+                objective: campaignData.objective || null,
+                status: campaignData.status || 'draft',
+                daily_budget: campaignData.dailyBudget || campaignData.daily_budget || null,
+                total_budget: campaignData.totalBudget || campaignData.total_budget || null,
+                start_date: campaignData.startDate || campaignData.start_date || null,
+                end_date: campaignData.endDate || campaignData.end_date || null,
+                created_by: user?.user?.id
+            })
+            .select()
+            .single();
+
+        if (!error && data) setCampaigns(prev => [data, ...prev]);
+        return data;
     };
 
-    const getCampaignById = (id) => {
-        return campaigns.find(c => c.id === id);
+    const getCampaignById = (id) => campaigns.find(c => c.id === id) || null;
+
+    const updateCampaignData = async (campaignId, updates) => {
+        // Map camelCase to snake_case for known fields
+        const dbUpdates = {};
+        if (updates.name !== undefined) dbUpdates.name = updates.name;
+        if (updates.status !== undefined) dbUpdates.status = updates.status;
+        if (updates.platform !== undefined) dbUpdates.platform = updates.platform;
+        if (updates.objective !== undefined) dbUpdates.objective = updates.objective;
+        if (updates.dailyBudget !== undefined) dbUpdates.daily_budget = updates.dailyBudget;
+        if (updates.daily_budget !== undefined) dbUpdates.daily_budget = updates.daily_budget;
+        if (updates.totalBudget !== undefined) dbUpdates.total_budget = updates.totalBudget;
+        if (updates.total_budget !== undefined) dbUpdates.total_budget = updates.total_budget;
+        if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate;
+        if (updates.start_date !== undefined) dbUpdates.start_date = updates.start_date;
+        if (updates.endDate !== undefined) dbUpdates.end_date = updates.endDate;
+        if (updates.end_date !== undefined) dbUpdates.end_date = updates.end_date;
+
+        const { data, error } = await supabase
+            .from('campaigns')
+            .update(dbUpdates)
+            .eq('id', campaignId)
+            .select()
+            .single();
+
+        if (!error && data) setCampaigns(prev => prev.map(c => c.id === campaignId ? data : c));
+        return data;
     };
 
-    const applyAIAction = (campaignId, actionType) => {
+    const deleteCampaign = async (campaignId) => {
+        const { error } = await supabase
+            .from('campaigns')
+            .delete()
+            .eq('id', campaignId);
+        if (!error) setCampaigns(prev => prev.filter(c => c.id !== campaignId));
+    };
+
+    const getCampaignsByProject = (projectId) => {
+        return campaigns.filter(c => c.project_id === projectId);
+    };
+
+    // ─── AI Actions (stub — will be fully wired in Phase E) ───
+    const applyAIAction = async (campaignId, actionType) => {
         const campaign = getCampaignById(campaignId);
         if (!campaign) return;
 
         let updates = {};
-
         switch (actionType) {
-            case 'SCALE_CAMPAIGN':
-                // Increase budget by 20% — store as raw number so formatCurrency works everywhere
-                const currentBudget = typeof campaign.dailyBudget === 'number'
-                    ? campaign.dailyBudget
-                    : parseInt(String(campaign.dailyBudget).replace(/[^0-9]/g, '')) || 0;
-                const newBudget = Math.floor(currentBudget * 1.2);
-                updates = { dailyBudget: newBudget };
+            case 'SCALE_CAMPAIGN': {
+                const currentBudget = Number(campaign.daily_budget) || 0;
+                updates = { daily_budget: Math.floor(currentBudget * 1.2) };
                 break;
+            }
             case 'OPTIMIZE_BUDGET':
-                // Mock update - maybe reorder platforms mock or just set a flag
-                updates = { lastOptimized: new Date().toISOString() };
+                // Will call AI edge function in Phase E
                 break;
             case 'ROTATE_CREATIVES':
-                // Mock update
-                updates = { activeCreativeId: 'creative_v2' };
+                // Will call AI edge function in Phase E
                 break;
             default:
                 break;
         }
 
-        const updatedCampaign = updateCampaign(campaignId, updates);
-
-        // Update local state
-        setCampaigns(prev => prev.map(c => c.id === campaignId ? updatedCampaign : c));
-
-        return updatedCampaign;
+        if (Object.keys(updates).length) {
+            return await updateCampaignData(campaignId, updates);
+        }
+        return campaign;
     };
 
-    const createProject = (projectData) => {
-        const newProject = addProject(projectData);
-        setProjects(prev => [newProject, ...prev]);
-        return newProject;
-    };
-
-    const getProjectById = (id) => {
-        return projects.find(p => p.id === id);
-    };
-
+    // ─── Social Posts (local state for now — no table yet) ───
     const [socialPosts, setSocialPosts] = useState([]);
 
-    const updateProject = (projectId, updates) => {
-        setProjects(prev => prev.map(p => p.id === projectId ? { ...p, ...updates } : p));
-        // In a real app, this would be an API call
-        // For now, we manually update the local storage in a real implementation we'd use the util
-        const updatedProjects = projects.map(p => p.id === projectId ? { ...p, ...updates } : p);
-        localStorage.setItem('salespal_projects', JSON.stringify(updatedProjects));
-    };
-
-    const deleteProject = (projectId) => {
-        setProjects(prev => prev.filter(p => p.id !== projectId));
-        setCampaigns(prev => prev.filter(c => c.projectId !== projectId));
-
-        // Persist deletion
-        const updatedProjects = projects.filter(p => p.id !== projectId);
-        localStorage.setItem('salespal_projects', JSON.stringify(updatedProjects));
-
-        if (selectedProjectId === projectId) {
-            setSelectedProjectId(null);
-            localStorage.removeItem('salespal_active_project_id');
-        }
-    };
-
-    const updateCampaign = (campaignId, updates) => {
-        setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, ...updates } : c));
-        // Persist
-        const updatedCampaigns = campaigns.map(c => c.id === campaignId ? { ...c, ...updates } : c);
-        localStorage.setItem('salespal_campaigns', JSON.stringify(updatedCampaigns));
-    };
-
-    const deleteCampaign = (campaignId) => {
-        setCampaigns(prev => prev.filter(c => c.id !== campaignId));
-        // Persist
-        const updatedCampaigns = campaigns.filter(c => c.id !== campaignId);
-        localStorage.setItem('salespal_campaigns', JSON.stringify(updatedCampaigns));
-    };
-
     const addSocialPost = (post) => {
-        const newPost = { ...post, id: Date.now().toString(), createdAt: new Date().toISOString() };
+        const newPost = { ...post, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
         setSocialPosts(prev => [newPost, ...prev]);
     };
 
@@ -156,49 +197,32 @@ export const MarketingProvider = ({ children }) => {
         setSocialPosts(prev => prev.map(p => p.id === postId ? { ...p, ...updates } : p));
     };
 
-    const getCampaignsByProject = (projectId) => {
-        return campaigns.filter(c => c.projectId === projectId);
+    // ─── Credits (Supabase-backed) ───
+    const [creditState, setCreditState] = useState({ balance: 0 });
+
+    const fetchCredits = useCallback(async () => {
+        if (!orgId) return;
+        const { data } = await supabase
+            .from('marketing_credits')
+            .select('balance')
+            .eq('org_id', orgId)
+            .single();
+        if (data) setCreditState({ balance: data.balance });
+    }, [orgId]);
+
+    useEffect(() => { fetchCredits(); }, [fetchCredits]);
+
+    const addCredits = async (type, quantity) => {
+        if (!orgId) return;
+        const { data: newBalance } = await supabase.rpc('topup_marketing_credits', {
+            p_org_id: orgId,
+            p_amount: Number(quantity),
+            p_reference_type: `topup_${type}`
+        });
+        if (newBalance !== null) setCreditState({ balance: newBalance });
     };
 
-    // --- CREDIT SYSTEM (Centralized) ---
-    const [creditState, setCreditState] = useState(() => {
-        const saved = localStorage.getItem('salespal_marketing_credits');
-        return saved ? JSON.parse(saved) : {
-            baseLimits: {
-                images: 20,
-                videos: 4
-            },
-            extraCredits: {
-                images: 0,
-                videos: 0
-            }
-        };
-    });
-
-    // Persist credits
-    useEffect(() => {
-        localStorage.setItem('salespal_marketing_credits', JSON.stringify(creditState));
-    }, [creditState]);
-
-    const addCredits = (type, quantity) => {
-        if (!type || !quantity) return;
-
-        // Ensure type matches our keys (images/videos)
-        // If type comes as 'marketing-images-10', we need to parse it? 
-        // No, CartPage passes 'item.resource' which is 'images' or 'videos'.
-
-        setCreditState(prev => ({
-            ...prev,
-            extraCredits: {
-                ...prev.extraCredits,
-                // Handle potential case mismatch just in case, though usually 'images'/'videos'
-                [type]: (prev.extraCredits[type] || 0) + Number(quantity)
-            }
-        }));
-    };
-
-    // --- STATE MACHINE LOGIC ---
-
+    // ─── Draft State Machine (local state — persisted to campaign_drafts in future) ───
     const [activeDraft, setActiveDraft] = useState(null);
 
     const startNewDraft = (projectId) => {
@@ -231,33 +255,17 @@ export const MarketingProvider = ({ children }) => {
 
     const updateDraftStep = (step, stepData = {}) => {
         if (!activeDraft) return;
-
         setActiveDraft(prev => {
             const newSteps = { ...prev.steps };
-            // Mark current step as completed
             if (step) newSteps[step] = 'completed';
 
-            // Special Transition Logic
             let newStatus = prev.status;
             let newAI = { ...prev.ai };
 
-            if (step === 'business') {
-                newStatus = 'analyzing';
-                // Reset AI flags if business changes? Maybe not for now to keep simple
-            }
+            if (step === 'business') newStatus = 'analyzing';
+            if (step === 'analysis') { newStatus = 'draft'; newAI.analysisDone = true; }
 
-            if (step === 'analysis') {
-                newStatus = 'draft';
-                newAI.analysisDone = true;
-            }
-
-            return {
-                ...prev,
-                status: newStatus,
-                steps: newSteps,
-                ai: newAI,
-                data: { ...prev.data, ...stepData }
-            };
+            return { ...prev, status: newStatus, steps: newSteps, ai: newAI, data: { ...prev.data, ...stepData } };
         });
     };
 
@@ -268,16 +276,7 @@ export const MarketingProvider = ({ children }) => {
 
     const canAccessStep = (stepIndex) => {
         if (!activeDraft) return false;
-
-        // Linear dependencies
-        // 0: Business -> Always Open
-        // 1: Analysis -> Rewuires Business Complete
-        // 2: Ads -> Requires Analysis Complete
-        // 3: Budget -> Requires Ads Complete
-        // 4: Review -> Requires Budget Complete
-
         const s = activeDraft.steps;
-
         switch (stepIndex) {
             case 0: return true;
             case 1: return s.business === 'completed';
@@ -288,37 +287,20 @@ export const MarketingProvider = ({ children }) => {
         }
     };
 
-    const launchCampaign = () => {
+    const launchCampaign = async () => {
         if (!activeDraft) return { success: false, error: 'No active draft' };
 
-        // Note: Integration validation is now handled by the frontend guard (canLaunchCampaign)
-        // The StepReviewLaunch component ensures integrations are connected before calling this
-
-        const finalizedCampaign = addCampaign({
+        const finalizedCampaign = await createCampaign({
             ...activeDraft.data,
-            id: `cmp_${Date.now()}`,
             projectId: activeDraft.projectId,
-            status: 'running',
-            createdAt: new Date().toISOString(),
-            // RAW METRICS (Canonical Schema Root)
-            spend: 0,
-            impressions: 0,
-            clicks: 0,
-            conversions: 0,
-            revenue: 0,
-            reach: 0,
-            // Detailed Breakdown Containers
-            details: {
-                creatives: [],      // [{ id, name, spend, impressions, clicks, conversions }]
-                demographics: {},   // { age: [{ range, impressions... }], gender: ... }
-                device: [],         // [{ name, impressions, clicks... }]
-                platformSpecific: {} // { qualityScore: 7, ... } raw values only
-            }
+            status: 'active'
         });
 
-        setCampaigns(prev => [finalizedCampaign, ...prev]);
-        setActiveDraft(null);
-        return { success: true, campaign: finalizedCampaign };
+        if (finalizedCampaign) {
+            setActiveDraft(null);
+            return { success: true, campaign: finalizedCampaign };
+        }
+        return { success: false, error: 'Failed to create campaign' };
     };
 
     const cancelDraft = () => {
@@ -326,33 +308,44 @@ export const MarketingProvider = ({ children }) => {
     };
 
     const value = {
-        campaigns,
+        // Projects
         projects,
-        socialPosts,
+        projectsLoading,
         selectedProjectId,
+        selectProject,
+        createProject,
+        updateProject,
+        deleteProject,
+        getProjectById,
+
+        // Campaigns
+        campaigns,
+        campaignsLoading,
+        createCampaign,
+        updateCampaign: updateCampaignData,
+        deleteCampaign,
+        getCampaignById,
+        getCampaignsByProject,
+        applyAIAction,
+
+        // Social Posts
+        socialPosts,
+        addSocialPost,
+        updateSocialPost,
+        deleteSocialPost,
+
+        // Credits
+        creditState,
+        addCredits,
+
+        // Draft state machine
         activeDraft,
         startNewDraft,
         updateDraftStep,
         setDraftStepIndex,
         canAccessStep,
         launchCampaign,
-        cancelDraft,
-        selectProject,
-        createCampaign,
-        updateCampaign,
-        deleteCampaign,
-        getCampaignById,
-        applyAIAction,
-        createProject,
-        updateProject,
-        deleteProject,
-        getProjectById,
-        getCampaignsByProject,
-        addSocialPost,
-        updateSocialPost,
-        deleteSocialPost,
-        creditState,
-        addCredits
+        cancelDraft
     };
 
     return (
