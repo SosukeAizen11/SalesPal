@@ -5,6 +5,7 @@ import { useSubscription } from '../commerce/SubscriptionContext';
 import ProjectSwitcher from '../components/ProjectSwitcher';
 import GlobalCreditDisplay from '../components/GlobalCreditDisplay';
 import TopUpDrawer from '../components/credits/TopUpDrawer';
+import NotificationBell from '../components/notifications/NotificationBell';
 
 const MarketingLayoutContent = () => {
     // We keep the header for ProjectSwitcher and GlobalCreditDisplay
@@ -19,13 +20,17 @@ const MarketingLayoutContent = () => {
         <div className="flex h-screen bg-gray-50 overflow-hidden">
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0">
-                {/* Top Bar - Now visible for Project Switcher & Credits */}
-                <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 sticky top-0 z-20">
+                {/* Top Bar - Project Switcher, Credits & Notifications */}
+                <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 sticky top-0 z-20 overflow-visible">
                     <div className="w-64">
                         <ProjectSwitcher />
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                         {showCredits && <GlobalCreditDisplay onTopUpClick={() => setIsTopUpOpen(true)} />}
+                        {/* Divider */}
+                        {showCredits && <div className="w-px h-5 bg-gray-200" />}
+                        {/* Notification Bell — always visible */}
+                        <NotificationBell />
                     </div>
                 </header>
 
@@ -51,3 +56,4 @@ const MarketingLayout = () => {
 };
 
 export default MarketingLayout;
+

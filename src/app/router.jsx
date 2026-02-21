@@ -75,6 +75,7 @@ import {
     MarketingSettingsNotifications
 } from '../pages/marketing/settings/MarketingSettingsPlaceholders';
 import ProfilePage from '../pages/profile/ProfilePage';
+import NotificationCenter from '../pages/notifications/NotificationCenter';
 
 export const router = createBrowserRouter([
     {
@@ -261,6 +262,10 @@ export const router = createBrowserRouter([
                     {
                         path: "/profile",
                         element: <ProfilePage />
+                    },
+                    {
+                        path: "/notifications",
+                        element: <NotificationCenter />
                     },
 
                     // Global Settings
