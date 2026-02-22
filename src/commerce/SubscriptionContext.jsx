@@ -1,199 +1,155 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { useOrg } from '../context/OrgContext';
+import { useAuth } from '../context/AuthContext';
 import { MODULES } from './commerce.config';
+
+/**
+ * SubscriptionContext — Supabase-backed subscription + credit management.
+ *
+ * DB tables used:
+ *   - subscriptions  (user_id, org_id, module, plan, status, activated_at, expires_at)
+ *   - marketing_credits (org_id, balance)
+ *   - credit_transactions (org_id, type, amount, balance_after, reference_type)
+ *
+ * DB functions used:
+ *   - consume_credit(p_org_id, p_type, p_amount)  → boolean
+ *   - add_credit(p_org_id, p_amount, p_source)    → void
+ *
+ * RLS: subscriptions rows are scoped by user_id = auth.uid()
+ */
 
 const SubscriptionContext = createContext();
 
-const STORAGE_KEY = 'salespal_subscriptions';
-const CART_STORAGE_KEY = 'salespal_cart';
-
 export const SubscriptionProvider = ({ children }) => {
-    // Structure: { [moduleId]: { module: string, status: 'active'|'paused'|'cancelled_pending', active: boolean, renewalDate: string, pausedUntil?: string, cancellationDate?: string, limits?: {}, usage: {}, extraCredits: {}, productId?: string } }
+    const { orgId } = useOrg();
+    const { user } = useAuth();
     const [subscriptions, setSubscriptions] = useState({});
+    const [credits, setCredits] = useState({ balance: 0 });
     const [loading, setLoading] = useState(true);
 
-    // Initialize from LocalStorage
-    useEffect(() => {
+    // ─── Fetch subscriptions + credits from Supabase ───
+    const fetchAll = useCallback(async () => {
+        if (!user) {
+            setSubscriptions({});
+            setCredits({ balance: 0 });
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+
         try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                setSubscriptions(JSON.parse(stored));
-            }
-        } catch (e) {
-            console.error("Failed to load subscriptions", e);
+            // Subscriptions are keyed by user_id (RLS enforces user_id = auth.uid())
+            const subPromise = supabase.from('subscriptions').select('*').eq('user_id', user.id);
+
+            // Credits are still org-scoped
+            const creditPromise = orgId
+                ? supabase.from('marketing_credits').select('balance').eq('org_id', orgId).maybeSingle()
+                : Promise.resolve({ data: null });
+
+            const [subRes, creditRes] = await Promise.all([subPromise, creditPromise]);
+
+            // Build subscriptions map keyed by module
+            const subMap = {};
+            (subRes.data || []).forEach(row => {
+                subMap[row.module] = {
+                    id: row.id,
+                    module: row.module,
+                    plan: row.plan,
+                    status: row.status,
+                    active: row.status === 'active' || row.status === 'trial',
+                    activatedAt: row.activated_at,
+                    expiresAt: row.expires_at,
+                    limits: MODULES[row.module]?.limits || null,
+                };
+            });
+            setSubscriptions(subMap);
+            setCredits({ balance: creditRes?.data?.balance ?? 0 });
+        } catch (err) {
+            console.error('SubscriptionContext fetchAll error:', err);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user, orgId]);
 
-    // Persist to LocalStorage
-    useEffect(() => {
-        if (!loading) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(subscriptions));
-        }
-    }, [subscriptions, loading]);
+    useEffect(() => { fetchAll(); }, [fetchAll]);
 
-    const buildCounters = (existing, limits) => {
-        const usage = { ...(existing?.usage || {}) };
-        const extraCredits = { ...(existing?.extraCredits || {}) };
+    // ─── Subscription management ───
 
-        if (limits) {
-            Object.keys(limits).forEach((key) => {
-                if (typeof usage[key] !== 'number' || usage[key] < 0) {
-                    usage[key] = 0;
-                }
-                if (typeof extraCredits[key] !== 'number' || extraCredits[key] < 0) {
-                    extraCredits[key] = 0;
-                }
-            });
-        }
-
-        return { usage, extraCredits };
-    };
-
-    const internalActivateModule = (moduleId, sourceProductId) => {
-        if (!MODULES[moduleId]) {
-            console.error(`Invalid module ID: ${moduleId}`);
-            return;
-        }
-
-        setSubscriptions(prev => {
-            const existing = prev[moduleId];
-            if (existing?.active) {
-                return prev;
-            }
-
-            const now = new Date();
-            const renewalDate = new Date(now.setDate(now.getDate() + 30)).toISOString();
-            const limits = MODULES[moduleId].limits || existing?.limits || null;
-            const { usage, extraCredits } = buildCounters(existing, limits);
-
-            return {
-                ...prev,
-                [moduleId]: {
-                    ...existing,
-                    module: moduleId,
-                    status: 'active',
-                    active: true,
-                    renewalDate,
-                    limits,
-                    usage,
-                    extraCredits,
-                    productId: sourceProductId || existing?.productId
-                }
-            };
-        });
-    };
-
-    /**
-     * Activate subscriptions for a product or module.
-     * Supports:
-     * - moduleId string ("marketing")
-     * - cart item / product object with type/module/moduleId/productId
-     */
-    const activateSubscription = (input) => {
-        if (!input) return;
-
+    const activateSubscription = async (input) => {
+        if (!user) return;
         const moduleIds = [];
-        let sourceProductId = null;
 
         if (typeof input === 'string') {
             moduleIds.push(input);
         } else {
-            const type = input.type;
             const moduleKey = input.module || input.moduleId;
             const productId = input.productId || input.id;
-            sourceProductId = productId || null;
-
-            // Bundle product (e.g. SalesPal 360) activates multiple modules
-            if (type === 'bundle' || moduleKey === 'bundle' || productId === 'salespal-360') {
+            if (productId === 'salespal-360' || input.type === 'bundle') {
                 moduleIds.push('marketing', 'sales', 'postSale', 'support', 'salespal360');
             } else if (moduleKey) {
                 moduleIds.push(moduleKey);
-            } else if (productId && MODULES[productId]) {
-                moduleIds.push(productId);
             }
         }
 
-        moduleIds.forEach((moduleId) => internalActivateModule(moduleId, sourceProductId));
-    };
+        for (const moduleId of moduleIds) {
+            const now = new Date().toISOString();
+            const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const deactivateSubscription = (moduleId) => {
-        setSubscriptions(prev => {
-            const existing = prev[moduleId];
-            if (!existing) return prev;
+            const { error } = await supabase.from('subscriptions').upsert({
+                user_id: user.id,
+                org_id: orgId || null,
+                module: moduleId,
+                status: 'active',
+                plan: 'starter',
+                activated_at: now,
+                expires_at: expiresAt,
+            }, { onConflict: 'user_id,module' });
 
-            // In a real app, this might set a "cancel_at_period_end" flag.
-            // For now, we'll simulate a "cancelled_pending" state if it's active,
-            // or just remove it if it's already past due or inactive.
-
-            // If we want to simulate immediate cancellation (old behavior):
-            // const next = { ...prev };
-            // delete next[moduleId];
-            // return next;
-
-            // New "Premium" behavior: Cancel at end of cycle
-            // We'll calculate the end of the current billing cycle based on renewalDate
-            const cancellationDate = existing.renewalDate;
-
-            return {
-                ...prev,
-                [moduleId]: {
-                    ...existing,
-                    status: 'cancelled',
-                    active: true, // Still active until the date
-                    cancellationDate
-                }
-            };
-        });
-    };
-
-    const pauseSubscription = (moduleId, months) => {
-        setSubscriptions(prev => {
-            const existing = prev[moduleId];
-            if (!existing) return prev;
-
-            const now = new Date();
-            let pausedUntil = new Date();
-
-            if (months === 'next_billing') {
-                pausedUntil = new Date(existing.renewalDate);
-            } else {
-                pausedUntil.setMonth(now.getMonth() + months);
+            if (error) {
+                console.error(`Failed to activate subscription for ${moduleId}:`, error);
             }
 
-            return {
-                ...prev,
-                [moduleId]: {
-                    ...existing,
-                    status: 'paused',
-                    active: false, // Paused means inactive for usage
-                    pausedUntil: pausedUntil.toISOString()
-                }
-            };
-        });
+            // Allocate base credits for marketing on activation
+            if (moduleId === 'marketing' && orgId) {
+                const limits = MODULES.marketing?.limits;
+                const baseCredits = (limits?.images || 20) + (limits?.videos || 4);
+                await supabase.rpc('add_credit', {
+                    p_org_id: orgId,
+                    p_amount: baseCredits,
+                    p_source: 'subscription'
+                });
+            }
+        }
+
+        await fetchAll();
     };
 
-    const resumeSubscription = (moduleId) => {
-        setSubscriptions(prev => {
-            const existing = prev[moduleId];
-            if (!existing) return prev;
+    const deactivateSubscription = async (moduleId) => {
+        if (!user) return;
+        await supabase.from('subscriptions')
+            .update({ status: 'cancelled' })
+            .eq('user_id', user.id)
+            .eq('module', moduleId);
+        await fetchAll();
+    };
 
-            // When resuming, we ideally adjust the renewal date.
-            // For simplicity, we just set it back to active and keep the old renewal date
-            // or reset it if it expired. 
-            // Let's just switch status back to active.
+    const pauseSubscription = async (moduleId) => {
+        if (!user) return;
+        await supabase.from('subscriptions')
+            .update({ status: 'paused' })
+            .eq('user_id', user.id)
+            .eq('module', moduleId);
+        await fetchAll();
+    };
 
-            return {
-                ...prev,
-                [moduleId]: {
-                    ...existing,
-                    status: 'active',
-                    active: true,
-                    pausedUntil: null,
-                    cancellationDate: null
-                }
-            };
-        });
+    const resumeSubscription = async (moduleId) => {
+        if (!user) return;
+        await supabase.from('subscriptions')
+            .update({ status: 'active' })
+            .eq('user_id', user.id)
+            .eq('module', moduleId);
+        await fetchAll();
     };
 
     const isModuleActive = (moduleId) => {
@@ -204,175 +160,74 @@ export const SubscriptionProvider = ({ children }) => {
         return subscriptions[moduleId] || null;
     };
 
-    const addCredits = (moduleId, resource, amount) => {
-        if (!isModuleActive(moduleId)) return false;
+    // ─── Credit management ───
 
-        setSubscriptions(prev => {
-            const moduleState = prev[moduleId];
-            // Ensure counters exist
-            const currentExtra = moduleState.extraCredits?.[resource] || 0;
+    const consume = async (moduleId, type) => {
+        if (!orgId || !isModuleActive(moduleId)) return false;
 
-            return {
-                ...prev,
-                [moduleId]: {
-                    ...moduleState,
-                    extraCredits: {
-                        ...(moduleState.extraCredits || {}),
-                        [resource]: currentExtra + amount
-                    }
-                }
-            };
+        const { data: success, error } = await supabase.rpc('consume_credit', {
+            p_org_id: orgId,
+            p_type: type,
+            p_amount: 1,
         });
-        return true;
-    };
 
-    const resetMonthlyUsage = (moduleId) => {
-        if (!isModuleActive(moduleId)) return;
-
-        setSubscriptions(prev => ({
-            ...prev,
-            [moduleId]: {
-                ...prev[moduleId],
-                usage: {}
-            }
-        }));
-    };
-
-    const canConsume = (moduleId, type) => {
-        const sub = subscriptions[moduleId];
-        if (!sub || !sub.active || !sub.limits) return false;
-
-        const limit = sub.limits[type];
-        if (typeof limit !== 'number') return false;
-
-        const used = (sub.usage && typeof sub.usage[type] === 'number') ? sub.usage[type] : 0;
-        const extra = (sub.extraCredits && typeof sub.extraCredits[type] === 'number') ? sub.extraCredits[type] : 0;
-
-        return used < limit || extra > 0;
-    };
-
-    const consume = (moduleId, type) => {
-        const sub = subscriptions[moduleId];
-        if (!sub || !sub.active || !sub.limits) return false;
-
-        const limit = sub.limits[type];
-        if (typeof limit !== 'number') return false;
-
-        const currentUsage = (sub.usage && typeof sub.usage[type] === 'number') ? sub.usage[type] : 0;
-        const currentExtra = (sub.extraCredits && typeof sub.extraCredits[type] === 'number') ? sub.extraCredits[type] : 0;
-
-        let nextUsage = currentUsage;
-        let nextExtra = currentExtra;
-
-        if (currentUsage < limit) {
-            nextUsage = currentUsage + 1;
-        } else if (currentExtra > 0) {
-            nextExtra = currentExtra - 1;
-        } else {
+        if (error) {
+            console.error('consume_credit error:', error);
             return false;
         }
 
-        if (nextUsage < 0 || nextExtra < 0) {
-            return false;
+        if (success) {
+            setCredits(prev => ({ balance: Math.max(0, prev.balance - 1) }));
         }
 
-        setSubscriptions(prev => {
-            const existing = prev[moduleId];
-            if (!existing) return prev;
+        return !!success;
+    };
 
-            const limits = existing.limits || sub.limits || {};
-            const usage = { ...(existing.usage || {}), [type]: nextUsage };
-            const extraCredits = { ...(existing.extraCredits || {}), [type]: nextExtra };
+    const addCredits = async (moduleId, resource, amount) => {
+        if (!orgId) return false;
 
-            return {
-                ...prev,
-                [moduleId]: {
-                    ...existing,
-                    limits,
-                    usage,
-                    extraCredits
-                }
-            };
+        const { error } = await supabase.rpc('add_credit', {
+            p_org_id: orgId,
+            p_amount: Number(amount),
+            p_source: `topup_${resource}`
         });
 
-        return true;
+        if (!error) {
+            setCredits(prev => ({ balance: prev.balance + Number(amount) }));
+        }
+
+        return !error;
     };
 
     const getRemaining = (moduleId, type) => {
-        const sub = subscriptions[moduleId];
-        if (!sub || !sub.active || !sub.limits) return 0;
-
-        const limit = sub.limits[type];
-        if (typeof limit !== 'number') return 0;
-
-        const used = (sub.usage && typeof sub.usage[type] === 'number') ? sub.usage[type] : 0;
-        const extra = (sub.extraCredits && typeof sub.extraCredits[type] === 'number') ? sub.extraCredits[type] : 0;
-
-        const remainingBase = Math.max(0, limit - used);
-        return remainingBase + Math.max(0, extra);
+        return credits.balance;
     };
 
-    const resetIfRenewalPassed = (moduleId) => {
-        const sub = subscriptions[moduleId];
-        if (!sub || !sub.active || !sub.renewalDate) return;
-
-        const now = new Date();
-        const renewalDate = new Date(sub.renewalDate);
-
-        if (now <= renewalDate) return;
-
-        setSubscriptions(prev => {
-            const existing = prev[moduleId];
-            if (!existing) return prev;
-
-            const limits = existing.limits || null;
-            const usage = {};
-
-            if (limits) {
-                Object.keys(limits).forEach((key) => {
-                    usage[key] = 0;
-                });
-            }
-
-            const nextRenewal = new Date();
-            nextRenewal.setDate(nextRenewal.getDate() + 30);
-
-            return {
-                ...prev,
-                [moduleId]: {
-                    ...existing,
-                    usage,
-                    renewalDate: nextRenewal.toISOString()
-                }
-            };
-        });
+    const canConsume = (moduleId, type) => {
+        return isModuleActive(moduleId) && credits.balance > 0;
     };
 
     const clearCartAfterPurchase = () => {
-        try {
-            localStorage.removeItem(CART_STORAGE_KEY);
-        } catch {
-            // Fail silently – do not surface storage errors to users
-        }
+        try { localStorage.removeItem('salespal_cart'); } catch { /* noop */ }
     };
 
     return (
         <SubscriptionContext.Provider value={{
             subscriptions,
+            credits,
+            loading,
             activateSubscription,
             deactivateSubscription,
-            isModuleActive,
-            getSubscription,
-            addCredits,
-            resetMonthlyUsage,
-            canConsume,
-            consume,
-            getRemaining,
-            resetIfRenewalPassed,
-            clearCartAfterPurchase,
             pauseSubscription,
             resumeSubscription,
-            loading
+            isModuleActive,
+            getSubscription,
+            consume,
+            addCredits,
+            getRemaining,
+            canConsume,
+            clearCartAfterPurchase,
+            refetch: fetchAll,
         }}>
             {children}
         </SubscriptionContext.Provider>

@@ -21,6 +21,7 @@ import {
     calculateCPL, calculateCPM, calculateROAS, calculateCTR, calculateCPC, calculateFrequency,
     calculateLandingPageCVR
 } from '../../../../utils/analyticsCalculations';
+import { usePreferences } from '../../../../context/PreferencesContext';
 
 const MetricCard = ({ label, value, subtext }) => (
     <div className="p-4 bg-white border border-gray-200 rounded-lg text-center shadow-sm">
@@ -79,6 +80,7 @@ const CampaignDetailView = ({ campaign }) => {
         landing: false
     });
     const [showDrilldown, setShowDrilldown] = useState(false);
+    const { formatCurrency } = usePreferences();
 
     const toggleSection = (key) => setSections(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -129,7 +131,7 @@ const CampaignDetailView = ({ campaign }) => {
                             {/* Drilldown removed per strict metrics auditing */}
                             <div>
                                 <p className="text-xs text-gray-400 uppercase font-bold">Total Spend</p>
-                                <p className="text-xl font-bold text-gray-900">${(campaign.spend || 0).toLocaleString()}</p>
+                                <p className="text-xl font-bold text-gray-900">{formatCurrency(campaign.spend || 0)}</p>
                             </div>
                         </div>
                     </div>
@@ -138,9 +140,9 @@ const CampaignDetailView = ({ campaign }) => {
                     {/* 2. Core Metrics Grid (Financial Health Focus) */}
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                         <MetricCard label="ROAS" value={`${roas.toFixed(2)}x`} subtext="Target: 3.0x" />
-                        <MetricCard label="Revenue" value={`$${convValue.toLocaleString()}`} />
-                        <MetricCard label="Spend" value={`$${(campaign.spend || 0).toLocaleString()}`} />
-                        <MetricCard label="CPA" value={`$${cpl.toFixed(2)}`} />
+                        <MetricCard label="Revenue" value={formatCurrency(convValue)} />
+                        <MetricCard label="Spend" value={formatCurrency(campaign.spend || 0)} />
+                        <MetricCard label="CPA" value={formatCurrency(cpl)} />
                         <MetricCard label="Frequency" value={frequency.toFixed(2)} />
                     </div>
 
@@ -325,7 +327,7 @@ const CampaignDetailView = ({ campaign }) => {
                                                 return (
                                                     <tr key={i} className="hover:bg-blue-50/30">
                                                         <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                                                        <td className="px-4 py-3 text-gray-500">${(c.spend || 0).toLocaleString()}</td>
+                                                        <td className="px-4 py-3 text-gray-500">{formatCurrency(c.spend || 0)}</td>
                                                         <td className="px-4 py-3 text-gray-600">{c.clicks?.toLocaleString() || 0}</td>
                                                         <td className="px-4 py-3 text-gray-600">{c.conversions?.toLocaleString() || 0}</td>
                                                         <td className="px-4 py-3 text-gray-600 font-medium">{cvr.toFixed(1)}%</td>

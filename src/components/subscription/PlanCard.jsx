@@ -4,12 +4,14 @@ import Button from '../ui/Button';
 import UsageProgress from './UsageProgress';
 import { PauseSubscriptionModal, CancelSubscriptionModal } from './ActionModals';
 import { motion } from 'framer-motion';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const PlanCard = ({ moduleKey, label, subData, config, onPause, onResume, onCancel, icon: Icon, color }) => {
     const [showPauseModal, setShowPauseModal] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
+    const { formatCurrency } = usePreferences();
 
-    const isActive = subData?.status === 'active';
+    const isActive = subData?.status === 'active' || subData?.status === 'trial';
     const isPaused = subData?.status === 'paused';
     const isCancelled = subData?.status === 'cancelled';
 
@@ -122,7 +124,7 @@ const PlanCard = ({ moduleKey, label, subData, config, onPause, onResume, onCanc
                                 )}
                             </div>
                             <div className="font-bold text-gray-900 flex items-center">
-                                {subData?.price ? `₹${subData.price.toLocaleString()}` : '₹9,999'}<span className="text-gray-400 font-normal text-xs ml-0.5">/mo</span>
+                                {formatCurrency(subData?.price ?? 9999)}<span className="text-gray-400 font-normal text-xs ml-0.5">/mo</span>
                             </div>
                         </div>
                     )}

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMarketing } from '../../context/MarketingContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -9,6 +10,7 @@ import { FolderOpen, TrendingUp } from 'lucide-react';
 const Dashboard = () => {
     const navigate = useNavigate();
     const { projects, selectedProjectId, campaigns } = useMarketing();
+    const { formatCurrency, isApproximateConversion } = usePreferences();
 
     // Get the active project
     const activeProject = useMemo(() => {
@@ -111,9 +113,10 @@ const Dashboard = () => {
                     <h3 className="text-sm font-medium text-gray-400 mb-2">Total Daily Spend</h3>
                     <div className="flex items-baseline gap-2">
                         <p className="text-xl font-semibold text-white">
-                            ₹{projectMetrics.totalDailySpend.toLocaleString()}
+                            {formatCurrency(projectMetrics.totalDailySpend)}
                         </p>
                         <span className="text-sm text-gray-500">/day</span>
+                        {isApproximateConversion && <span className="text-[10px] text-amber-400">approx.</span>}
                     </div>
                 </Card>
             </div>

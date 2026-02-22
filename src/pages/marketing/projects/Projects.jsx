@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Folder, Filter, X, Megaphone, DollarSign, Users, ChevronRight } from 'lucide-react';
+import { Plus, Folder, Filter, X, Megaphone, Users, ChevronRight } from 'lucide-react';
+import CurrencyIcon from '../../../components/ui/CurrencyIcon';
 import { useMarketing } from '../../../context/MarketingContext';
+import { usePreferences } from '../../../context/PreferencesContext';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import Badge from '../../../components/ui/Badge';
@@ -10,6 +12,7 @@ export default function Projects() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { projects, campaigns } = useMarketing();
+    const { formatCurrency } = usePreferences();
 
     const filterMode = searchParams.get('filter');
     const isFiltered = filterMode === 'active';
@@ -24,7 +27,7 @@ export default function Projects() {
         const activeCount = projectCampaigns.filter(c => c.status === 'RUNNING' || c.status === 'running' || c.status === 'active').length;
 
         // Mock aggregation - in real app would sum from campaign.metrics
-        const totalSpend = '₹' + (projectCampaigns.length * 5400).toLocaleString();
+        const totalSpend = formatCurrency(projectCampaigns.length * 5400);
         const totalLeads = projectCampaigns.length * 124;
 
         return { activeCount, totalSpend, totalLeads, campaignCount: projectCampaigns.length };
@@ -91,7 +94,7 @@ export default function Projects() {
                                     <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
                                         <div>
                                             <p className="text-xs text-gray-400 font-medium mb-1 flex items-center gap-1">
-                                                <DollarSign className="w-3 h-3" /> Spend
+                                                <CurrencyIcon className="w-3 h-3" /> Spend
                                             </p>
                                             <p className="text-sm font-semibold text-gray-900">{metrics.totalSpend}</p>
                                         </div>

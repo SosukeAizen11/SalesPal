@@ -7,26 +7,31 @@
  * 2. NO granular campaign or ad-set level data.
  * 3. NO deep diagnostic segmentation (Demographics, etc.).
  * 4. Links to Layer 2 (CampaignDetailView) for optimization context.
+ *
+ * DATA SOURCE: All metrics fetched from Supabase `campaign_metrics` table.
+ * NO mock data, NO Math.random(), NO distribute().
  */
-import React, { useState, useMemo, useRef } from 'react';
-import { formatCurrency } from '../../utils/formatCurrency';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { usePreferences } from '../../context/PreferencesContext';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Filter, BarChart2, Globe, ChevronDown, HelpCircle } from 'lucide-react';
+import { Filter, BarChart2, Globe, Loader2 } from 'lucide-react';
 import { AnalyticsProvider, useAnalytics } from '../../context/AnalyticsContext';
 import { useMarketing } from '../../context/MarketingContext';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import Modal from '../../components/ui/Modal';
 
 // Sections
-// Sections
 import KPISummary from './analytics/sections/KPISummary';
-import PerformanceTrends from './analytics/sections/PerformanceTrends';
+import AIStrategicInsights from './analytics/sections/AIStrategicInsights';
+import PerformanceStability from './analytics/sections/ROASTrend';
 import ChannelPerformanceMix from './analytics/sections/ChannelPerformanceMix';
 import ActionFeed from './analytics/sections/ActionFeed';
+import AcquisitionIntelligence from './analytics/sections/AcquisitionIntelligence';
 import CampaignDetailView from './analytics/sections/CampaignDetailView';
 
 import {
-    calculateCPL, calculateFrequency, calculateLandingPageCVR, calculateCPM,
-    calculateROAS, calculateCPC, calculateCTR, distribute
+    calculateCPL, calculateROAS
 } from '../../utils/analyticsCalculations';
 
 // --- MAIN CONTENT COMPONENT ---
@@ -35,31 +40,58 @@ const DashboardContent = ({ mode = 'page' }) => {
         isGlobal, selectedProjectId, timeRange, channelFilter,
         setTimeRange, setChannelFilter, setCompareMode, compareMode, setProject
     } = useAnalytics();
-    const { projects } = useMarketing();
-
+    const { projects, campaigns } = useMarketing();
+    const { user } = useAuth();
+    const { formatCurrency } = usePreferences();
 
     // UI State
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [modalContext, setModalContext] = useState(null);
+    const [metricsRows, setMetricsRows] = useState([]);
+    const [metricsLoading, setMetricsLoading] = useState(true);
 
     // Scroll Refs
     const trendsRef = useRef(null);
-    const spendRef = useRef(null);
-    const funnelRef = useRef(null);
-    const campaignsRef = useRef(null);
 
-    // --- DATA AGGREGATION & ANALYTICS ---
-    const { campaigns } = useMarketing();
+    // --- FETCH METRICS FROM SUPABASE ---
+    const fetchMetrics = useCallback(async () => {
+        if (!user) {
+            setMetricsRows([]);
+            setMetricsLoading(false);
+            return;
+        }
+        setMetricsLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('campaign_metrics')
+                .select('*, campaigns(name, platform, project_id)')
+                .eq('user_id', user.id)
+                .order('date', { ascending: true });
 
+            if (error) {
+                console.error('Failed to fetch campaign_metrics:', error);
+                setMetricsRows([]);
+            } else {
+                setMetricsRows(data || []);
+            }
+        } catch (err) {
+            console.error('Dashboard metrics fetch error:', err);
+        } finally {
+            setMetricsLoading(false);
+        }
+    }, [user]);
 
+    useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
+
+    // --- DATA AGGREGATION FROM REAL METRICS ---
     const dashboardData = useMemo(() => {
-        // 1. Filter Campaigns
-        const filtered = campaigns.filter(c => {
-            const projectMatch = selectedProjectId === 'all' || (c.projectId && c.projectId === selectedProjectId);
+        // Filter metrics by project and channel
+        const filtered = metricsRows.filter(row => {
+            const projectMatch = selectedProjectId === 'all' || (row.campaigns?.project_id === selectedProjectId);
 
             if (channelFilter === 'all') return projectMatch;
 
-            const platformName = (c.platform || '').toLowerCase();
+            const platformName = (row.campaigns?.platform || '').toLowerCase();
             const filterName = channelFilter.toLowerCase();
 
             let platformValid = false;
@@ -71,88 +103,107 @@ const DashboardContent = ({ mode = 'page' }) => {
             return projectMatch && platformValid;
         });
 
-        // 2. Aggregate Totals
-        const totals = filtered.reduce((acc, c) => ({
-            spend: acc.spend + (Number(c.spend) || 0),
-            revenue: acc.revenue + (Number(c.revenue) || 0),
-            conversions: acc.conversions + (Number(c.conversions) || 0),
-        }), { spend: 0, revenue: 0, conversions: 0 });
+        // Aggregate Totals
+        const totals = filtered.reduce((acc, row) => ({
+            spend: acc.spend + parseFloat(row.spend || 0),
+            revenue: acc.revenue + parseFloat(row.revenue || 0),
+            conversions: acc.conversions + (row.conversions || 0),
+            impressions: acc.impressions + (row.impressions || 0),
+            clicks: acc.clicks + (row.clicks || 0),
+        }), { spend: 0, revenue: 0, conversions: 0, impressions: 0, clicks: 0 });
 
-        // 3. Derived Metrics (Using Pure Utils)
+        // Derived Metrics
         const roas = calculateROAS(totals.revenue, totals.spend);
         const cpa = calculateCPL(totals.spend, totals.conversions);
 
-        // 4. Trend Generation (Distribute totals for visualization)
-        const dayCount = timeRange === '30d' ? 30 : 7;
-        const labels = Array.from({ length: dayCount }, (_, i) => `Day ${i + 1}`);
+        // Build trend data from daily groups (real data, no distribute())
+        const dateMap = {};
+        filtered.forEach(row => {
+            const d = row.date;
+            if (!dateMap[d]) dateMap[d] = { date: d, spend: 0, revenue: 0, conversions: 0 };
+            dateMap[d].spend += parseFloat(row.spend || 0);
+            dateMap[d].revenue += parseFloat(row.revenue || 0);
+            dateMap[d].conversions += (row.conversions || 0);
+        });
 
-        // Helper to distribute total into array (Mock distribution)
-        const spendTrend = distribute(totals.spend, dayCount);
-        const revTrend = distribute(totals.revenue, dayCount);
-        const convTrend = distribute(totals.conversions, dayCount);
-
-        // Recalculate ROAS trend point-by-point
+        const sortedDates = Object.values(dateMap).sort((a, b) => a.date.localeCompare(b.date));
+        const labels = sortedDates.map(d => {
+            const dt = new Date(d.date);
+            return dt.toLocaleDateString(undefined, { weekday: 'short' });
+        });
+        const spendTrend = sortedDates.map(d => Math.round(d.spend));
+        const revTrend = sortedDates.map(d => Math.round(d.revenue));
+        const convTrend = sortedDates.map(d => d.conversions);
         const roasTrend = spendTrend.map((s, i) => s > 0 ? (revTrend[i] / s).toFixed(2) : 0);
-
-        // Recalculate CPA trend point-by-point
         const cpaTrend = spendTrend.map((s, i) => {
             const c = convTrend[i];
             return c > 0 ? (s / c).toFixed(2) : 0;
         });
 
-        // 5. Channel Mix Data
-        const channelMix = ['Meta Ads', 'Google Ads', 'LinkedIn'].map(platform => {
-            const platformCampaigns = filtered.filter(c => (c.platform || '').toLowerCase().includes(platform.toLowerCase().split(' ')[0]));
-            const pSpend = platformCampaigns.reduce((a, c) => a + (Number(c.spend) || 0), 0);
-            const pRev = platformCampaigns.reduce((a, c) => a + (Number(c.revenue) || 0), 0);
-            const pConv = platformCampaigns.reduce((a, c) => a + (Number(c.conversions) || 0), 0);
-            return {
-                platform,
-                spend: pSpend,
-                revenue: pRev,
-                conversions: pConv,
-                roas: calculateROAS(pRev, pSpend).toFixed(2),
-                color: platform === 'Meta Ads' ? '#8884d8' : platform === 'Google Ads' ? '#82ca9d' : '#ffc658'
-            };
-        }).filter(d => d.spend > 0);
+        // Channel Mix Data
+        const channelAgg = {};
+        filtered.forEach(row => {
+            const platform = row.campaigns?.platform || 'unknown';
+            const label = platform === 'meta' ? 'Meta Ads' : platform === 'google' ? 'Google Ads' : platform === 'linkedin' ? 'LinkedIn' : platform;
+            if (!channelAgg[label]) channelAgg[label] = { spend: 0, revenue: 0, conversions: 0 };
+            channelAgg[label].spend += parseFloat(row.spend || 0);
+            channelAgg[label].revenue += parseFloat(row.revenue || 0);
+            channelAgg[label].conversions += (row.conversions || 0);
+        });
 
-        // 6. Anomaly Detection (Rule-Based)
+        const colorMap = { 'Meta Ads': '#8884d8', 'Google Ads': '#82ca9d', 'LinkedIn': '#ffc658' };
+        const channelMix = Object.entries(channelAgg).map(([platform, data]) => ({
+            platform,
+            spend: data.spend,
+            revenue: data.revenue,
+            conversions: data.conversions,
+            roas: calculateROAS(data.revenue, data.spend).toFixed(2),
+            color: colorMap[platform] || '#94a3b8'
+        })).filter(d => d.spend > 0);
+
+        // Anomaly Detection (Rule-Based from real data)
         const anomalies = [];
 
-        // Rule 1: Burn Alert (Campaign Level)
-        filtered.forEach(c => {
-            const cSpend = Number(c.spend) || 0;
-            const cRev = Number(c.revenue) || 0;
-            if (cSpend > 500 && cRev === 0) {
+        // Rule 1: Burn Alert — campaigns with spend > 500 and zero revenue
+        const campaignTotals = {};
+        filtered.forEach(row => {
+            const cid = row.campaign_id;
+            if (!campaignTotals[cid]) campaignTotals[cid] = { name: row.campaigns?.name || 'Unknown', spend: 0, revenue: 0 };
+            campaignTotals[cid].spend += parseFloat(row.spend || 0);
+            campaignTotals[cid].revenue += parseFloat(row.revenue || 0);
+        });
+
+        Object.entries(campaignTotals).forEach(([cid, c]) => {
+            if (c.spend > 500 && c.revenue === 0) {
                 anomalies.push({
                     type: 'burn',
                     severity: 'high',
                     title: `Burn Alert: ${c.name}`,
-                    message: `Spent ${formatCurrency(cSpend)} with ${formatCurrency(0)} revenue. Pause immediately to stop losses.`,
+                    message: `Spent ${formatCurrency(c.spend)} with ${formatCurrency(0)} revenue. Pause immediately.`,
                     actionLabel: 'Pause Campaign',
-                    campaignId: c.id,
+                    campaignId: cid,
                     action: true,
-                    onAction: () => handleActionPreview({ type: 'pause_campaign', campaignId: c.id, name: c.name })
+                    onAction: () => handleActionPreview({ type: 'pause_campaign', campaignId: cid, name: c.name })
                 });
             }
         });
 
-        // Rule 2: CPA Spike (CPA increase > 40% vs target)
-        const cpaTarget = 50; // Example target
+        // Rule 2: CPA Spike
+        const cpaTarget = 50;
         const cpaIncrease = ((cpa - cpaTarget) / cpaTarget) * 100;
         if (cpaIncrease > 40) {
             anomalies.push({
                 type: 'spike',
                 severity: 'medium',
                 title: 'CPA Spike Detected',
-                message: `CPA is ${formatCurrency(cpa)} (+${cpaIncrease.toFixed(0)}% vs ${formatCurrency(cpaTarget)} target). Investigate underperforming campaigns.`,
+                message: `CPA is ${formatCurrency(cpa)} (+${cpaIncrease.toFixed(0)}% vs ${formatCurrency(cpaTarget)} target).`,
                 actionLabel: 'Investigate',
                 action: true,
                 onAction: () => handleActionPreview({ type: 'check_ad_groups', metric: 'cpa', value: cpa })
             });
         }
 
-        // Rule 3: ROAS Opportunity (High ROAS + Budget > 90% utilization)
+        // Rule 3: ROAS Opportunity
         const google = channelMix.find(c => c.platform === 'Google Ads');
         const meta = channelMix.find(c => c.platform === 'Meta Ads');
         if (google && meta && parseFloat(google.roas) > parseFloat(meta.roas) * 1.5 && meta.spend > google.spend) {
@@ -160,22 +211,62 @@ const DashboardContent = ({ mode = 'page' }) => {
                 type: 'opportunity',
                 severity: 'low',
                 title: 'Budget Reallocation Opportunity',
-                message: `Google ROAS (${google.roas}x) outperforms Meta (${meta.roas}x) by 50%+. Shift budget to maximize returns.`,
+                message: `Google ROAS (${google.roas}x) outperforms Meta (${meta.roas}x).`,
                 actionLabel: 'Shift Budget',
                 action: true,
                 onAction: () => handleActionPreview({ type: 'shift_budget', from: 'Meta Ads', to: 'Google Ads' })
             });
         }
 
+        // Sparkline / percentage change helpers
+        const toSparkline = (dataArray) => dataArray.map((val) => ({ value: parseFloat(val) || 0 }));
+        const getPctChange = (arr) => {
+            if (arr.length < 2) return 0;
+            const first = parseFloat(arr[0]) || 0;
+            const last = parseFloat(arr[arr.length - 1]) || 0;
+            if (first === 0) return 0;
+            return ((last - first) / first * 100).toFixed(0);
+        };
+
+        const roasPct = getPctChange(roasTrend);
+        const spendPct = getPctChange(spendTrend);
+        const revPct = getPctChange(revTrend);
+        const cpaPct = getPctChange(cpaTrend);
+
         return {
-            // High-Level KPIs (Financial Health Focus)
             kpis: {
-                roas: { value: roas.toFixed(2) + 'x', trend: null },
-                totalSpend: { value: formatCurrency(totals.spend), trend: null },
-                totalRevenue: { value: formatCurrency(totals.revenue), trend: null },
-                cpa: { value: formatCurrency(cpa), trend: null },
+                roas: {
+                    value: roas.toFixed(2) + 'x',
+                    trend: roasPct > 0 ? '+' + roasPct + '%' : roasPct + '%',
+                    percentageChange: Math.abs(roasPct),
+                    isPositive: roasPct >= 0,
+                    sparkline: toSparkline(roasTrend)
+                },
+                totalSpend: {
+                    value: formatCurrency(totals.spend),
+                    trend: spendPct > 0 ? '+' + spendPct + '%' : spendPct + '%',
+                    percentageChange: Math.abs(spendPct),
+                    // Let's stick to Green = Up for Revenue/ROAS/Spend, Red = Down.
+                    // EXCEPT CPA: Lower is good (Green).
+                    isPositive: spendPct >= 0,
+                    sparkline: toSparkline(spendTrend)
+                },
+                totalRevenue: {
+                    value: formatCurrency(totals.revenue),
+                    trend: revPct > 0 ? '+' + revPct + '%' : revPct + '%',
+                    percentageChange: Math.abs(revPct),
+                    isPositive: revPct >= 0,
+                    sparkline: toSparkline(revTrend)
+                },
+                cpa: {
+                    value: formatCurrency(cpa),
+                    trend: cpaPct > 0 ? '+' + cpaPct + '%' : cpaPct + '%',
+                    percentageChange: Math.abs(cpaPct),
+                    isPositive: cpaPct <= 0,
+                    sparkline: toSparkline(cpaTrend),
+                    invertColor: true
+                },
             },
-            // Charts
             trends: {
                 dates: labels,
                 spend: spendTrend,
@@ -186,52 +277,42 @@ const DashboardContent = ({ mode = 'page' }) => {
             channelMix,
             anomalies
         };
-    }, [campaigns, selectedProjectId, timeRange, channelFilter]);
+    }, [metricsRows, selectedProjectId, channelFilter, formatCurrency]);
 
     const navigate = useNavigate();
 
     // HANDLERS
-    const handleKPIClick = (metric, title) => {
-        let route = '';
-
-        switch (metric) {
-            case 'roas':
-                route = '/marketing/insights/roas';
-                break;
-            case 'totalRevenue':
-                route = '/marketing/insights/revenue';
-                break;
-            case 'totalSpend':
-                route = '/marketing/insights/spend';
-                break;
-            case 'cpa':
-                route = '/marketing/insights/cpa';
-                break;
-            default:
-                // Fallback for other cards if any
-                return;
-        }
-
-        navigate(route);
+    const handleKPIClick = (metric) => {
+        const routes = {
+            roas: '/marketing/insights/roas',
+            totalRevenue: '/marketing/insights/revenue',
+            totalSpend: '/marketing/insights/spend',
+            cpa: '/marketing/insights/cpa',
+        };
+        if (routes[metric]) navigate(routes[metric]);
     };
 
     const handleCampaignClick = (campaign) => {
-        setModalContext({
-            type: 'campaign',
-            data: campaign,
-            title: 'Campaign Details'
-        });
+        setModalContext({ type: 'campaign', data: campaign, title: 'Campaign Details' });
         setDetailModalOpen(true);
     };
 
     const handleActionPreview = (action) => {
-        setModalContext({
-            type: 'action',
-            data: action,
-            title: 'Preview Action'
-        });
+        setModalContext({ type: 'action', data: action, title: 'Preview Action' });
         setDetailModalOpen(true);
     };
+
+    // Loading state
+    if (metricsLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                    <p className="text-sm text-gray-500 font-medium">Loading dashboard...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-12">
@@ -309,20 +390,27 @@ const DashboardContent = ({ mode = 'page' }) => {
 
             <div className="p-6 max-w-[1600px] mx-auto space-y-6">
 
-                {/* A. THE PULSE (Financial Vitals) */}
+                {/* 1. Priority Alerts */}
+                <section aria-label="Priority Alerts">
+                    <ActionFeed alerts={dashboardData.anomalies} />
+                </section>
+
+                {/* 2. Acquisition Intelligence (Supabase-backed) */}
+                <AcquisitionIntelligence />
+
+                {/* 3. Financial Vitals (KPI Summary) */}
                 <section aria-label="Financial Vitals">
                     <KPISummary data={dashboardData.kpis} onDetailClick={handleKPIClick} mode="pulse" />
                 </section>
 
-                {/* B. Efficiency & Allocation Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Trend Health (2/3 width) */}
-                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-bold text-gray-900">Trend Health</h3>
-                            <p className="text-xs text-gray-500">7-Day Financial Stability</p>
-                        </div>
-                        <PerformanceTrends data={dashboardData.trends} timeRange={timeRange} />
+                {/* 4. AI Strategic Insights */}
+                <AIStrategicInsights />
+
+                {/* 5. Efficiency & Allocation Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                    {/* Performance Stability (2/3 width) */}
+                    <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24 min-w-0">
+                        <PerformanceStability data={dashboardData.trends} />
                     </div>
 
                     {/* Allocation Mix (1/3 width) */}
@@ -331,10 +419,6 @@ const DashboardContent = ({ mode = 'page' }) => {
                     </div>
                 </div>
 
-                {/* C. Action Feed (Anomalies Only) */}
-                <section aria-label="Action Feed">
-                    <ActionFeed alerts={dashboardData.anomalies} />
-                </section>
             </div>
 
             {/* DETAIL MODAL */}

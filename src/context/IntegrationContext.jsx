@@ -1,100 +1,113 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 /**
- * IntegrationContext - Global single source of truth for all integration states
- * Used by campaigns, social features, and settings
+ * IntegrationContext — Supabase-backed integration state.
+ * Uses user_id (not org_id) for RLS simplicity.
+ * No OAuth, no sessionStorage, no redirects.
+ * Table: integrations (user_id, platform, status)
  */
 
 const IntegrationContext = createContext();
 
-const INITIAL_INTEGRATIONS = {
-    meta: {
-        id: 'meta',
-        name: 'Meta Ads',
-        description: 'Facebook & Instagram advertising',
-        connected: false,
-        connectedAt: null,
-        accountName: null
-    },
-    google: {
-        id: 'google',
-        name: 'Google Ads',
-        description: 'Search and display advertising',
-        connected: false,
-        connectedAt: null,
-        accountName: null
-    },
-    instagram: {
-        id: 'instagram',
-        name: 'Instagram',
-        description: 'Organic posts and stories',
-        connected: false,
-        connectedAt: null,
-        accountName: null
-    },
-    linkedin: {
-        id: 'linkedin',
-        name: 'LinkedIn Ads',
-        description: 'B2B advertising and campaigns',
-        connected: false,
-        connectedAt: null,
-        accountName: null
-    }
+const PLATFORM_DEFAULTS = {
+    meta: { name: 'Meta Ads', description: 'Facebook & Instagram advertising' },
+    google: { name: 'Google Ads', description: 'Search and display advertising' },
+    instagram: { name: 'Instagram', description: 'Organic posts and stories' },
+    linkedin: { name: 'LinkedIn Ads', description: 'B2B advertising and campaigns' }
 };
 
 export const IntegrationProvider = ({ children }) => {
-    // Initialize from localStorage or default
-    const [integrations, setIntegrations] = useState(() => {
-        const saved = localStorage.getItem('salespal_integrations');
-        return saved ? JSON.parse(saved) : INITIAL_INTEGRATIONS;
-    });
+    const { user } = useAuth();
+    const [integrations, setIntegrations] = useState({});
+    const [loading, setLoading] = useState(true);
 
-    // Persist on change
-    React.useEffect(() => {
-        localStorage.setItem('salespal_integrations', JSON.stringify(integrations));
-    }, [integrations]);
+    // Fetch all integrations for the user from Supabase
+    const fetchIntegrations = useCallback(async () => {
+        if (!user) { setIntegrations({}); setLoading(false); return; }
+        setLoading(true);
 
-    const connectIntegration = useCallback((id, accountName = 'Connected Account') => {
+        const { data, error } = await supabase
+            .from('integrations')
+            .select('*')
+            .eq('user_id', user.id);
+
+        if (!error && data) {
+            const map = {};
+            data.forEach(row => {
+                map[row.platform] = {
+                    id: row.id,
+                    platform_id: row.platform,
+                    name: PLATFORM_DEFAULTS[row.platform]?.name || row.platform,
+                    description: PLATFORM_DEFAULTS[row.platform]?.description || '',
+                    connected: row.status === 'connected',
+                    connectedAt: row.connected_at || row.created_at,
+                    status: row.status,
+                };
+            });
+            setIntegrations(map);
+        }
+        setLoading(false);
+    }, [user]);
+
+    useEffect(() => { fetchIntegrations(); }, [fetchIntegrations]);
+
+    // Connect platform — direct insert, no OAuth
+    const connectIntegration = useCallback(async (platformId) => {
+        if (!user) return;
+
+        // Optimistic update
         setIntegrations(prev => ({
             ...prev,
-            [id]: {
-                ...prev[id],
+            [platformId]: {
+                ...(prev[platformId] || {}),
+                platform_id: platformId,
+                name: PLATFORM_DEFAULTS[platformId]?.name || platformId,
                 connected: true,
                 connectedAt: new Date().toISOString(),
-                accountName
+                status: 'connected',
             }
         }));
-    }, []);
 
-    const disconnectIntegration = useCallback((id) => {
-        setIntegrations(prev => ({
-            ...prev,
-            [id]: {
-                ...prev[id],
-                connected: false,
-                connectedAt: null,
-                accountName: null
-            }
-        }));
-    }, []);
+        const { error } = await supabase
+            .from('integrations')
+            .upsert({
+                user_id: user.id,
+                platform: platformId,
+                status: 'connected',
+                connected_by: user.id,
+                updated_at: new Date().toISOString(),
+            }, { onConflict: 'user_id,platform' });
 
-    // --- OAUTH MOCK FLOW ---
-    const initiateConnection = useCallback((platformId, returnPath = '/') => {
-        // Save return path (may include query params)
-        sessionStorage.setItem('oauth_return_path', returnPath);
-        // In a real app, this would redirect to backend/OAuth provider
-        // Here we simulate by returning the path to our mock connection page
-        return `/connect/${platformId}`;
-    }, []);
+        if (error) {
+            console.error('Error connecting integration:', error);
+            await fetchIntegrations(); // rollback
+        }
+    }, [user, fetchIntegrations]);
 
-    const completeConnection = useCallback((platformId) => {
-        connectIntegration(platformId);
-        // Return exact path that was stored (including query params)
-        const returnPath = sessionStorage.getItem('oauth_return_path') || '/marketing/settings';
-        sessionStorage.removeItem('oauth_return_path');
-        console.log('[IntegrationContext] Returning to:', returnPath);
-        return returnPath;
-    }, [connectIntegration]);
+    // Disconnect platform — delete the row
+    const disconnectIntegration = useCallback(async (platformId) => {
+        if (!user) return;
+
+        // Optimistic update
+        setIntegrations(prev => {
+            const next = { ...prev };
+            delete next[platformId];
+            return next;
+        });
+
+        const { error } = await supabase
+            .from('integrations')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('platform', platformId);
+
+        if (error) {
+            console.error('Error disconnecting integration:', error);
+            await fetchIntegrations(); // rollback
+        }
+    }, [user, fetchIntegrations]);
 
     const isConnected = useCallback((id) => {
         return integrations[id]?.connected ?? false;
@@ -104,68 +117,40 @@ export const IntegrationProvider = ({ children }) => {
         return integrations[id] ?? null;
     }, [integrations]);
 
-    /**
-     * Validate required integrations for a given set of platforms
-     * Returns { valid: boolean, errors: Array<{ id, message }> }
-     */
     const validateIntegrations = useCallback((platforms = []) => {
         const errors = [];
-
-        // Meta is required for Facebook/Instagram ad campaigns
         if (platforms.includes('facebook') || platforms.includes('meta')) {
-            if (!integrations.meta.connected) {
-                errors.push({
-                    id: 'meta',
-                    message: 'Meta Ads integration required for Facebook campaigns'
-                });
+            if (!integrations.meta?.connected) {
+                errors.push({ id: 'meta', message: 'Meta Ads integration required for Facebook campaigns' });
             }
         }
-
-        // Google required for Google campaigns
         if (platforms.includes('google')) {
-            if (!integrations.google.connected) {
-                errors.push({
-                    id: 'google',
-                    message: 'Google Ads integration required for Google campaigns'
-                });
+            if (!integrations.google?.connected) {
+                errors.push({ id: 'google', message: 'Google Ads integration required for Google campaigns' });
             }
         }
-
-        // Instagram for Instagram posts/stories
         if (platforms.includes('instagram')) {
-            if (!integrations.meta.connected && !integrations.instagram.connected) {
-                errors.push({
-                    id: 'instagram',
-                    message: 'Meta Ads or Instagram integration required for Instagram'
-                });
+            if (!integrations.meta?.connected && !integrations.instagram?.connected) {
+                errors.push({ id: 'instagram', message: 'Meta Ads or Instagram integration required for Instagram' });
             }
         }
-
-        // LinkedIn for LinkedIn campaigns
         if (platforms.includes('linkedin')) {
-            if (!integrations.linkedin.connected) {
-                errors.push({
-                    id: 'linkedin',
-                    message: 'LinkedIn Ads integration required for LinkedIn campaigns'
-                });
+            if (!integrations.linkedin?.connected) {
+                errors.push({ id: 'linkedin', message: 'LinkedIn Ads integration required for LinkedIn campaigns' });
             }
         }
-
-        return {
-            valid: errors.length === 0,
-            errors
-        };
+        return { valid: errors.length === 0, errors };
     }, [integrations]);
 
     const value = {
         integrations,
+        loading,
         connectIntegration,
         disconnectIntegration,
-        initiateConnection,
-        completeConnection,
         isConnected,
         getIntegration,
-        validateIntegrations
+        validateIntegrations,
+        refetch: fetchIntegrations,
     };
 
     return (

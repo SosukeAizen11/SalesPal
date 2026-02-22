@@ -2,60 +2,17 @@ import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketing } from '../../../context/MarketingContext';
 import { useAnalytics, AnalyticsProvider } from '../../../context/AnalyticsContext';
-import { formatCurrency, formatROAS } from '../../../utils/formatCurrency';
-import { ArrowLeft, TrendingUp, TrendingDown, HelpCircle, DollarSign, Target, MousePointerClick, BarChart3 } from 'lucide-react';
+import { formatROAS } from '../../../utils/formatCurrency';
+import { usePreferences } from '../../../context/PreferencesContext';
+import { ArrowLeft, TrendingUp, TrendingDown, HelpCircle, Target, MousePointerClick, BarChart3 } from 'lucide-react';
+import CurrencyIcon from '../../../components/ui/CurrencyIcon';
 import Card from '../../../components/ui/Card';
 import Badge from '../../../components/ui/Badge';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 
-const KPI_CONFIG = {
-    roas: {
-        label: "Return on Ad Spend (ROAS)",
-        shortLabel: "ROAS",
-        description: "Revenue generated for every rupee spent.",
-        format: (val) => formatROAS(val),
-        icon: TrendingUp,
-        color: "text-indigo-600",
-        bgColor: "bg-indigo-50",
-        stroke: "#6366f1",
-        fill: "#e0e7ff"
-    },
-    cpa: {
-        label: "Cost Per Acquisition (CPA)",
-        shortLabel: "CPA",
-        description: "Average cost to acquire one conversion.",
-        format: (val) => formatCurrency(val),
-        icon: Target,
-        color: "text-rose-600",
-        bgColor: "bg-rose-50",
-        stroke: "#f43f5e",
-        fill: "#ffe4e6"
-    },
-    spend: {
-        label: "Total Spend",
-        shortLabel: "Spend",
-        description: "Total budget utilized across campaigns.",
-        format: (val) => formatCurrency(val),
-        icon: DollarSign,
-        color: "text-blue-600",
-        bgColor: "bg-blue-50",
-        stroke: "#3b82f6",
-        fill: "#dbeafe"
-    },
-    revenue: {
-        label: "Total Revenue",
-        shortLabel: "Revenue",
-        description: "Total revenue generated from campaigns.",
-        format: (val) => formatCurrency(val),
-        icon: DollarSign,
-        color: "text-green-600",
-        bgColor: "bg-green-50",
-        stroke: "#22c55e",
-        fill: "#dcfce7"
-    }
-};
+// KPI_CONFIG is now built inside DrilldownContent to use context-aware formatCurrency
 
 export default function MarketingKPIDrilldown() {
     return (
@@ -70,6 +27,54 @@ function DrilldownContent() {
     const navigate = useNavigate();
     const { campaigns } = useMarketing();
     const { selectedProjectId } = useAnalytics();
+    const { formatCurrency } = usePreferences();
+
+    const KPI_CONFIG = {
+        roas: {
+            label: "Return on Ad Spend (ROAS)",
+            shortLabel: "ROAS",
+            description: "Revenue generated for every unit spent.",
+            format: (val) => formatROAS(val),
+            icon: TrendingUp,
+            color: "text-indigo-600",
+            bgColor: "bg-indigo-50",
+            stroke: "#6366f1",
+            fill: "#e0e7ff"
+        },
+        cpa: {
+            label: "Cost Per Acquisition (CPA)",
+            shortLabel: "CPA",
+            description: "Average cost to acquire one conversion.",
+            format: (val) => formatCurrency(val),
+            icon: Target,
+            color: "text-rose-600",
+            bgColor: "bg-rose-50",
+            stroke: "#f43f5e",
+            fill: "#ffe4e6"
+        },
+        spend: {
+            label: "Total Spend",
+            shortLabel: "Spend",
+            description: "Total budget utilized across campaigns.",
+            format: (val) => formatCurrency(val),
+            icon: CurrencyIcon,
+            color: "text-blue-600",
+            bgColor: "bg-blue-50",
+            stroke: "#3b82f6",
+            fill: "#dbeafe"
+        },
+        revenue: {
+            label: "Total Revenue",
+            shortLabel: "Revenue",
+            description: "Total revenue generated from campaigns.",
+            format: (val) => formatCurrency(val),
+            icon: CurrencyIcon,
+            color: "text-green-600",
+            bgColor: "bg-green-50",
+            stroke: "#22c55e",
+            fill: "#dcfce7"
+        }
+    };
 
     const kpi = kpiType; // Alias for compatibility
     const config = KPI_CONFIG[kpi] || KPI_CONFIG.spend; // Fallback

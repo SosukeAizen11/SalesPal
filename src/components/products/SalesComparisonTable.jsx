@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Check } from 'lucide-react';
+import { usePreferences } from '../../context/PreferencesContext';
 
-const comparisonData = [
+const STATIC_COMPARISON_DATA = [
     {
         aspect: "Response Time",
         traditional: "30 min - 24 hours",
@@ -22,16 +23,22 @@ const comparisonData = [
         traditional: "Varies by mood/skill",
         salespal: "Always consistent"
     },
-    {
-        aspect: "Cost per Rep",
-        traditional: "₹30,000+ salary",
-        salespal: "₹9,999/month"
-    }
+    // Cost per Rep row is computed dynamically
 ];
 
 const SalesComparisonTable = () => {
     const [isVisible, setIsVisible] = useState(false);
     const sectionRef = useRef(null);
+    const { formatCurrency } = usePreferences();
+
+    const comparisonData = [
+        ...STATIC_COMPARISON_DATA,
+        {
+            aspect: 'Cost per Rep',
+            traditional: `${formatCurrency(30000)}+ salary`,
+            salespal: `${formatCurrency(9999)}/month`,
+        },
+    ];
 
     useEffect(() => {
         const observer = new IntersectionObserver(

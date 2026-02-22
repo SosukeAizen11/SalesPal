@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
-import { LogOut, X, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { LogOut, X, ChevronRight, CheckCircle2, Info } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../context/AuthContext';
 import { useMarketing } from '../../../context/MarketingContext';
 import { getProjectsBackRoute } from '../../../utils/navigationUtils';
@@ -22,7 +23,17 @@ const STEPS = [
     {
         label: 'Business',
         title: 'Tell SalesPal AI About Your Business',
-        subtitle: 'Share your business details via text, website, or PDF. Include your location for automatic currency detection.'
+        subtitle: (
+            <>
+                Share your business details via text, website, or PDF. Include your location for automatic currency detection.
+                <span className="inline-flex items-start gap-2 mt-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" strokeWidth={2} />
+                    <span className="text-sm font-semibold text-blue-700 leading-snug">
+                        Adding more information about your product will make your ads more accurate.
+                    </span>
+                </span>
+            </>
+        )
     },
     {
         label: 'Analysis', title: 'AI Business Analysis', subtitle: "Here's what SalesPal AI understood about your business."
@@ -32,7 +43,7 @@ const STEPS = [
     { label: 'Review', title: 'Review & Launch', subtitle: 'Review your campaign details before going live.' },
 ];
 
-const WIZARD_STATE_KEY = 'salespal_campaign_wizard_state';
+
 
 const NewCampaign = () => {
     const { projectId } = useParams();
@@ -52,6 +63,7 @@ const NewCampaign = () => {
     const currentStep = activeDraft?.currentStepIndex || 0;
 
     const [restoredState, setRestoredState] = useState(null);
+    const topRef = useRef(null);
 
     const navigate = useNavigate();
 
@@ -75,66 +87,14 @@ const NewCampaign = () => {
         }
     }, [location.search]);
 
-    // PART 2: Initialize or Restore State
-    // Handle persistent state during platform integration flow
+    // Initialize draft from Supabase.
+    // activeDraft already persists across page refreshes and OAuth redirects
+    // via the campaign_drafts table — no localStorage needed.
     useEffect(() => {
-        const savedState = localStorage.getItem(WIZARD_STATE_KEY);
-
-        if (savedState) {
-            try {
-                const parsed = JSON.parse(savedState);
-                // Only restore if it's for the same project
-                if (parsed.projectId === projectId) {
-                    console.log('[Campaign Wizard] Found saved state, preparing restoration...');
-                    setRestoredState(parsed);
-
-                    // Initialize a fresh draft - we will overwrite it with restored data
-                    if (!activeDraft) {
-                        startNewDraft(projectId);
-                    }
-
-                    // Clear storage to prevent stale restores
-                    localStorage.removeItem(WIZARD_STATE_KEY);
-                } else {
-                    // Mismatched project, just start new
-                    if (!activeDraft) startNewDraft(projectId);
-                }
-            } catch (error) {
-                console.error('[Campaign Wizard] Failed to parse saved state:', error);
-                localStorage.removeItem(WIZARD_STATE_KEY);
-                if (!activeDraft) startNewDraft(projectId);
-            }
-        } else {
-            // Normal flow: Start new draft if none exists
-            if (!activeDraft) {
-                startNewDraft(projectId);
-            }
+        if (!activeDraft) {
+            startNewDraft(projectId);
         }
     }, [projectId]);
-
-    // PART 3: Apply Restored Data
-    // Waits for activeDraft to be initialized by context before applying data
-    useEffect(() => {
-        if (restoredState && activeDraft) {
-            console.log('[Campaign Wizard] Applying restored state to active draft:', restoredState);
-
-            const { draftData, stepIndex } = restoredState;
-
-            // Apply specific step data
-            if (draftData && Object.keys(draftData).length > 0) {
-                Object.entries(draftData).forEach(([key, value]) => {
-                    updateDraftStep(key, value);
-                });
-            }
-
-            // Move to correct step
-            // We use a small timeout to let the state updates settle
-            setTimeout(() => {
-                setDraftStepIndex(stepIndex);
-                setRestoredState(null); // Mark restoration as complete
-            }, 100);
-        }
-    }, [activeDraft, restoredState]);
 
     // Guard: Prevent deep linking to locked steps
     React.useEffect(() => {
@@ -151,6 +111,16 @@ const NewCampaign = () => {
             }
         }
     }, [currentStep, activeDraft]);
+
+    // Handle scrolling to top on step change
+    useEffect(() => {
+        if (topRef.current) {
+            // Small timeout allows framer-motion to swap nodes before calculating bounds
+            setTimeout(() => {
+                topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+        }
+    }, [currentStep]);
 
     if (!activeDraft) return null; // or loading spinner
 
@@ -204,7 +174,7 @@ const NewCampaign = () => {
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto py-6">
+        <div ref={topRef} className="w-full max-w-[1400px] mx-auto py-4 md:py-6">
             {/* Success Toast - Platform Connected */}
             {showSuccessToast && (
                 <div className="fixed top-6 right-6 z-50 animate-slide-in-right">
@@ -263,7 +233,17 @@ const NewCampaign = () => {
                     />
 
                     <div className="mt-8 min-h-[400px]">
-                        {renderStepContent()}
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentStep}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -15 }}
+                                transition={{ duration: 0.3, ease: 'easeOut' }}
+                            >
+                                {renderStepContent()}
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>

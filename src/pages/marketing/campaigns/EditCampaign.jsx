@@ -26,7 +26,7 @@ export default function EditCampaign() {
         if (campaign) {
             setFormData({
                 name: campaign.name,
-                dailyBudget: campaign.dailyBudget, // Assuming string format like "₹3,500" or raw number
+                dailyBudget: campaign.dailyBudget, // raw number or string
                 status: campaign.status,
                 platforms: campaign.platforms || []
             });
@@ -82,7 +82,7 @@ export default function EditCampaign() {
                                 label="Daily Budget"
                                 value={formData.dailyBudget}
                                 onChange={(e) => setFormData({ ...formData, dailyBudget: e.target.value })}
-                                placeholder="e.g. ₹3,500"
+                                placeholder="e.g. 3500"
                                 required
                             />
                             <Select

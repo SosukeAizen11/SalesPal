@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Check, ArrowRight, Loader2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const PurchaseSuccess = () => {
     const navigate = useNavigate();
+    const { isAuthenticated, loading } = useAuth();
     const [isNavigating, setIsNavigating] = useState(false);
+
+    // Redirect if not authenticated
+    if (!loading && !isAuthenticated) {
+        return <Navigate to="/" replace />;
+    }
 
     useEffect(() => {
         // Trigger refined confetti burst on mount

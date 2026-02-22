@@ -97,18 +97,5 @@ export const calculateLandingPageCVR = (conversions, linkClicks) => {
     return (conversions / linkClicks) * 100;
 };
 
-/**
- * Distributes a total value into an array of parts that sum to the total.
- * Useful for mocking trend lines where only a total is known.
- * @param {number} total The total value to distribute
- * @param {number} count The number of parts to distribute into
- * @returns {number[]} Array of distributed values
- */
-export const distribute = (total, count) => {
-    if (!count || count <= 0) return [];
-    if (!total || total <= 0) return Array(count).fill(0);
+// distribute() removed — all dashboard analytics now use real Supabase data.
 
-    let parts = Array.from({ length: count }, () => Math.random());
-    let sumParts = parts.reduce((a, b) => a + b, 0);
-    return parts.map(p => Math.floor((p / sumParts) * total));
-};

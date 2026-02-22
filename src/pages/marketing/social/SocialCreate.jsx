@@ -147,7 +147,7 @@ const SocialCreate = ({ onNavigate }) => {
                                         Connect {publishCheck.missing.join(', ')} in Settings to publish posts.
                                     </p>
                                     <Link
-                                        to="/marketing/settings/integrations"
+                                        to="/settings/integrations"
                                         className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
                                     >
                                         Go to Marketing Settings → Integrations <ArrowRight className="w-4 h-4" />
@@ -170,7 +170,7 @@ const SocialCreate = ({ onNavigate }) => {
                                         {publishError.message}
                                     </p>
                                     <Link
-                                        to="/marketing/settings/integrations"
+                                        to="/settings/integrations"
                                         className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors"
                                     >
                                         Go to Integrations <ArrowRight className="w-4 h-4" />

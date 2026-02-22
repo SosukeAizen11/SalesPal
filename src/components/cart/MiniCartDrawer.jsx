@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, ShoppingCart, Trash2, Package, CreditCard, Megaphone, Phone, UserCheck, Headphones, Layers } from 'lucide-react';
 import { useCart } from '../../commerce/CartContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import Button from '../ui/Button';
 
 const MiniCartDrawer = () => {
@@ -15,6 +16,7 @@ const MiniCartDrawer = () => {
     } = useCart();
 
     const navigate = useNavigate();
+    const { formatCurrency } = usePreferences();
     const itemCount = cart.reduce((total, item) => total + (item.quantity || 1), 0);
     const subtotal = getCartTotal();
 
@@ -151,7 +153,7 @@ const MiniCartDrawer = () => {
 
                                             <div className="flex flex-col items-end gap-2">
                                                 <span className="text-sm font-semibold text-gray-900">
-                                                    ₹{(item.price * (item.quantity || 1)).toLocaleString()}
+                                                    {formatCurrency(item.price * (item.quantity || 1))}
                                                 </span>
                                                 <button
                                                     type="button"
@@ -173,7 +175,7 @@ const MiniCartDrawer = () => {
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600">Subtotal</span>
                                 <span className="text-base font-semibold text-gray-900">
-                                    ₹{subtotal.toLocaleString()}
+                                    {formatCurrency(subtotal)}
                                 </span>
                             </div>
 

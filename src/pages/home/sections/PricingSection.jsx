@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import SectionWrapper from '../../../components/layout/SectionWrapper';
 import { Phone, Check, ShoppingCart, Layers, Plus, PhoneCall, MessageSquare, Image, Grid3x3, Video, Zap, Bot, UserCheck, Megaphone, Headphones } from 'lucide-react';
 import Button from '../../../components/ui/Button';
-
+import { usePreferences } from '../../../context/PreferencesContext';
 import { useCart } from '../../../commerce/CartContext';
 import { useSubscription } from '../../../commerce/SubscriptionContext';
 import { useToast } from '../../../components/ui/Toast';
@@ -13,6 +13,7 @@ const PricingSection = () => {
     const { addProductToCart, cart, openMiniCart } = useCart();
     const { isModuleActive } = useSubscription();
     const { showToast } = useToast();
+    const { formatCurrency } = usePreferences();
 
     const isProductInCart = (productConfig) => {
         if (!productConfig) return false;
@@ -216,7 +217,7 @@ const PricingSection = () => {
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">{product.subtitle}</p>
 
                             <div className="mb-6">
-                                <span className="text-3xl font-bold text-gray-900">₹{config.price.toLocaleString()}</span>
+                                <span className="text-3xl font-bold text-gray-900">{formatCurrency(config.price)}</span>
                                 <span className="text-gray-600 text-sm">/mo</span>
                             </div>
 
@@ -284,7 +285,7 @@ const PricingSection = () => {
                                 <p className="text-gray-500 text-base mb-6">{product.subtitle}</p>
 
                                 <div className="flex items-baseline gap-1 mb-8">
-                                    <span className="text-5xl font-bold text-gray-900 tracking-tight">₹{config.price.toLocaleString()}</span>
+                                    <span className="text-5xl font-bold text-gray-900 tracking-tight">{formatCurrency(config.price)}</span>
                                     <span className="text-gray-400 text-lg font-medium"> /month</span>
                                 </div>
 
@@ -330,7 +331,7 @@ const PricingSection = () => {
 
                     {/* Text */}
                     <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900">₹1,000 Top-Up</h3>
+                        <h3 className="text-xl font-bold text-gray-900">{formatCurrency(1000)} Top-Up</h3>
                         <p className="text-sm text-gray-500 mt-1 max-w-2xl">
                             Choose ANY ONE of the following options. Works with all products. No plan change required.
                         </p>
@@ -341,7 +342,7 @@ const PricingSection = () => {
                         onClick={() => handleAddToCart({
                             id: 'top-up-1000',
                             name: 'Top-Up Credit',
-                            subtitle: '₹1,000 Universal Credit',
+                            subtitle: `${formatCurrency(1000)} Universal Credit`,
                             price: 1000,
                             features: ['Works with all products', 'No expiry', 'Instant credit']
                         })}

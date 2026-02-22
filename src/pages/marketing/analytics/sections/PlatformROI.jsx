@@ -1,8 +1,10 @@
 import React from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, Legend } from 'recharts';
 import AnalyticsSection from '../AnalyticsSection';
+import { usePreferences } from '../../../../context/PreferencesContext';
 
 const PlatformROI = ({ data }) => {
+    const { formatCurrency } = usePreferences();
     return (
         <AnalyticsSection
             title="Platform ROI Comparison"
@@ -41,7 +43,7 @@ const PlatformROI = ({ data }) => {
                         <div key={item.platform} className="flex justify-between items-center text-sm">
                             <span className="text-gray-600 font-medium">{item.platform}</span>
                             <div className="flex gap-4">
-                                <span className="text-gray-400">Rev: ₹{(item.revenue / 1000).toFixed(0)}k</span>
+                                <span className="text-gray-400">Rev: {formatCurrency(item.revenue, { compact: true })}</span>
                                 <span className="text-green-600 font-bold">{item.roi}x ROI</span>
                             </div>
                         </div>

@@ -130,7 +130,7 @@ const SocialOverview = () => {
                                 <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" title="Connected"></div>
                             ) : (
                                 <Link
-                                    to={`/marketing/settings/integrations/${channel.integrationId}`}
+                                    to={`/settings/integrations/${channel.integrationId}`}
                                     className="text-xs font-medium text-blue-600 hover:text-blue-800 whitespace-nowrap"
                                 >
                                     Connect
@@ -144,7 +144,7 @@ const SocialOverview = () => {
                     <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
                         <p className="font-medium">No channels connected</p>
                         <p className="text-amber-700 mt-1">
-                            <Link to="/marketing/settings/integrations" className="underline hover:no-underline">
+                            <Link to="/settings/integrations" className="underline hover:no-underline">
                                 Connect your social accounts
                             </Link>{' '}
                             to publish posts directly from SalesPal.
