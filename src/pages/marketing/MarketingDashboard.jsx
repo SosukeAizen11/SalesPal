@@ -201,11 +201,6 @@ const DashboardContent = ({ mode = 'page' }) => {
                     value: formatCurrency(totals.spend),
                     trend: spendPct > 0 ? '+' + spendPct + '%' : spendPct + '%',
                     percentageChange: Math.abs(spendPct),
-                    isPositive: spendPct <= 0, // Lower spend trend might be considered good or neutral, but usually for spend we just show direction. Let's say higher spend is strictly "more scale" so neutral? 
-                    // User requirement: "Green upward arrow if positive improvement."
-                    // For Spend: usually increasing spend is neutral/good if ROAS holds. 
-                    // Let's treat "increase" as green for Spend (scaling) unless user specified otherwise. 
-                    // Actually, usually lower spend is "saving money" but in growth, higher spend is "scaling".
                     // Let's stick to Green = Up for Revenue/ROAS/Spend, Red = Down.
                     // EXCEPT CPA: Lower is good (Green).
                     isPositive: spendPct >= 0,

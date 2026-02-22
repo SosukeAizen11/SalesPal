@@ -94,7 +94,6 @@ const Navbar = () => {
                 y: 0,
                 filter: 'blur(0px)',
                 height: isScrolled ? '72px' : '88px',
-                height: isScrolled ? '72px' : '88px',
                 backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.98)' : 'rgba(249, 250, 251, 0.95)',
                 backdropFilter: isScrolled ? 'blur(16px)' : 'blur(12px)',
                 boxShadow: isScrolled ? '0 4px 12px rgba(0, 0, 0, 0.08)' : '0 1px 3px rgba(0, 0, 0, 0.06)'

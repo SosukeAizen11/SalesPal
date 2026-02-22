@@ -103,12 +103,10 @@ const GlobalCreditDisplay = ({ onTopUpClick }) => {
         return {
             images: lim.images ?? creditState?.baseLimits?.images ?? 20,
             videos: lim.videos ?? creditState?.baseLimits?.videos ?? 4,
-            ai: lim.ai ?? creditState?.baseLimits?.ai ?? 200,
             calls: lim.calls ?? 500,
             sms: lim.sms ?? 1000,
             rcs: lim.rcs ?? 500,
             whatsapp: lim.whatsapp ?? 300,
-            other: lim.other ?? 2000,
         };
     }, [subscriptions, creditState?.baseLimits]);
 
@@ -127,12 +125,10 @@ const GlobalCreditDisplay = ({ onTopUpClick }) => {
         return {
             images: { remaining: imgBase + imgExtra, total: planLimits.images },
             videos: { remaining: vidBase + vidExtra, total: planLimits.videos },
-            ai: { remaining: creditState?.baseLimits?.ai ?? 100, total: planLimits.ai },
             calls: { remaining: remain('calls', planLimits.calls), total: planLimits.calls },
             sms: { remaining: remain('sms', planLimits.sms), total: planLimits.sms },
             rcs: { remaining: remain('rcs', planLimits.rcs), total: planLimits.rcs },
             whatsapp: { remaining: remain('whatsapp', planLimits.whatsapp), total: planLimits.whatsapp },
-            other: { remaining: remain('other', planLimits.other), total: planLimits.other },
         };
     }, [creditState, subscriptions, planLimits]);
 
@@ -153,8 +149,6 @@ const GlobalCreditDisplay = ({ onTopUpClick }) => {
                 <ThinDivider />
                 <CreditPill icon={Video} label="Videos" remaining={credits.videos.remaining} total={credits.videos.total} onClick={() => navigate('/marketing/videos')} />
                 <ThinDivider />
-                <CreditPill icon={Sparkles} label="AI" remaining={credits.ai.remaining} total={credits.ai.total} onClick={() => navigate('/marketing')} />
-                <ThinDivider />
                 <CreditPill icon={Phone} label="Calls" remaining={credits.calls.remaining} total={credits.calls.total} onClick={() => navigate('/marketing/calls')} />
 
                 {/* Group separator */}
@@ -166,8 +160,6 @@ const GlobalCreditDisplay = ({ onTopUpClick }) => {
                 <CreditPill icon={Radio} label="RCS" remaining={credits.rcs.remaining} total={credits.rcs.total} onClick={() => navigate('/marketing/campaigns')} />
                 <ThinDivider />
                 <CreditPill icon={MessageCircle} label="WhatsApp" remaining={credits.whatsapp.remaining} total={credits.whatsapp.total} onClick={() => navigate('/marketing/whatsapp')} />
-                <ThinDivider />
-                <CreditPill icon={Layers} label="Bulk" remaining={credits.other.remaining} total={credits.other.total} onClick={() => navigate('/marketing/campaigns')} />
             </div>
 
             {/* ── Top Up CTA ── */}
