@@ -39,7 +39,7 @@ const STEPS = [
     { label: 'Review', title: 'Review & Launch', subtitle: 'Review your campaign details before going live.' },
 ];
 
-const WIZARD_STATE_KEY = 'salespal_campaign_wizard_state';
+
 
 const NewCampaign = () => {
     const { projectId } = useParams();
@@ -58,7 +58,7 @@ const NewCampaign = () => {
     // Derived state directly from context
     const currentStep = activeDraft?.currentStepIndex || 0;
 
-    const [restoredState, setRestoredState] = useState(null);
+
 
     const navigate = useNavigate();
 
@@ -82,66 +82,14 @@ const NewCampaign = () => {
         }
     }, [location.search]);
 
-    // PART 2: Initialize or Restore State
-    // Handle persistent state during platform integration flow
+    // Initialize draft from Supabase.
+    // activeDraft already persists across page refreshes and OAuth redirects
+    // via the campaign_drafts table — no localStorage needed.
     useEffect(() => {
-        const savedState = localStorage.getItem(WIZARD_STATE_KEY);
-
-        if (savedState) {
-            try {
-                const parsed = JSON.parse(savedState);
-                // Only restore if it's for the same project
-                if (parsed.projectId === projectId) {
-                    console.log('[Campaign Wizard] Found saved state, preparing restoration...');
-                    setRestoredState(parsed);
-
-                    // Initialize a fresh draft - we will overwrite it with restored data
-                    if (!activeDraft) {
-                        startNewDraft(projectId);
-                    }
-
-                    // Clear storage to prevent stale restores
-                    localStorage.removeItem(WIZARD_STATE_KEY);
-                } else {
-                    // Mismatched project, just start new
-                    if (!activeDraft) startNewDraft(projectId);
-                }
-            } catch (error) {
-                console.error('[Campaign Wizard] Failed to parse saved state:', error);
-                localStorage.removeItem(WIZARD_STATE_KEY);
-                if (!activeDraft) startNewDraft(projectId);
-            }
-        } else {
-            // Normal flow: Start new draft if none exists
-            if (!activeDraft) {
-                startNewDraft(projectId);
-            }
+        if (!activeDraft) {
+            startNewDraft(projectId);
         }
     }, [projectId]);
-
-    // PART 3: Apply Restored Data
-    // Waits for activeDraft to be initialized by context before applying data
-    useEffect(() => {
-        if (restoredState && activeDraft) {
-            console.log('[Campaign Wizard] Applying restored state to active draft:', restoredState);
-
-            const { draftData, stepIndex } = restoredState;
-
-            // Apply specific step data
-            if (draftData && Object.keys(draftData).length > 0) {
-                Object.entries(draftData).forEach(([key, value]) => {
-                    updateDraftStep(key, value);
-                });
-            }
-
-            // Move to correct step
-            // We use a small timeout to let the state updates settle
-            setTimeout(() => {
-                setDraftStepIndex(stepIndex);
-                setRestoredState(null); // Mark restoration as complete
-            }, 100);
-        }
-    }, [activeDraft, restoredState]);
 
     // Guard: Prevent deep linking to locked steps
     React.useEffect(() => {

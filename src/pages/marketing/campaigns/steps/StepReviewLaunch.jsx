@@ -6,7 +6,7 @@ import { useMarketing } from '../../../../context/MarketingContext';
 import { canLaunchCampaign, getIntegrationErrors } from '../../../../utils/campaignGuard';
 import { usePreferences } from '../../../../context/PreferencesContext';
 
-const WIZARD_STATE_KEY = 'salespal_campaign_wizard_state';
+
 
 const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
     const navigate = useNavigate();
@@ -14,7 +14,6 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
     const [isConfirmed, setIsConfirmed] = useState(true);
     const [isLaunching, setIsLaunching] = useState(false);
     const { integrations, initiateConnection } = useIntegrations();
-    const { activeDraft } = useMarketing();
     const { formatCurrency } = usePreferences();
 
     // Derive platforms from budget split data
@@ -95,23 +94,12 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
         }, 1500);
     };
 
-    // PART 1 & 3: Save wizard state before redirecting to platform connection
+    // Navigate to platform connection page.
+    // Draft state is already persisted in Supabase — no localStorage backup needed.
+    // When user returns via ?connected=true, the draft resumes from campaign_drafts table.
     const handleConnectTrigger = (platformId) => {
-        // Save current wizard state to localStorage
-        const wizardState = {
-            projectId,
-            stepIndex: 4, // Review step index
-            draftData: activeDraft?.data || data || {}
-        };
-
-        console.log('[StepReviewLaunch] Saving wizard state before platform connection:', wizardState);
-        localStorage.setItem(WIZARD_STATE_KEY, JSON.stringify(wizardState));
-
-        // Get the return URL with ?connected=true parameter for the toast
         const currentPath = `/marketing/projects/${projectId}/campaigns/new`;
         const returnUrl = `${currentPath}?connected=true`;
-
-        // Initiate connection with return URL
         const connectionPath = initiateConnection(platformId, returnUrl);
         navigate(connectionPath);
     };

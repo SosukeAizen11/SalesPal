@@ -3,14 +3,14 @@ import { supabase } from '../lib/supabase';
 import { useOrg } from './OrgContext';
 
 /**
- * IntegrationContext - Supabase-backed integration states
- * DB columns: id, org_id, platform, status (connected|disconnected|error),
- *             access_token_enc, refresh_token_enc, token_expires_at, connected_by
+ * IntegrationContext — Supabase-backed integration state.
+ * Replaces localStorage key: salespal_integrations
+ * Table: integrations (org_id, platform, status, connected_by, created_at, updated_at)
  */
 
 const IntegrationContext = createContext();
 
-const PLATFORM_META = {
+const PLATFORM_DEFAULTS = {
     meta: { name: 'Meta Ads', description: 'Facebook & Instagram advertising' },
     google: { name: 'Google Ads', description: 'Search and display advertising' },
     instagram: { name: 'Instagram', description: 'Organic posts and stories' },
@@ -22,118 +22,110 @@ export const IntegrationProvider = ({ children }) => {
     const [integrations, setIntegrations] = useState({});
     const [loading, setLoading] = useState(true);
 
-    // Fetch integrations from Supabase
+    // Fetch all integrations for the org from Supabase
     const fetchIntegrations = useCallback(async () => {
-        // Build default disconnected state for all platforms
-        const defaults = {};
-        Object.entries(PLATFORM_META).forEach(([id, meta]) => {
-            defaults[id] = { id, ...meta, connected: false, connectedAt: null, accountName: null };
-        });
-
-        if (!orgId) {
-            setIntegrations(defaults);
-            setLoading(false);
-            return;
-        }
-
+        if (!orgId) { setIntegrations({}); setLoading(false); return; }
         setLoading(true);
-        const { data } = await supabase
+
+        const { data, error } = await supabase
             .from('integrations')
             .select('*')
             .eq('org_id', orgId);
 
-        // Overlay DB rows on defaults
-        const result = { ...defaults };
-        if (data) {
+        if (!error && data) {
+            // Convert rows into a map keyed by platform
+            const map = {};
             data.forEach(row => {
-                const id = row.platform;
-                if (result[id]) {
-                    result[id] = {
-                        ...result[id],
-                        connected: row.status === 'connected',
-                        connectedAt: row.created_at,
-                        accountName: 'Connected Account',
-                        dbId: row.id
-                    };
-                }
+                map[row.platform] = {
+                    id: row.id,
+                    platform_id: row.platform,
+                    name: PLATFORM_DEFAULTS[row.platform]?.name || row.platform,
+                    description: PLATFORM_DEFAULTS[row.platform]?.description || '',
+                    connected: row.status === 'connected',
+                    connectedAt: row.created_at,
+                    accountName: null, // stored in ad_accounts table
+                    status: row.status,
+                };
             });
+            setIntegrations(map);
         }
-
-        setIntegrations(result);
         setLoading(false);
     }, [orgId]);
 
     useEffect(() => { fetchIntegrations(); }, [fetchIntegrations]);
 
-    const connectIntegration = useCallback(async (id, accountName = 'Connected Account') => {
+    const connectIntegration = useCallback(async (platformId, accountName = 'Connected Account') => {
         if (!orgId) return;
-
-        const { data: user } = await supabase.auth.getUser();
-
-        // Check if row exists
-        const { data: existing } = await supabase
-            .from('integrations')
-            .select('id')
-            .eq('org_id', orgId)
-            .eq('platform', id)
-            .maybeSingle();
-
-        if (existing) {
-            await supabase
-                .from('integrations')
-                .update({ status: 'connected', connected_by: user?.user?.id })
-                .eq('id', existing.id);
-        } else {
-            await supabase
-                .from('integrations')
-                .insert({
-                    org_id: orgId,
-                    platform: id,
-                    status: 'connected',
-                    connected_by: user?.user?.id
-                });
-        }
+        const { data: userRes } = await supabase.auth.getUser();
 
         // Optimistic update
         setIntegrations(prev => ({
             ...prev,
-            [id]: {
-                ...prev[id],
+            [platformId]: {
+                ...(prev[platformId] || {}),
+                platform_id: platformId,
+                name: PLATFORM_DEFAULTS[platformId]?.name || platformId,
                 connected: true,
                 connectedAt: new Date().toISOString(),
-                accountName
+                accountName,
+                status: 'connected',
             }
         }));
-    }, [orgId]);
 
-    const disconnectIntegration = useCallback(async (id) => {
+        const { error } = await supabase
+            .from('integrations')
+            .upsert({
+                org_id: orgId,
+                platform: platformId,
+                status: 'connected',
+                connected_by: userRes?.user?.id || null,
+                updated_at: new Date().toISOString(),
+            }, { onConflict: 'org_id,platform' });
+
+        if (error) {
+            console.error('Error connecting integration:', error);
+            await fetchIntegrations(); // rollback
+        }
+    }, [orgId, fetchIntegrations]);
+
+    const disconnectIntegration = useCallback(async (platformId) => {
         if (!orgId) return;
 
-        await supabase
-            .from('integrations')
-            .update({ status: 'disconnected' })
-            .eq('org_id', orgId)
-            .eq('platform', id);
-
+        // Optimistic update
         setIntegrations(prev => ({
             ...prev,
-            [id]: {
-                ...prev[id],
+            [platformId]: {
+                ...(prev[platformId] || {}),
                 connected: false,
                 connectedAt: null,
-                accountName: null
+                accountName: null,
+                status: 'disconnected',
             }
         }));
-    }, [orgId]);
 
-    // --- OAUTH FLOW (mock for now) ---
+        const { error } = await supabase
+            .from('integrations')
+            .upsert({
+                org_id: orgId,
+                platform: platformId,
+                status: 'disconnected',
+                updated_at: new Date().toISOString(),
+            }, { onConflict: 'org_id,platform' });
+
+        if (error) {
+            console.error('Error disconnecting integration:', error);
+            await fetchIntegrations(); // rollback
+        }
+    }, [orgId, fetchIntegrations]);
+
+    // OAuth mock flow — still uses sessionStorage (UI concern, not persisted)
     const initiateConnection = useCallback((platformId, returnPath = '/') => {
         sessionStorage.setItem('oauth_return_path', returnPath);
         return `/connect/${platformId}`;
     }, []);
 
-    const completeConnection = useCallback((platformId) => {
-        connectIntegration(platformId);
+    const completeConnection = useCallback(async (platformId) => {
+        await connectIntegration(platformId);
         const returnPath = sessionStorage.getItem('oauth_return_path') || '/marketing/settings';
         sessionStorage.removeItem('oauth_return_path');
         return returnPath;
@@ -149,7 +141,6 @@ export const IntegrationProvider = ({ children }) => {
 
     const validateIntegrations = useCallback((platforms = []) => {
         const errors = [];
-
         if (platforms.includes('facebook') || platforms.includes('meta')) {
             if (!integrations.meta?.connected) {
                 errors.push({ id: 'meta', message: 'Meta Ads integration required for Facebook campaigns' });
@@ -170,7 +161,6 @@ export const IntegrationProvider = ({ children }) => {
                 errors.push({ id: 'linkedin', message: 'LinkedIn Ads integration required for LinkedIn campaigns' });
             }
         }
-
         return { valid: errors.length === 0, errors };
     }, [integrations]);
 
@@ -183,7 +173,8 @@ export const IntegrationProvider = ({ children }) => {
         completeConnection,
         isConnected,
         getIntegration,
-        validateIntegrations
+        validateIntegrations,
+        refetch: fetchIntegrations,
     };
 
     return (

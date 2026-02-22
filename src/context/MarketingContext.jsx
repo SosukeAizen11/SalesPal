@@ -181,20 +181,81 @@ export const MarketingProvider = ({ children }) => {
         return campaign;
     };
 
-    // ─── Social Posts (local state for now — no table yet) ───
+    // ─── Social Posts (Supabase-backed) ───
     const [socialPosts, setSocialPosts] = useState([]);
+    const [socialPostsLoading, setSocialPostsLoading] = useState(true);
 
-    const addSocialPost = (post) => {
-        const newPost = { ...post, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-        setSocialPosts(prev => [newPost, ...prev]);
+    const fetchSocialPosts = useCallback(async () => {
+        if (!orgId) { setSocialPosts([]); setSocialPostsLoading(false); return; }
+        setSocialPostsLoading(true);
+        const { data } = await supabase
+            .from('social_posts')
+            .select('*')
+            .eq('org_id', orgId)
+            .order('created_at', { ascending: false });
+        setSocialPosts(data || []);
+        setSocialPostsLoading(false);
+    }, [orgId]);
+
+    useEffect(() => { fetchSocialPosts(); }, [fetchSocialPosts]);
+
+    const addSocialPost = async (post) => {
+        if (!orgId) return null;
+        const { data: userRes } = await supabase.auth.getUser();
+        // Optimistic update
+        const tempId = crypto.randomUUID();
+        const optimistic = { ...post, id: tempId, org_id: orgId, created_at: new Date().toISOString() };
+        setSocialPosts(prev => [optimistic, ...prev]);
+
+        const { data, error } = await supabase
+            .from('social_posts')
+            .insert({
+                org_id: orgId,
+                project_id: selectedProjectId || null,
+                created_by: userRes?.user?.id,
+                content: post.content,
+                post_type: post.type || post.post_type || 'image',
+                status: post.status || 'draft',
+                scheduled_for: post.scheduledFor || post.scheduled_for || null,
+                platforms: post.platforms || [],
+                media_urls: post.mediaUrls || post.media_urls || []
+            })
+            .select()
+            .single();
+
+        if (!error && data) {
+            // Replace optimistic with real row
+            setSocialPosts(prev => prev.map(p => p.id === tempId ? data : p));
+            return data;
+        } else {
+            // Rollback on error
+            setSocialPosts(prev => prev.filter(p => p.id !== tempId));
+            return null;
+        }
     };
 
-    const deleteSocialPost = (postId) => {
+    const deleteSocialPost = async (postId) => {
+        // Optimistic removal
         setSocialPosts(prev => prev.filter(p => p.id !== postId));
+        const { error } = await supabase
+            .from('social_posts')
+            .delete()
+            .eq('id', postId);
+        if (error) {
+            // Rollback: refetch on failure
+            fetchSocialPosts();
+        }
     };
 
-    const updateSocialPost = (postId, updates) => {
+    const updateSocialPost = async (postId, updates) => {
         setSocialPosts(prev => prev.map(p => p.id === postId ? { ...p, ...updates } : p));
+        const { data, error } = await supabase
+            .from('social_posts')
+            .update(updates)
+            .eq('id', postId)
+            .select()
+            .single();
+        if (!error && data) setSocialPosts(prev => prev.map(p => p.id === postId ? data : p));
     };
 
     // ─── Credits (Supabase-backed) ───
@@ -214,64 +275,95 @@ export const MarketingProvider = ({ children }) => {
 
     const addCredits = async (type, quantity) => {
         if (!orgId) return;
-        const { data: newBalance } = await supabase.rpc('topup_marketing_credits', {
+        const { error } = await supabase.rpc('add_credit', {
             p_org_id: orgId,
             p_amount: Number(quantity),
-            p_reference_type: `topup_${type}`
+            p_source: `topup_${type}`
         });
-        if (newBalance !== null) setCreditState({ balance: newBalance });
+        if (!error) await fetchCredits();
     };
 
-    // ─── Draft State Machine (local state — persisted to campaign_drafts in future) ───
+    // ─── Draft State Machine (Supabase-backed) ───
     const [activeDraft, setActiveDraft] = useState(null);
 
-    const startNewDraft = (projectId) => {
-        setActiveDraft({
-            projectId,
-            id: `draft_${Date.now()}`,
-            status: 'draft',
-            currentStepIndex: 0,
-            data: {
-                name: '',
-                goals: [],
-                audiences: [],
-                platforms: [],
-                budget: { daily: 0, type: 'daily' },
-                ads: []
-            },
-            steps: {
-                business: 'pending',
-                analysis: 'pending',
-                ads: 'pending',
-                budget: 'pending',
-                review: 'pending'
-            },
-            ai: {
-                analysisDone: false,
-                recommendationsReady: false
-            }
-        });
+    const startNewDraft = async (projectId) => {
+        if (!orgId) return;
+        const { data: userRes } = await supabase.auth.getUser();
+        const userId = userRes?.user?.id;
+
+        const initialDraftData = {
+            name: '', goals: [], audiences: [], platforms: [],
+            budget: { daily: 0, type: 'daily' }, ads: []
+        };
+        const initialSteps = {
+            business: 'pending', analysis: 'pending',
+            ads: 'pending', budget: 'pending', review: 'pending'
+        };
+
+        const { data, error } = await supabase
+            .from('campaign_drafts')
+            .insert({
+                org_id: orgId,
+                project_id: projectId || null,
+                user_id: userId,
+                wizard_step: 0,
+                draft_data: { steps: initialSteps, ai: { analysisDone: false }, data: initialDraftData }
+            })
+            .select()
+            .single();
+
+        if (!error && data) {
+            setActiveDraft({
+                id: data.id,
+                projectId: data.project_id,
+                currentStepIndex: data.wizard_step,
+                status: 'draft',
+                data: initialDraftData,
+                steps: initialSteps,
+                ai: { analysisDone: false, recommendationsReady: false }
+            });
+        }
     };
 
-    const updateDraftStep = (step, stepData = {}) => {
+    const updateDraftStep = async (step, stepData = {}) => {
         if (!activeDraft) return;
-        setActiveDraft(prev => {
-            const newSteps = { ...prev.steps };
-            if (step) newSteps[step] = 'completed';
 
-            let newStatus = prev.status;
-            let newAI = { ...prev.ai };
+        const newSteps = { ...activeDraft.steps };
+        if (step) newSteps[step] = 'completed';
 
-            if (step === 'business') newStatus = 'analyzing';
-            if (step === 'analysis') { newStatus = 'draft'; newAI.analysisDone = true; }
+        let newStatus = activeDraft.status;
+        let newAI = { ...activeDraft.ai };
+        if (step === 'business') newStatus = 'analyzing';
+        if (step === 'analysis') { newStatus = 'draft'; newAI.analysisDone = true; }
 
-            return { ...prev, status: newStatus, steps: newSteps, ai: newAI, data: { ...prev.data, ...stepData } };
-        });
+        const newData = { ...activeDraft.data, ...stepData };
+
+        const updatedDraft = {
+            ...activeDraft,
+            status: newStatus,
+            steps: newSteps,
+            ai: newAI,
+            data: newData
+        };
+        setActiveDraft(updatedDraft);
+
+        // Persist to Supabase
+        await supabase
+            .from('campaign_drafts')
+            .update({
+                draft_data: { steps: newSteps, ai: newAI, data: newData },
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', activeDraft.id);
     };
 
-    const setDraftStepIndex = (index) => {
+    const setDraftStepIndex = async (index) => {
         if (!activeDraft) return;
         setActiveDraft(prev => ({ ...prev, currentStepIndex: index }));
+        await supabase
+            .from('campaign_drafts')
+            .update({ wizard_step: index })
+            .eq('id', activeDraft.id);
     };
 
     const canAccessStep = (stepIndex) => {
@@ -288,23 +380,69 @@ export const MarketingProvider = ({ children }) => {
     };
 
     const launchCampaign = async () => {
-        if (!activeDraft) return { success: false, error: 'No active draft' };
+        if (!activeDraft || !orgId) return { success: false, error: 'No active draft' };
+        const { data: userRes } = await supabase.auth.getUser();
+        const d = activeDraft.data;
+        const ads = d.ads?.[0] || {};
+        const budget = d.budget || {};
 
-        const finalizedCampaign = await createCampaign({
-            ...activeDraft.data,
-            projectId: activeDraft.projectId,
-            status: 'active'
+        const { data: campaignId, error } = await supabase.rpc('launch_campaign', {
+            p_draft_id: activeDraft.id,
+            p_org_id: orgId,
+            p_project_id: activeDraft.projectId || null,
+            p_name: d.name || 'Untitled Campaign',
+            p_platform: (ads.platforms?.[0]) || 'meta',
+            p_objective: d.goals?.[0] || null,
+            p_daily_budget: budget.daily || 0,
+            p_start_date: null,
+            p_end_date: null,
+            p_ad_platforms: ads.platforms || [],
+            p_ad_format: ads.format || 'carousel',
+            p_headline: ads.copy?.headline || null,
+            p_primary_text: ads.copy?.primaryText || null,
+            p_cta: ads.copy?.cta || null,
+            p_media_type: ads.media?.type || 'ai-generated',
+            p_media_url: ads.media?.url || null,
+            p_budget_platforms: budget.platforms || [],
+            p_budget_split: budget.split || {},
+            p_currency: budget.currency || 'INR',
+            p_created_by: userRes?.user?.id || null
         });
 
-        if (finalizedCampaign) {
+        if (!error && campaignId) {
             setActiveDraft(null);
-            return { success: true, campaign: finalizedCampaign };
+            await fetchCampaigns();
+            return { success: true, campaignId };
         }
-        return { success: false, error: 'Failed to create campaign' };
+        return { success: false, error: error?.message || 'Launch failed' };
     };
 
-    const cancelDraft = () => {
+    const cancelDraft = async () => {
+        if (activeDraft?.id) {
+            await supabase.from('campaign_drafts').delete().eq('id', activeDraft.id);
+        }
         setActiveDraft(null);
+    };
+
+    // Resume an existing draft (e.g. on page load)
+    const resumeDraft = async (draftId) => {
+        const { data, error } = await supabase
+            .from('campaign_drafts')
+            .select('*')
+            .eq('id', draftId)
+            .single();
+        if (!error && data) {
+            const dd = data.draft_data || {};
+            setActiveDraft({
+                id: data.id,
+                projectId: data.project_id,
+                currentStepIndex: data.wizard_step,
+                status: 'draft',
+                data: dd.data || {},
+                steps: dd.steps || {},
+                ai: dd.ai || { analysisDone: false }
+            });
+        }
     };
 
     const value = {
@@ -330,6 +468,7 @@ export const MarketingProvider = ({ children }) => {
 
         // Social Posts
         socialPosts,
+        socialPostsLoading,
         addSocialPost,
         updateSocialPost,
         deleteSocialPost,
@@ -345,7 +484,8 @@ export const MarketingProvider = ({ children }) => {
         setDraftStepIndex,
         canAccessStep,
         launchCampaign,
-        cancelDraft
+        cancelDraft,
+        resumeDraft
     };
 
     return (
