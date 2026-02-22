@@ -166,7 +166,7 @@ const CampaignCard = ({ campaign = {}, onToggleStatus, onEdit, onDelete }) => {
                     <div className="text-xs text-red-700">
                         <span className="font-medium">Missing integrations:</span> {launchCheck.missing.join(', ')}.
                         <button
-                            onClick={() => navigate('/marketing/settings/integrations')}
+                            onClick={() => navigate('/settings/integrations')}
                             className="ml-1 underline hover:no-underline font-medium"
                         >
                             Connect now

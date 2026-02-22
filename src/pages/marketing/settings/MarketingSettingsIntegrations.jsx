@@ -8,7 +8,7 @@ import { useIntegrations } from '../../../context/IntegrationContext';
 
 const MarketingSettingsIntegrations = () => {
     const navigate = useNavigate();
-    const { integrations, initiateConnection } = useIntegrations();
+    const { integrations, connectIntegration } = useIntegrations();
     const [connectingId, setConnectingId] = useState(null);
 
     const integrationList = [
@@ -42,11 +42,10 @@ const MarketingSettingsIntegrations = () => {
         }
     ];
 
-    const handleConnect = (id) => {
+    const handleConnect = async (id) => {
         setConnectingId(id);
-        // Use Global OAuth Flow
-        const path = initiateConnection(id, window.location.pathname);
-        navigate(path);
+        await connectIntegration(id);
+        setConnectingId(null);
     };
 
     const handleManage = (item) => {
@@ -87,7 +86,7 @@ const MarketingSettingsIntegrations = () => {
                                 <p className="text-sm text-gray-500 leading-relaxed">{item.description}</p>
 
                                 {isConnected && (
-                                    <div className="flex items-center gap-1.5 mt-2 text-xs text-green-700 font-medium bg-green-50 inline-flex px-2 py-0.5 rounded-full border border-green-100">
+                                    <div className="flex items-center gap-1.5 mt-2 text-xs text-green-700 font-medium bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
                                         <CheckCircle2 className="w-3 h-3" />
                                         Synced
                                     </div>

@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useOrg } from './OrgContext';
+import { useAuth } from './AuthContext';
 
 /**
  * IntegrationContext — Supabase-backed integration state.
- * Replaces localStorage key: salespal_integrations
- * Table: integrations (org_id, platform, status, connected_by, created_at, updated_at)
+ * Uses user_id (not org_id) for RLS simplicity.
+ * No OAuth, no sessionStorage, no redirects.
+ * Table: integrations (user_id, platform, status)
  */
 
 const IntegrationContext = createContext();
@@ -18,22 +19,21 @@ const PLATFORM_DEFAULTS = {
 };
 
 export const IntegrationProvider = ({ children }) => {
-    const { orgId } = useOrg();
+    const { user } = useAuth();
     const [integrations, setIntegrations] = useState({});
     const [loading, setLoading] = useState(true);
 
-    // Fetch all integrations for the org from Supabase
+    // Fetch all integrations for the user from Supabase
     const fetchIntegrations = useCallback(async () => {
-        if (!orgId) { setIntegrations({}); setLoading(false); return; }
+        if (!user) { setIntegrations({}); setLoading(false); return; }
         setLoading(true);
 
         const { data, error } = await supabase
             .from('integrations')
             .select('*')
-            .eq('org_id', orgId);
+            .eq('user_id', user.id);
 
         if (!error && data) {
-            // Convert rows into a map keyed by platform
             const map = {};
             data.forEach(row => {
                 map[row.platform] = {
@@ -42,21 +42,20 @@ export const IntegrationProvider = ({ children }) => {
                     name: PLATFORM_DEFAULTS[row.platform]?.name || row.platform,
                     description: PLATFORM_DEFAULTS[row.platform]?.description || '',
                     connected: row.status === 'connected',
-                    connectedAt: row.created_at,
-                    accountName: null, // stored in ad_accounts table
+                    connectedAt: row.connected_at || row.created_at,
                     status: row.status,
                 };
             });
             setIntegrations(map);
         }
         setLoading(false);
-    }, [orgId]);
+    }, [user]);
 
     useEffect(() => { fetchIntegrations(); }, [fetchIntegrations]);
 
-    const connectIntegration = useCallback(async (platformId, accountName = 'Connected Account') => {
-        if (!orgId) return;
-        const { data: userRes } = await supabase.auth.getUser();
+    // Connect platform — direct insert, no OAuth
+    const connectIntegration = useCallback(async (platformId) => {
+        if (!user) return;
 
         // Optimistic update
         setIntegrations(prev => ({
@@ -67,7 +66,6 @@ export const IntegrationProvider = ({ children }) => {
                 name: PLATFORM_DEFAULTS[platformId]?.name || platformId,
                 connected: true,
                 connectedAt: new Date().toISOString(),
-                accountName,
                 status: 'connected',
             }
         }));
@@ -75,61 +73,41 @@ export const IntegrationProvider = ({ children }) => {
         const { error } = await supabase
             .from('integrations')
             .upsert({
-                org_id: orgId,
+                user_id: user.id,
                 platform: platformId,
                 status: 'connected',
-                connected_by: userRes?.user?.id || null,
+                connected_by: user.id,
                 updated_at: new Date().toISOString(),
-            }, { onConflict: 'org_id,platform' });
+            }, { onConflict: 'user_id,platform' });
 
         if (error) {
             console.error('Error connecting integration:', error);
             await fetchIntegrations(); // rollback
         }
-    }, [orgId, fetchIntegrations]);
+    }, [user, fetchIntegrations]);
 
+    // Disconnect platform — delete the row
     const disconnectIntegration = useCallback(async (platformId) => {
-        if (!orgId) return;
+        if (!user) return;
 
         // Optimistic update
-        setIntegrations(prev => ({
-            ...prev,
-            [platformId]: {
-                ...(prev[platformId] || {}),
-                connected: false,
-                connectedAt: null,
-                accountName: null,
-                status: 'disconnected',
-            }
-        }));
+        setIntegrations(prev => {
+            const next = { ...prev };
+            delete next[platformId];
+            return next;
+        });
 
         const { error } = await supabase
             .from('integrations')
-            .upsert({
-                org_id: orgId,
-                platform: platformId,
-                status: 'disconnected',
-                updated_at: new Date().toISOString(),
-            }, { onConflict: 'org_id,platform' });
+            .delete()
+            .eq('user_id', user.id)
+            .eq('platform', platformId);
 
         if (error) {
             console.error('Error disconnecting integration:', error);
             await fetchIntegrations(); // rollback
         }
-    }, [orgId, fetchIntegrations]);
-
-    // OAuth mock flow — still uses sessionStorage (UI concern, not persisted)
-    const initiateConnection = useCallback((platformId, returnPath = '/') => {
-        sessionStorage.setItem('oauth_return_path', returnPath);
-        return `/connect/${platformId}`;
-    }, []);
-
-    const completeConnection = useCallback(async (platformId) => {
-        await connectIntegration(platformId);
-        const returnPath = sessionStorage.getItem('oauth_return_path') || '/marketing/settings';
-        sessionStorage.removeItem('oauth_return_path');
-        return returnPath;
-    }, [connectIntegration]);
+    }, [user, fetchIntegrations]);
 
     const isConnected = useCallback((id) => {
         return integrations[id]?.connected ?? false;
@@ -169,8 +147,6 @@ export const IntegrationProvider = ({ children }) => {
         loading,
         connectIntegration,
         disconnectIntegration,
-        initiateConnection,
-        completeConnection,
         isConnected,
         getIntegration,
         validateIntegrations,

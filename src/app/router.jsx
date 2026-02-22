@@ -31,7 +31,7 @@ import MarketingLayout from '../layout/MarketingLayout';
 import MarketingDashboard from '../pages/marketing/MarketingDashboard';
 import Campaigns from '../pages/marketing/Campaigns';
 
-import Settings from '../pages/marketing/Settings';
+// Settings import removed — settings now at /settings using MarketingSettingsLayout
 import NewCampaign from '../pages/marketing/campaigns/NewCampaign';
 import CampaignDetails from '../pages/marketing/campaigns/CampaignDetails';
 import EditCampaign from '../pages/marketing/campaigns/EditCampaign';
@@ -49,17 +49,7 @@ import SocialList from '../pages/marketing/social/SocialList';
 import SocialAnalytics from '../pages/marketing/social/SocialAnalytics';
 import SocialPostDetails from '../pages/marketing/social/SocialPostDetails';
 
-// Settings Pages
-import SettingsLayout from '../pages/settings/SettingsLayout';
-import SettingsIntegrations from '../pages/settings/SettingsIntegrations';
-import SettingsPreferences from '../pages/settings/SettingsPreferences';
-import {
-    SettingsAccount,
-    SettingsTeam,
-    SettingsMarketing,
-    SettingsNotifications,
-    SettingsSecurity
-} from '../pages/settings/SettingsPages';
+// Old global settings removed — unified under /settings using MarketingSettingsLayout
 import SubscriptionPage from '../pages/subscription/SubscriptionPage';
 import PlaceholderPage from '../pages/marketing/PlaceholderPage';
 
@@ -217,18 +207,10 @@ export const router = createBrowserRouter([
                                     { path: "posts/:id", element: <SocialPostDetails /> }
                                 ]
                             },
+                            // Redirect old /marketing/settings → /settings
                             {
-                                path: "settings",
-                                element: <MarketingSettingsLayout />,
-                                children: [
-                                    { index: true, element: <Navigate to="integrations" replace /> },
-                                    { path: "integrations", element: <MarketingSettingsIntegrations /> },
-                                    { path: "integrations/meta", element: <MetaIntegration /> },
-                                    { path: "integrations/linkedin", element: <MetaIntegration /> },
-                                    { path: "defaults", element: <MarketingSettingsDefaults /> },
-                                    { path: "tracking", element: <MarketingSettingsTracking /> },
-                                    { path: "notifications", element: <MarketingSettingsNotifications /> }
-                                ]
+                                path: "settings/*",
+                                element: <Navigate to="/settings" replace />
                             },
 
                             { path: "photos", element: <PlaceholderPage title="My Photos" description="Manage your image assets and generated photos here." /> },
@@ -276,20 +258,25 @@ export const router = createBrowserRouter([
                         element: <NotificationCenter />
                     },
 
-                    // Global Settings
+                    // Unified Settings (powered by MarketingLayout + MarketingSettingsLayout)
                     {
                         path: "/settings",
                         element: (
-                            <SettingsLayout />
+                            <MarketingLayout />
                         ),
                         children: [
-                            { index: true, element: <SettingsAccount /> },
-                            { path: "team", element: <SettingsTeam /> },
-                            { path: "integrations", element: <SettingsIntegrations /> },
-                            { path: "marketing", element: <SettingsMarketing /> },
-                            { path: "notifications", element: <SettingsNotifications /> },
-                            { path: "security", element: <SettingsSecurity /> },
-                            { path: "preferences", element: <SettingsPreferences /> }
+                            {
+                                element: <MarketingSettingsLayout />,
+                                children: [
+                                    { index: true, element: <Navigate to="integrations" replace /> },
+                                    { path: "integrations", element: <MarketingSettingsIntegrations /> },
+                                    { path: "integrations/meta", element: <MetaIntegration /> },
+                                    { path: "integrations/linkedin", element: <MetaIntegration /> },
+                                    { path: "defaults", element: <MarketingSettingsDefaults /> },
+                                    { path: "tracking", element: <MarketingSettingsTracking /> },
+                                    { path: "notifications", element: <MarketingSettingsNotifications /> }
+                                ]
+                            }
                         ]
                     },
 

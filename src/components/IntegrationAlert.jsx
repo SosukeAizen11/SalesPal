@@ -21,7 +21,7 @@ const IntegrationAlert = ({ errors = [], className = '' }) => {
                             <li key={error.id} className="flex items-center justify-between gap-4">
                                 <span className="text-sm text-red-700">{error.message}</span>
                                 <Link
-                                    to={`/marketing/settings/integrations/${error.id}`}
+                                    to={`/settings/integrations/${error.id}`}
                                     className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-800 whitespace-nowrap"
                                 >
                                     Connect <ArrowRight className="w-3 h-3" />
@@ -30,7 +30,7 @@ const IntegrationAlert = ({ errors = [], className = '' }) => {
                         ))}
                     </ul>
                     <p className="text-xs text-red-600 mt-3">
-                        <Link to="/marketing/settings/integrations" className="underline hover:no-underline">
+                        <Link to="/settings/integrations" className="underline hover:no-underline">
                             Go to Settings → Integrations
                         </Link> to connect required platforms before launching.
                     </p>

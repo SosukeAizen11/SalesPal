@@ -23,7 +23,7 @@ export const marketingNav = [
     },
     {
         name: 'Settings',
-        path: '/marketing/settings',
+        path: '/settings',
         icon: Settings
     }
 ];

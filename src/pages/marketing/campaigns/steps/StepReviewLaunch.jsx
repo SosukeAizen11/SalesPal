@@ -33,7 +33,7 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
     const { projectId } = useParams();
     const [isConfirmed, setIsConfirmed] = useState(true);
     const [isLaunching, setIsLaunching] = useState(false);
-    const { integrations, initiateConnection } = useIntegrations();
+    const { integrations, connectIntegration } = useIntegrations();
     const { formatCurrency } = usePreferences();
 
     // Derive platforms from budget split data
@@ -114,14 +114,10 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
         }, 1500);
     };
 
-    // Navigate to platform connection page.
-    // Draft state is already persisted in Supabase — no localStorage backup needed.
-    // When user returns via ?connected=true, the draft resumes from campaign_drafts table.
-    const handleConnectTrigger = (platformId) => {
-        const currentPath = `/marketing/projects/${projectId}/campaigns/new`;
-        const returnUrl = `${currentPath}?connected=true`;
-        const connectionPath = initiateConnection(platformId, returnUrl);
-        navigate(connectionPath);
+    // Connect platform directly — no OAuth redirect, just insert into Supabase
+    const handleConnectTrigger = async (platformId) => {
+        await connectIntegration(platformId);
+        setLaunchError(null); // Clear error after successful connection
     };
 
     const SectionHeader = ({ title }) => (

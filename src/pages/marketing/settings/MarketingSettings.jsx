@@ -15,14 +15,14 @@ const MarketingSettings = () => {
             name: 'Meta Ads',
             description: 'Connect Facebook & Instagram ad accounts.',
             icon: Facebook,
-            path: '/marketing/settings/integrations/meta'
+            path: '/settings/integrations/meta'
         },
         {
             id: 'google',
             name: 'Google Ads',
             description: 'Sync campaigns from Google Ads.',
             icon: ({ className }) => <span className={`flex items-center justify-center font-bold text-lg text-blue-600 ${className}`}>G</span>,
-            path: '/marketing/settings/integrations/google'
+            path: '/settings/integrations/google'
         }
     ];
 
