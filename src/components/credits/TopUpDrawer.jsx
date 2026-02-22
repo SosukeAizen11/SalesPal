@@ -61,19 +61,6 @@ const LEFT_CREDITS = [
         price: 799,
     },
     {
-        id: 'ai',
-        label: 'AI Credits',
-        sublabel: 'Generative AI features',
-        Icon: Sparkles,
-        color: 'text-violet-600',
-        iconBg: 'bg-violet-50',
-        packId: 'marketing-ai-50',
-        packName: '50 AI Credits',
-        resource: 'ai',
-        amount: 50,
-        price: 499,
-    },
-    {
         id: 'calls',
         label: 'Call Credits',
         sublabel: 'Outbound voice calls',
@@ -128,19 +115,6 @@ const RIGHT_CREDITS = [
         amount: 300,
         price: 449,
         popular: true,
-    },
-    {
-        id: 'other',
-        label: 'Bulk Campaign Credits',
-        sublabel: 'Email & push notifications',
-        Icon: Layers,
-        color: 'text-rose-600',
-        iconBg: 'bg-rose-50',
-        packId: 'marketing-bulk-2000',
-        packName: '2,000 Bulk Credits',
-        resource: 'other',
-        amount: 2000,
-        price: 349,
     },
 ];
 
@@ -272,12 +246,10 @@ const ColumnHeader = ({ label, icon: Icon }) => (
 const ALL_CREDIT_DEFS = [
     { id: 'images', label: 'Images', Icon: ImageIcon, color: 'text-blue-600', dotColor: 'bg-blue-500' },
     { id: 'videos', label: 'Videos', Icon: Video, color: 'text-purple-600', dotColor: 'bg-purple-500' },
-    { id: 'ai', label: 'AI', Icon: Sparkles, color: 'text-violet-600', dotColor: 'bg-violet-500' },
     { id: 'calls', label: 'Calls', Icon: Phone, color: 'text-green-600', dotColor: 'bg-green-500' },
     { id: 'sms', label: 'SMS', Icon: MessageSquare, color: 'text-sky-600', dotColor: 'bg-sky-500' },
     { id: 'rcs', label: 'RCS', Icon: Radio, color: 'text-indigo-600', dotColor: 'bg-indigo-500' },
     { id: 'whatsapp', label: 'WhatsApp', Icon: MessageCircle, color: 'text-emerald-600', dotColor: 'bg-emerald-500' },
-    { id: 'other', label: 'Bulk', Icon: Layers, color: 'text-rose-600', dotColor: 'bg-rose-500' },
 ];
 
 const BalanceStrip = ({ balances }) => (
@@ -346,12 +318,10 @@ const TopUpDrawer = ({ isOpen, onClose }) => {
         return {
             images: { remaining: imgBase + imgExtra, total: imgBase + imgExtra || 20 },
             videos: { remaining: vidBase + vidExtra, total: vidBase + vidExtra || 4 },
-            ai: { remaining: creditState?.baseLimits?.ai ?? 100, total: 200 },
             calls: { remaining: creditState?.baseLimits?.calls ?? 50, total: 500 },
             sms: { remaining: creditState?.baseLimits?.sms ?? 800, total: 1000 },
             rcs: { remaining: creditState?.baseLimits?.rcs ?? 120, total: 500 },
             whatsapp: { remaining: creditState?.baseLimits?.whatsapp ?? 180, total: 300 },
-            other: { remaining: creditState?.baseLimits?.other ?? 1500, total: 2000 },
         };
     }, [creditState]);
 

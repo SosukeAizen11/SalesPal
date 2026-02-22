@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
 import { LogOut, X, ChevronRight, CheckCircle2, Info } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../context/AuthContext';
 import { useMarketing } from '../../../context/MarketingContext';
 import { getProjectsBackRoute } from '../../../utils/navigationUtils';
@@ -61,7 +62,8 @@ const NewCampaign = () => {
     // Derived state directly from context
     const currentStep = activeDraft?.currentStepIndex || 0;
 
-
+    const [restoredState, setRestoredState] = useState(null);
+    const topRef = useRef(null);
 
     const navigate = useNavigate();
 
@@ -109,6 +111,16 @@ const NewCampaign = () => {
             }
         }
     }, [currentStep, activeDraft]);
+
+    // Handle scrolling to top on step change
+    useEffect(() => {
+        if (topRef.current) {
+            // Small timeout allows framer-motion to swap nodes before calculating bounds
+            setTimeout(() => {
+                topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+        }
+    }, [currentStep]);
 
     if (!activeDraft) return null; // or loading spinner
 
@@ -162,7 +174,7 @@ const NewCampaign = () => {
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto py-6">
+        <div ref={topRef} className="w-full max-w-[1400px] mx-auto py-4 md:py-6">
             {/* Success Toast - Platform Connected */}
             {showSuccessToast && (
                 <div className="fixed top-6 right-6 z-50 animate-slide-in-right">
@@ -221,7 +233,17 @@ const NewCampaign = () => {
                     />
 
                     <div className="mt-8 min-h-[400px]">
-                        {renderStepContent()}
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentStep}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -15 }}
+                                transition={{ duration: 0.3, ease: 'easeOut' }}
+                            >
+                                {renderStepContent()}
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>

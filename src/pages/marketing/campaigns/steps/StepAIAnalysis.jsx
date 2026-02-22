@@ -662,7 +662,7 @@ const StepAIAnalysis = ({ onComplete, onBack, data, ai }) => {
                 <StepNavigation
                     onNext={handleNext}
                     onBack={onBack}
-                    nextLabel="Continue to Ad Creation →"
+                    nextLabel="Continue to Ad Creation"
                 />
             </div>
         </div>

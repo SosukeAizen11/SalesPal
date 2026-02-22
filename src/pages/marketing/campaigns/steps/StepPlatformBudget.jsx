@@ -211,6 +211,15 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
         return computeEqualSplit(seedPlatformIds, defaultTotal);
     });
 
+    // Initialize total campaign budget
+    const [totalCampaignBudget, setTotalCampaignBudget] = useState(() => {
+        if (data?.budget?.daily) return data.budget.daily;
+        if (data?.budget?.perPlatform) {
+            return Object.values(data.budget.perPlatform).reduce((s, v) => s + (v || 0), 0);
+        }
+        return 3500;
+    });
+
     // ── Toggle a platform on / off ────────────────────────────────────────────
     const togglePlatform = useCallback((id) => {
         setSelectedPlatformIds(prev => {
@@ -230,11 +239,13 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
     }, []);
 
     // Computed totals
-    const totalBudget = useMemo(
+    const allocatedBudget = useMemo(
         () => Object.values(platformBudgets).reduce((s, v) => s + (v || 0), 0),
         [platformBudgets]
     );
-    const monthlyBudget = totalBudget * 30;
+    const monthlyBudget = totalCampaignBudget * 30;
+    const remainingBudget = totalCampaignBudget - allocatedBudget;
+    const isBudgetMismatch = selectedPlatformIds.length > 0 && remainingBudget !== 0;
 
     // Validation errors per platform
     const [showErrors, setShowErrors] = useState(false);
@@ -249,7 +260,7 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
         return errs;
     }, [platformBudgets, selectedPlatformIds]);
 
-    const hasErrors = Object.keys(errors).length > 0;
+    const hasErrors = Object.keys(errors).length > 0 || isBudgetMismatch || totalCampaignBudget <= 0;
 
     // Handlers
     const handleBudgetChange = useCallback((platformId, value) => {
@@ -257,17 +268,17 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
     }, []);
 
     const handleEqualSplit = useCallback(() => {
-        const base = totalBudget > 0 ? totalBudget : selectedPlatformIds.length * 500;
+        const base = totalCampaignBudget > 0 ? totalCampaignBudget : selectedPlatformIds.length * 500;
         // Only touch selected platforms; leave un-selected stashed amounts untouched
         const split = computeEqualSplit(selectedPlatformIds, base);
         setPlatformBudgets(prev => ({ ...prev, ...split }));
-    }, [totalBudget, selectedPlatformIds]);
+    }, [totalCampaignBudget, selectedPlatformIds]);
 
     const handleAISplit = useCallback(() => {
-        const base = totalBudget > 0 ? totalBudget : 3500;
+        const base = totalCampaignBudget > 0 ? totalCampaignBudget : 3500;
         const split = computeAISplit(selectedPlatformIds, base);
         setPlatformBudgets(prev => ({ ...prev, ...split }));
-    }, [totalBudget, selectedPlatformIds]);
+    }, [totalCampaignBudget, selectedPlatformIds]);
 
     const handleNext = () => {
         if (selectedPlatformIds.length === 0) {
@@ -283,12 +294,12 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
         const activeBudgets = {};
         selectedPlatformIds.forEach(id => {
             activeBudgets[id] = platformBudgets[id] || 0;
-            split[id] = totalBudget > 0 ? Math.round((platformBudgets[id] / totalBudget) * 100) : 0;
+            split[id] = totalCampaignBudget > 0 ? Math.round((platformBudgets[id] / totalCampaignBudget) * 100) : 0;
         });
 
         onComplete({
             budget: {
-                daily: totalBudget,
+                daily: totalCampaignBudget,
                 monthly: monthlyBudget,
                 currency: currentCurrency?.code || 'INR',
                 perPlatform: activeBudgets,
@@ -306,23 +317,23 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
         return selectedPlatformIds.map(id => {
             const meta = PLATFORM_REGISTRY[id];
             const amount = platformBudgets[id] || 0;
-            const pct = totalBudget > 0 ? Math.round((amount / totalBudget) * 100) : 0;
+            const pct = totalCampaignBudget > 0 ? Math.round((amount / totalCampaignBudget) * 100) : 0;
             return { ...meta, amount, pct };
         });
-    }, [selectedPlatformIds, platformBudgets, totalBudget]);
+    }, [selectedPlatformIds, platformBudgets, totalCampaignBudget]);
 
     // Estimated reach (rough heuristics)
     const estimatedImpressions = useMemo(() => {
-        const base = totalBudget * 3.5; // rough CPM factor
+        const base = totalCampaignBudget * 3.5; // rough CPM factor
         return { low: Math.round(base * 0.8), high: Math.round(base * 1.2) };
-    }, [totalBudget]);
+    }, [totalCampaignBudget]);
 
     const estimatedLeads = useMemo(() => {
-        const base = totalBudget / 60;
+        const base = totalCampaignBudget / 60;
         return { low: Math.round(base * 0.8), high: Math.round(base * 1.2) };
-    }, [totalBudget]);
+    }, [totalCampaignBudget]);
 
-    const totalExceedWarning = totalBudget > 50000; // warn if > 50k/day
+    const totalExceedWarning = totalCampaignBudget > 50000; // warn if > 50k/day
 
     return (
         <div className="animate-fade-in-up">
@@ -413,6 +424,60 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                         )}
                     </div>
 
+                    {/* ── TOTAL CAMPAIGN BUDGET INPUT ────────────────────────── */}
+                    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Total Campaign Budget</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                <span className="text-gray-500 font-medium">{symbol}</span>
+                            </div>
+                            <input
+                                type="number"
+                                min={0}
+                                step="100"
+                                value={totalCampaignBudget || ''}
+                                onChange={e => {
+                                    const val = parseInt(e.target.value, 10);
+                                    setTotalCampaignBudget(isNaN(val) ? 0 : val);
+                                }}
+                                placeholder="Enter total amount you plan to spend"
+                                className={`w-full pl-8 pr-16 py-3 text-lg font-bold text-gray-900 bg-transparent border rounded-xl focus:outline-none focus:ring-2 transition-all ${showErrors && totalCampaignBudget <= 0 ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-100 focus:border-blue-400'}`}
+                            />
+                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                <span className="text-gray-400 text-sm font-medium">/ day</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100">
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Total Budget</p>
+                                <p className="text-sm font-bold text-gray-900">{symbol}{totalCampaignBudget.toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Allocated</p>
+                                <p className="text-sm font-bold text-blue-600">{symbol}{allocatedBudget.toLocaleString()}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className={`text-xs mb-1 ${remainingBudget < 0 ? 'text-red-500' : 'text-gray-500'}`}>Remaining</p>
+                                <p className={`text-sm font-bold ${remainingBudget === 0 ? 'text-green-600' : remainingBudget < 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                                    {remainingBudget > 0 ? '+' : ''}{symbol}{remainingBudget.toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+
+                        {remainingBudget < 0 ? (
+                            <p className="mt-3 text-xs text-red-500 flex items-center gap-1.5">
+                                <AlertCircle className="w-4 h-4" />
+                                Allocated amount exceeds your total budget.
+                            </p>
+                        ) : remainingBudget > 0 && allocatedBudget > 0 ? (
+                            <p className="mt-3 text-xs text-amber-600 flex items-center gap-1.5">
+                                <AlertCircle className="w-4 h-4" />
+                                You have {symbol}{remainingBudget.toLocaleString()} unallocated budget.
+                            </p>
+                        ) : null}
+                    </div>
+
                     {/* Smart split action bar */}
                     <div className="flex items-center gap-3">
                         <span className="text-xs font-semibold text-gray-500 shrink-0">
@@ -446,7 +511,7 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                                 key={platform.id}
                                 platform={platform}
                                 value={platformBudgets[platform.id] || 0}
-                                totalBudget={totalBudget}
+                                totalBudget={totalCampaignBudget}
                                 onChange={val => handleBudgetChange(platform.id, val)}
                                 error={showErrors && errors[platform.id]}
                                 symbol={symbol}
@@ -463,9 +528,11 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
 
                     {/* Total budget row */}
                     {selectedPlatforms.length > 0 && (
-                        <div className="bg-gray-900 text-white rounded-2xl p-5">
+                        <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-5 mb-8">
+                            <h3 className="text-sm font-semibold text-gray-900 mb-4">Total Budget Breakdown</h3>
+
                             {/* Segmented bar */}
-                            <div className="flex h-2.5 w-full rounded-full overflow-hidden mb-4 gap-0.5">
+                            <div className="flex h-2.5 w-full bg-gray-100 rounded-full overflow-hidden mb-4 gap-0.5">
                                 {barSegments.map(seg => (
                                     <div
                                         key={seg.id}
@@ -479,26 +546,26 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                             {/* Legend */}
                             <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4">
                                 {barSegments.map(seg => (
-                                    <span key={seg.id} className="text-[11px] text-gray-300 flex items-center gap-1">
+                                    <span key={seg.id} className="text-[11px] text-gray-600 flex items-center gap-1">
                                         <span className={`w-2 h-2 rounded-full ${seg.bar} inline-block`} />
                                         {seg.name} — {seg.pct}%
                                     </span>
                                 ))}
                             </div>
 
-                            <div className="flex items-end justify-between pt-3 border-t border-white/10">
+                            <div className="flex items-end justify-between pt-4 border-t border-gray-100">
                                 <div>
-                                    <p className="text-xs text-gray-400 mb-1">Total Daily Budget</p>
-                                    <p className="text-3xl font-extrabold leading-none">{symbol}{totalBudget.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-500 mb-1">Total Daily Budget</p>
+                                    <p className="text-3xl font-extrabold text-gray-900 leading-none">{symbol}{totalCampaignBudget.toLocaleString()}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-xs text-gray-400 mb-1">Monthly Estimate</p>
-                                    <p className="text-lg font-bold text-gray-200">{symbol}{monthlyBudget.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-500 mb-1">Monthly Estimate</p>
+                                    <p className="text-lg font-bold text-gray-600">{symbol}{monthlyBudget.toLocaleString()}</p>
                                 </div>
                             </div>
 
                             {totalExceedWarning && (
-                                <div className="mt-3 flex items-center gap-2 text-amber-300 text-xs">
+                                <div className="mt-3 flex items-center gap-2 text-amber-600 text-xs">
                                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                                     High daily spend — make sure your account is ready for this volume.
                                 </div>
@@ -508,20 +575,27 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
 
                     {/* Validation summary */}
                     {showErrors && hasErrors && (
-                        <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                            <span>Please fix the budget errors above before continuing. Each platform has a minimum daily budget requirement.</span>
+                        <div className="flex flex-col gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                            {Object.keys(errors).length > 0 && (
+                                <div className="flex items-start gap-2">
+                                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <span>Please fix the minimum platform budget errors.</span>
+                                </div>
+                            )}
+                            {isBudgetMismatch && (
+                                <div className="flex items-start gap-2">
+                                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <span>Your allocated amount must exactly match your Total Campaign Budget.</span>
+                                </div>
+                            )}
+                            {totalCampaignBudget <= 0 && (
+                                <div className="flex items-start gap-2">
+                                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <span>Please enter a valid Total Campaign Budget.</span>
+                                </div>
+                            )}
                         </div>
                     )}
-
-                    {/* Footer Nav */}
-                    <div className="pt-4 border-t border-gray-100">
-                        <StepNavigation
-                            onNext={handleNext}
-                            onBack={onBack}
-                            nextLabel="Continue to Review →"
-                        />
-                    </div>
                 </div>
 
                 {/* ── RIGHT COLUMN: Summary card ─────────────────────────────── */}
@@ -538,8 +612,8 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                             <div className="space-y-4">
                                 {/* Daily spend */}
                                 <div className="flex justify-between items-baseline pb-4 border-b border-gray-100">
-                                    <span className="text-sm text-gray-600">Total Daily Spend</span>
-                                    <span className="text-xl font-bold text-gray-900">{formatCurrency(totalBudget)}</span>
+                                    <span className="text-sm text-gray-600">Total Campaign Budget</span>
+                                    <span className="text-xl font-bold text-gray-900">{formatCurrency(totalCampaignBudget)}</span>
                                 </div>
 
                                 {/* Per-platform breakdown */}
@@ -643,11 +717,14 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setPlatformBudgets(prev => {
-                                        const doubled = {};
-                                        Object.entries(prev).forEach(([k, v]) => (doubled[k] = v * 2));
-                                        return doubled;
-                                    })}
+                                    onClick={() => {
+                                        setPlatformBudgets(prev => {
+                                            const doubled = {};
+                                            Object.entries(prev).forEach(([k, v]) => (doubled[k] = v * 2));
+                                            return doubled;
+                                        });
+                                        setTotalCampaignBudget(prev => prev * 2);
+                                    }}
                                     className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-colors"
                                 >
                                     <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -670,6 +747,15 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Footer Nav */}
+            <div className="pt-8 mt-8 border-t border-gray-100">
+                <StepNavigation
+                    onNext={handleNext}
+                    onBack={onBack}
+                    nextLabel="Continue to Review"
+                />
             </div>
         </div>
     );

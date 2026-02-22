@@ -4,7 +4,7 @@ import {
     MoreHorizontal, ThumbsUp, Share2, Bookmark,
     Search, ChevronDown, Globe, Wifi, Battery, Signal,
     CheckCheck, Phone, Image as ImageIcon, Video, Layers,
-    ExternalLink, Eye, RefreshCw
+    ExternalLink, Eye, RefreshCw, Facebook, Instagram
 } from 'lucide-react';
 
 // ─── Tiny icon helpers ────────────────────────────────────────────────────────
@@ -85,19 +85,19 @@ const DesktopShell = ({ children }) => (
 );
 
 // ─── SOCIAL PREVIEW ───────────────────────────────────────────────────────────
-const SocialFeedPreview = ({ copy, uploadedMedia, format, previewMode }) => (
+const SocialFeedPreview = ({ copy, uploadedMedia, format, previewMode, promotedPost }) => (
     <div className="text-[13px]">
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
             <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${promotedPost?.platform === 'instagram' ? 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
                     YB
                 </div>
                 <div>
                     <p className="font-semibold text-gray-900 text-xs leading-tight">Your Business</p>
                     <p className="text-[10px] text-gray-400 flex items-center gap-1">
                         <span className="bg-blue-100 text-blue-700 font-bold px-1 rounded text-[8px]">Sponsored</span>
-                        · <Globe className="w-2.5 h-2.5" />
+                        · {promotedPost?.platform === 'instagram' ? <Instagram className="w-2.5 h-2.5" /> : promotedPost?.platform === 'facebook' ? <Facebook className="w-2.5 h-2.5" /> : <Globe className="w-2.5 h-2.5" />}
                     </p>
                 </div>
             </div>
@@ -119,19 +119,21 @@ const SocialFeedPreview = ({ copy, uploadedMedia, format, previewMode }) => (
                     ? <video src={uploadedMedia.url} className="w-full h-full object-cover" />
                     : <img src={uploadedMedia.url} className="w-full h-full object-cover" alt="Ad" />
             ) : (
-                <div className="flex flex-col items-center gap-1.5 text-gray-400">
-                    {format === 'image' && <ImageIcon className="w-8 h-8" />}
-                    {format === 'video' && <Video className="w-8 h-8" />}
-                    {format === 'carousel' && (
-                        <div className="flex gap-1">
-                            {[0, 1, 2].map(i => (
-                                <div key={i} className={`rounded bg-gray-200 ${i === 0 ? 'w-16 h-20 opacity-100' : 'w-10 h-20 opacity-40'}`} />
-                            ))}
+                <div className="w-full h-full relative group">
+                    {format === 'carousel' ? (
+                        <div className="flex w-full h-full overflow-x-auto snap-x scrollbar-hide">
+                            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover shrink-0 snap-center" alt="Sample 1" />
+                            <img src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover shrink-0 snap-center" alt="Sample 2" />
+                            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover shrink-0 snap-center" alt="Sample 3" />
                         </div>
+                    ) : (
+                        <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover" alt="Sample" />
                     )}
-                    <span className="text-[10px] font-medium">
-                        {previewMode === 'generated' ? 'AI Creative' : 'Ad Creative'}
-                    </span>
+                    <div className="absolute inset-0 bg-black/5 flex items-center justify-center pointer-events-none">
+                        <span className="bg-black/40 text-white text-[10px] font-medium px-2 py-1 flex items-center gap-1 rounded backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ImageIcon className="w-3 h-3" /> Sample Creative
+                        </span>
+                    </div>
                 </div>
             )}
 
@@ -272,8 +274,11 @@ const WhatsAppPreview = ({ copy, uploadedMedia }) => {
                                 }
                             </div>
                         ) : (
-                            <div className="w-full h-24 bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center">
-                                <ImageIcon className="w-6 h-6 text-white/70" />
+                            <div className="w-full h-32 relative group">
+                                <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover" alt="Sample" />
+                                <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
+                                    <span className="bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">Sample</span>
+                                </div>
                             </div>
                         )}
 
@@ -354,8 +359,11 @@ const SMSPreview = ({ copy, uploadedMedia, isRCS }) => {
                                 {uploadedMedia ? (
                                     <img src={uploadedMedia.url} className="w-full h-20 object-cover" alt="" />
                                 ) : (
-                                    <div className="w-full h-20 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                                        <ImageIcon className="w-5 h-5 text-blue-400" />
+                                    <div className="w-full h-20 relative group">
+                                        <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover" alt="Sample" />
+                                        <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
+                                            <span className="bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">Sample</span>
+                                        </div>
                                     </div>
                                 )}
                                 <div className="p-2">
@@ -438,16 +446,19 @@ const DisplayAdPreview = ({ copy, uploadedMedia, desktop }) => (
                         }
                     </div>
                 ) : (
-                    <div className="w-full h-32 bg-gradient-to-r from-blue-600 to-indigo-700 flex flex-col items-center justify-center p-4 text-center">
-                        <p className="text-white font-bold text-sm leading-tight line-clamp-2 mb-1">
-                            {copy.headline || 'Your Headline'}
-                        </p>
-                        <p className="text-blue-200 text-[10px] line-clamp-2 mb-3">
-                            {copy.primaryText?.slice(0, 60) || 'Descriptive subtext will appear here'}
-                        </p>
-                        <button className="bg-white text-blue-700 text-[10px] font-bold px-4 py-1.5 rounded-full">
-                            {copy.cta || 'Learn More'}
-                        </button>
+                    <div className="w-full h-32 relative group">
+                        <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover" alt="Sample Display Ad" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col items-center justify-end p-4 text-center">
+                            <p className="text-white font-bold text-sm leading-tight line-clamp-2 mb-1">
+                                {copy.headline || 'Your Headline'}
+                            </p>
+                            <p className="text-gray-200 text-[10px] line-clamp-1 mb-2">
+                                {copy.primaryText?.slice(0, 60) || 'Descriptive subtext will appear here'}
+                            </p>
+                            <button className="bg-white text-gray-900 text-[10px] font-bold px-4 py-1.5 rounded-full shadow-lg">
+                                {copy.cta || 'Learn More'}
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -491,7 +502,7 @@ const TabButton = ({ tab, isActive, onClick }) => (
 );
 
 // ─── MAIN EXPORT ─────────────────────────────────────────────────────────────
-const AdPreviewPanel = ({ copy, uploadedMedia, format, previewMode, selectedPlatforms }) => {
+const AdPreviewPanel = ({ copy, uploadedMedia, format, previewMode, selectedPlatforms, promotedPost }) => {
     const [activeTab, setActiveTab] = useState('social');
     const [device, setDevice] = useState('mobile');
     const [rcsMode, setRcsMode] = useState(false);
@@ -510,13 +521,20 @@ const AdPreviewPanel = ({ copy, uploadedMedia, format, previewMode, selectedPlat
     const currentTab = availableTabs.find(t => t.id === activeTab) ? activeTab : availableTabs[0]?.id;
     const desktop = device === 'desktop';
 
+    // Derive the media to show (either user uploaded or selected from promoted post)
+    const activeMedia = useMemo(() => {
+        if (uploadedMedia) return uploadedMedia;
+        if (promotedPost?.image) return { type: 'image', url: promotedPost.image };
+        return null;
+    }, [uploadedMedia, promotedPost]);
+
     const renderPreview = () => {
         switch (currentTab) {
-            case 'social': return <SocialFeedPreview copy={copy} uploadedMedia={uploadedMedia} format={format} previewMode={previewMode} />;
+            case 'social': return <SocialFeedPreview copy={copy} uploadedMedia={activeMedia} format={format} previewMode={previewMode} promotedPost={promotedPost} />;
             case 'google': return <GoogleSearchPreview copy={copy} desktop={desktop} />;
-            case 'whatsapp': return <WhatsAppPreview copy={copy} uploadedMedia={uploadedMedia} />;
-            case 'sms': return <SMSPreview copy={copy} uploadedMedia={uploadedMedia} isRCS={rcsMode} />;
-            case 'display': return <DisplayAdPreview copy={copy} uploadedMedia={uploadedMedia} desktop={desktop} />;
+            case 'whatsapp': return <WhatsAppPreview copy={copy} uploadedMedia={activeMedia} />;
+            case 'sms': return <SMSPreview copy={copy} uploadedMedia={activeMedia} isRCS={rcsMode} />;
+            case 'display': return <DisplayAdPreview copy={copy} uploadedMedia={activeMedia} desktop={desktop} />;
             default: return null;
         }
     };

@@ -246,6 +246,8 @@ const DashboardContent = ({ mode = 'page' }) => {
                     value: formatCurrency(totals.spend),
                     trend: spendPct > 0 ? '+' + spendPct + '%' : spendPct + '%',
                     percentageChange: Math.abs(spendPct),
+                    // Let's stick to Green = Up for Revenue/ROAS/Spend, Red = Down.
+                    // EXCEPT CPA: Lower is good (Green).
                     isPositive: spendPct >= 0,
                     sparkline: toSparkline(spendTrend)
                 },

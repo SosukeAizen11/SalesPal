@@ -520,69 +520,8 @@ const StepAdCreation = ({ onComplete, onBack, data }) => {
                         </div>
                     </div>
 
-                    {/* 3. Promote Post (Full Width) */}
-                    <PromotePostSection onSelect={handlePromotePost} />
 
-                    {/* 4. Ad Copy */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-5">
-                        <h4 className="font-semibold text-gray-900">Ad Copy & Details</h4>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="md:col-span-2">
-                                <div className="flex justify-between items-center mb-1.5">
-                                    <label className="text-sm font-medium text-gray-700">Primary Text</label>
-                                    <span className="text-xs text-purple-600 font-medium bg-purple-50 px-2 py-0.5 rounded-full">AI Generated</span>
-                                </div>
-                                <Textarea
-                                    value={copy.primaryText}
-                                    onChange={(e) => setCopy(curr => ({ ...curr, primaryText: e.target.value }))}
-                                    className="min-h-[100px] text-sm resize-none"
-                                    placeholder="Enter the main text for your ad..."
-                                    error={showError && !copy.primaryText.trim() ? "Primary text is required" : undefined}
-                                />
-                            </div>
-
-                            <div>
-                                <div className="flex justify-between items-center mb-1.5">
-                                    <label className="text-sm font-medium text-gray-700">Headline</label>
-                                    <span className="text-xs text-purple-600 font-medium bg-purple-50 px-2 py-0.5 rounded-full">AI Generated</span>
-                                </div>
-                                <Input
-                                    value={copy.headline}
-                                    onChange={(e) => setCopy(curr => ({ ...curr, headline: e.target.value }))}
-                                    className="text-sm font-medium"
-                                    placeholder="Short, catchy headline"
-                                    error={showError && !copy.headline.trim() ? "Headline is required" : undefined}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-1.5">Call to Action</label>
-                                <select
-                                    value={copy.cta}
-                                    onChange={(e) => setCopy(curr => ({ ...curr, cta: e.target.value }))}
-                                    disabled={selectedPlatforms.length === 0}
-                                    className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:alert-50 disabled:cursor-not-allowed"
-                                >
-                                    {selectedPlatforms.length === 0 && <option>Select a platform first</option>}
-                                    {ctaOptions.map(opt => (
-                                        <option key={opt.value} value={opt.value} disabled={!opt.isValid}>
-                                            {opt.value} {!opt.isValid ? `(Not supported on ${opt.missingIn.map(p => ALL_PLATFORMS.find(ap => ap.id === p)?.name).join(', ')})` : ''}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Footer Navigation (Moved to Left Column Content) */}
-                    <div className="pt-4 pb-8">
-                        <StepNavigation
-                            onNext={handleNext}
-                            onBack={onBack}
-                            nextLabel="Continue to Budget →"
-                        />
-                    </div>
                 </div>
 
                 {/* Right Column: Rich Ad Preview (Sticky) */}
@@ -608,6 +547,7 @@ const StepAdCreation = ({ onComplete, onBack, data }) => {
                             <AdPreviewPanel
                                 copy={copy}
                                 uploadedMedia={uploadedMedia}
+                                promotedPost={promotedPost}
                                 format={activeFormat}
                                 previewMode={previewMode}
                                 selectedPlatforms={selectedPlatforms}
@@ -616,6 +556,73 @@ const StepAdCreation = ({ onComplete, onBack, data }) => {
                     </div>
                 </div>
 
+            </div>
+
+            {/* Bottom Full-Width Sections */}
+            <div className="flex flex-col gap-8 mt-8">
+                {/* 3. Promote Post */}
+                <PromotePostSection onSelect={handlePromotePost} />
+
+                {/* 4. Ad Copy */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-5 lg:p-8">
+                    <h4 className="font-semibold text-gray-900 text-lg">Ad Copy & Details</h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="md:col-span-2">
+                            <div className="flex justify-between items-center mb-1.5">
+                                <label className="text-sm font-medium text-gray-700">Primary Text</label>
+                                <span className="text-xs text-purple-600 font-medium bg-purple-50 px-2 py-0.5 rounded-full">AI Generated</span>
+                            </div>
+                            <Textarea
+                                value={copy.primaryText}
+                                onChange={(e) => setCopy(curr => ({ ...curr, primaryText: e.target.value }))}
+                                className="min-h-[100px] text-sm resize-none"
+                                placeholder="Enter the main text for your ad..."
+                                error={showError && !copy.primaryText.trim() ? "Primary text is required" : undefined}
+                            />
+                        </div>
+
+                        <div>
+                            <div className="flex justify-between items-center mb-1.5">
+                                <label className="text-sm font-medium text-gray-700">Headline</label>
+                                <span className="text-xs text-purple-600 font-medium bg-purple-50 px-2 py-0.5 rounded-full">AI Generated</span>
+                            </div>
+                            <Input
+                                value={copy.headline}
+                                onChange={(e) => setCopy(curr => ({ ...curr, headline: e.target.value }))}
+                                className="text-sm font-medium"
+                                placeholder="Short, catchy headline"
+                                error={showError && !copy.headline.trim() ? "Headline is required" : undefined}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-medium text-gray-700 block mb-1.5">Call to Action</label>
+                            <select
+                                value={copy.cta}
+                                onChange={(e) => setCopy(curr => ({ ...curr, cta: e.target.value }))}
+                                disabled={selectedPlatforms.length === 0}
+                                className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:alert-50 disabled:cursor-not-allowed"
+                            >
+                                {selectedPlatforms.length === 0 && <option>Select a platform first</option>}
+                                {ctaOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value} disabled={!opt.isValid}>
+                                        {opt.value} {!opt.isValid ? `(Not supported on ${opt.missingIn.map(p => ALL_PLATFORMS.find(ap => ap.id === p)?.name).join(', ')})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer Navigation */}
+            <div className="pt-8 mt-8 border-t border-gray-100">
+                <StepNavigation
+                    onNext={handleNext}
+                    onBack={onBack}
+                    nextLabel="Continue to Budget"
+                />
             </div>
         </div>
     );
