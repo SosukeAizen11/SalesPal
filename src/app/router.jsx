@@ -104,11 +104,19 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: "/cart",
-                        element: <CartPage />,
+                        element: (
+                            <ProtectedRoute>
+                                <CartPage />
+                            </ProtectedRoute>
+                        ),
                     },
                     {
                         path: "/purchase-success",
-                        element: <PurchaseSuccess />,
+                        element: (
+                            <ProtectedRoute>
+                                <PurchaseSuccess />
+                            </ProtectedRoute>
+                        ),
                     },
                 ]
             },

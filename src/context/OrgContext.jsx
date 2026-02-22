@@ -79,7 +79,7 @@ export const OrgProvider = ({ children }) => {
                     const { data: sub } = await supabase
                         .from('subscriptions')
                         .select('*')
-                        .eq('org_id', orgData.id)
+                        .eq('user_id', user.id)
                         .eq('module', 'marketing')
                         .in('status', ['active', 'trial'])
                         .limit(1)
@@ -102,7 +102,7 @@ export const OrgProvider = ({ children }) => {
             const { data: sub } = await supabase
                 .from('subscriptions')
                 .select('*')
-                .eq('org_id', orgData.id)
+                .eq('user_id', user.id)
                 .eq('module', 'marketing')
                 .in('status', ['active', 'trial'])
                 .limit(1)

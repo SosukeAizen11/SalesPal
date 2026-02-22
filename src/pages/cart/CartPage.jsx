@@ -9,6 +9,7 @@ import { MODULES } from '../../commerce/commerce.config';
 import { useToast } from '../../components/ui/Toast';
 import { usePreferences } from '../../context/PreferencesContext';
 import Button from '../../components/ui/Button';
+import AuthModal from '../../components/auth/AuthModal';
 
 const CartPage = () => {
     const { cart, removeItem, getCartTotal, addSubscription, openMiniCart, clearCart } = useCart();
@@ -45,6 +46,9 @@ const CartPage = () => {
 
     // Payment processing state
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Auth Modal state
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
     // Valid promo codes (in production, this would be fetched from backend)
     const validPromoCodes = {
@@ -555,6 +559,11 @@ const CartPage = () => {
                                 onClick={async () => {
                                     if (!cart.length || isProcessing) return;
 
+                                    if (!isAuthenticated) {
+                                        setIsAuthModalOpen(true);
+                                        return;
+                                    }
+
                                     setIsProcessing(true);
 
                                     try {
@@ -676,6 +685,15 @@ const CartPage = () => {
                     </div>
                 )}
             </div>
+
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setIsAuthModalOpen(false)}
+                onSuccess={() => {
+                    setIsAuthModalOpen(false);
+                    // The user is now authenticated! They can click "Complete Purchase" again.
+                }}
+            />
         </div >
     );
 };

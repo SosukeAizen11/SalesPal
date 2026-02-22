@@ -11,7 +11,7 @@ const PlanCard = ({ moduleKey, label, subData, config, onPause, onResume, onCanc
     const [showCancelModal, setShowCancelModal] = useState(false);
     const { formatCurrency } = usePreferences();
 
-    const isActive = subData?.status === 'active';
+    const isActive = subData?.status === 'active' || subData?.status === 'trial';
     const isPaused = subData?.status === 'paused';
     const isCancelled = subData?.status === 'cancelled';
 

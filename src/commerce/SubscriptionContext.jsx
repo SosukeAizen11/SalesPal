@@ -1,34 +1,36 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { useOrg } from './OrgContext';
+import { useOrg } from '../context/OrgContext';
+import { useAuth } from '../context/AuthContext';
 import { MODULES } from './commerce.config';
-// Note: commerce.config.js lives at src/commerce/commerce.config.js — same directory
 
 /**
  * SubscriptionContext — Supabase-backed subscription + credit management.
- * Replaces localStorage keys: salespal_subscriptions, salespal_marketing_credits
  *
  * DB tables used:
- *   - subscriptions  (org_id, module, plan, status, activated_at, expires_at)
+ *   - subscriptions  (user_id, org_id, module, plan, status, activated_at, expires_at)
  *   - marketing_credits (org_id, balance)
  *   - credit_transactions (org_id, type, amount, balance_after, reference_type)
  *
  * DB functions used:
  *   - consume_credit(p_org_id, p_type, p_amount)  → boolean
  *   - add_credit(p_org_id, p_amount, p_source)    → void
+ *
+ * RLS: subscriptions rows are scoped by user_id = auth.uid()
  */
 
 const SubscriptionContext = createContext();
 
 export const SubscriptionProvider = ({ children }) => {
     const { orgId } = useOrg();
+    const { user } = useAuth();
     const [subscriptions, setSubscriptions] = useState({});
     const [credits, setCredits] = useState({ balance: 0 });
     const [loading, setLoading] = useState(true);
 
-    // ─── Fetch subscription + credits from Supabase ───
+    // ─── Fetch subscriptions + credits from Supabase ───
     const fetchAll = useCallback(async () => {
-        if (!orgId) {
+        if (!user) {
             setSubscriptions({});
             setCredits({ balance: 0 });
             setLoading(false);
@@ -36,37 +38,46 @@ export const SubscriptionProvider = ({ children }) => {
         }
         setLoading(true);
 
-        const [subRes, creditRes] = await Promise.all([
-            supabase.from('subscriptions').select('*').eq('org_id', orgId),
-            supabase.from('marketing_credits').select('balance').eq('org_id', orgId).maybeSingle()
-        ]);
+        try {
+            // Subscriptions are keyed by user_id (RLS enforces user_id = auth.uid())
+            const subPromise = supabase.from('subscriptions').select('*').eq('user_id', user.id);
 
-        // Build subscriptions map keyed by module
-        const subMap = {};
-        (subRes.data || []).forEach(row => {
-            subMap[row.module] = {
-                id: row.id,
-                module: row.module,
-                plan: row.plan,
-                status: row.status,
-                active: row.status === 'active' || row.status === 'trial',
-                activatedAt: row.activated_at,
-                expiresAt: row.expires_at,
-                limits: MODULES[row.module]?.limits || null,
-            };
-        });
-        setSubscriptions(subMap);
+            // Credits are still org-scoped
+            const creditPromise = orgId
+                ? supabase.from('marketing_credits').select('balance').eq('org_id', orgId).maybeSingle()
+                : Promise.resolve({ data: null });
 
-        setCredits({ balance: creditRes.data?.balance ?? 0 });
-        setLoading(false);
-    }, [orgId]);
+            const [subRes, creditRes] = await Promise.all([subPromise, creditPromise]);
+
+            // Build subscriptions map keyed by module
+            const subMap = {};
+            (subRes.data || []).forEach(row => {
+                subMap[row.module] = {
+                    id: row.id,
+                    module: row.module,
+                    plan: row.plan,
+                    status: row.status,
+                    active: row.status === 'active' || row.status === 'trial',
+                    activatedAt: row.activated_at,
+                    expiresAt: row.expires_at,
+                    limits: MODULES[row.module]?.limits || null,
+                };
+            });
+            setSubscriptions(subMap);
+            setCredits({ balance: creditRes?.data?.balance ?? 0 });
+        } catch (err) {
+            console.error('SubscriptionContext fetchAll error:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [user, orgId]);
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
     // ─── Subscription management ───
 
     const activateSubscription = async (input) => {
-        if (!orgId) return;
+        if (!user) return;
         const moduleIds = [];
 
         if (typeof input === 'string') {
@@ -85,18 +96,23 @@ export const SubscriptionProvider = ({ children }) => {
             const now = new Date().toISOString();
             const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-            await supabase.from('subscriptions').upsert({
-                org_id: orgId,
+            const { error } = await supabase.from('subscriptions').upsert({
+                user_id: user.id,
+                org_id: orgId || null,
                 module: moduleId,
                 status: 'active',
                 plan: 'starter',
                 activated_at: now,
                 expires_at: expiresAt,
-            }, { onConflict: 'org_id,module' });
+            }, { onConflict: 'user_id,module' });
+
+            if (error) {
+                console.error(`Failed to activate subscription for ${moduleId}:`, error);
+            }
 
             // Allocate base credits for marketing on activation
-            if (moduleId === 'marketing') {
-                const limits = MODULES.marketing.limits;
+            if (moduleId === 'marketing' && orgId) {
+                const limits = MODULES.marketing?.limits;
                 const baseCredits = (limits?.images || 20) + (limits?.videos || 4);
                 await supabase.rpc('add_credit', {
                     p_org_id: orgId,
@@ -110,28 +126,28 @@ export const SubscriptionProvider = ({ children }) => {
     };
 
     const deactivateSubscription = async (moduleId) => {
-        if (!orgId) return;
+        if (!user) return;
         await supabase.from('subscriptions')
             .update({ status: 'cancelled' })
-            .eq('org_id', orgId)
+            .eq('user_id', user.id)
             .eq('module', moduleId);
         await fetchAll();
     };
 
     const pauseSubscription = async (moduleId) => {
-        if (!orgId) return;
+        if (!user) return;
         await supabase.from('subscriptions')
             .update({ status: 'paused' })
-            .eq('org_id', orgId)
+            .eq('user_id', user.id)
             .eq('module', moduleId);
         await fetchAll();
     };
 
     const resumeSubscription = async (moduleId) => {
-        if (!orgId) return;
+        if (!user) return;
         await supabase.from('subscriptions')
             .update({ status: 'active' })
-            .eq('org_id', orgId)
+            .eq('user_id', user.id)
             .eq('module', moduleId);
         await fetchAll();
     };
@@ -146,10 +162,6 @@ export const SubscriptionProvider = ({ children }) => {
 
     // ─── Credit management ───
 
-    /**
-     * Deduct credits via the consume_credit() DB function.
-     * Returns true if successful, false if insufficient balance.
-     */
     const consume = async (moduleId, type) => {
         if (!orgId || !isModuleActive(moduleId)) return false;
 
@@ -171,9 +183,6 @@ export const SubscriptionProvider = ({ children }) => {
         return !!success;
     };
 
-    /**
-     * Add credits (purchase pack or manual top-up).
-     */
     const addCredits = async (moduleId, resource, amount) => {
         if (!orgId) return false;
 
@@ -191,7 +200,6 @@ export const SubscriptionProvider = ({ children }) => {
     };
 
     const getRemaining = (moduleId, type) => {
-        // Single credit pool stored in marketing_credits.balance
         return credits.balance;
     };
 
