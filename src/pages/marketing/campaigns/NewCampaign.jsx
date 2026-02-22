@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
-import { LogOut, X, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { LogOut, X, ChevronRight, CheckCircle2, Info } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useMarketing } from '../../../context/MarketingContext';
 import { getProjectsBackRoute } from '../../../utils/navigationUtils';
@@ -25,8 +25,11 @@ const STEPS = [
         subtitle: (
             <>
                 Share your business details via text, website, or PDF. Include your location for automatic currency detection.
-                <span className="block mt-2 text-sm text-gray-400">
-                    Adding more information about your product will make your ads more accurate.
+                <span className="inline-flex items-start gap-2 mt-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" strokeWidth={2} />
+                    <span className="text-sm font-semibold text-blue-700 leading-snug">
+                        Adding more information about your product will make your ads more accurate.
+                    </span>
                 </span>
             </>
         )

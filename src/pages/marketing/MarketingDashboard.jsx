@@ -361,23 +361,23 @@ const DashboardContent = ({ mode = 'page' }) => {
 
             <div className="p-6 max-w-[1600px] mx-auto space-y-6">
 
-                {/* A. THE PULSE (Financial Vitals) */}
-                <section aria-label="Financial Vitals">
-                    <KPISummary data={dashboardData.kpis} onDetailClick={handleKPIClick} mode="pulse" />
-                </section>
-
-                {/* B. Priority Alerts — Immediately below KPIs */}
+                {/* 1. Priority Alerts — TOP of dashboard */}
                 <section aria-label="Priority Alerts">
                     <ActionFeed alerts={dashboardData.anomalies} />
                 </section>
 
-                {/* Acquisition Intelligence */}
+                {/* 2. Lead Generation Insights — directly below alerts */}
                 <AcquisitionIntelligence />
 
-                {/* C. AI Strategic Insights */}
+                {/* 3. Financial Vitals (KPI Summary) */}
+                <section aria-label="Financial Vitals">
+                    <KPISummary data={dashboardData.kpis} onDetailClick={handleKPIClick} mode="pulse" />
+                </section>
+
+                {/* 4. AI Strategic Insights */}
                 <AIStrategicInsights />
 
-                {/* C. Efficiency & Allocation Grid */}
+                {/* 5. Efficiency & Allocation Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                     {/* Performance Stability (2/3 width) */}
                     <div ref={trendsRef} className="lg:col-span-2 scroll-mt-24 min-w-0">
@@ -389,7 +389,6 @@ const DashboardContent = ({ mode = 'page' }) => {
                         <ChannelPerformanceMix data={dashboardData.channelMix} />
                     </div>
                 </div>
-
 
             </div>
 

@@ -9,6 +9,7 @@ import Button from '../../../../components/ui/Button';
 import CreditWarningModal from '../components/ad-creation/CreditWarningModal';
 import MediaUploadSection from '../components/ad-creation/MediaUploadSection';
 import PromotePostSection from '../components/ad-creation/PromotePostSection';
+import AdPreviewPanel from './components/AdPreviewPanel';
 
 // Context
 import { useSubscription } from '../../../../commerce/SubscriptionContext';
@@ -584,125 +585,33 @@ const StepAdCreation = ({ onComplete, onBack, data }) => {
                     </div>
                 </div>
 
-                {/* Right Column: Preview (Approx 35-40%, Sticky) */}
+                {/* Right Column: Rich Ad Preview (Sticky) */}
                 <div className="lg:col-span-5 xl:col-span-4 sticky top-6">
-                    <div className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                        <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                            <h3 className="font-semibold text-gray-900">Ad Preview</h3>
-                            <span className="text-xs font-medium text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded">
-                                {selectedPlatforms.includes('meta') ? 'Facebook Feed' : 'Google Search'}
+                    <div className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden flex flex-col" style={{ minHeight: 640 }}>
+                        {/* Panel header */}
+                        <div className="shrink-0 px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Eye className="w-4 h-4 text-primary" />
+                                <h3 className="font-semibold text-gray-900 text-sm">Ad Preview</h3>
+                            </div>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${previewMode === 'generated' ? 'bg-green-50 border-green-200 text-green-700' :
+                                previewMode === 'uploaded' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                    previewMode === 'promoted' ? 'bg-purple-50 border-purple-200 text-purple-700' :
+                                        'bg-gray-100 border-gray-200 text-gray-500'
+                                }`}>
+                                {previewMode === 'demo' ? 'Sample' : previewMode === 'generated' ? 'AI Generated' : previewMode === 'uploaded' ? 'Your Media' : 'Promoted Post'}
                             </span>
                         </div>
 
-                        <div className="p-5 bg-gray-50/50">
-                            {/* Media Upload (Compact) */}
-                            <MediaUploadSection
-                                onUpload={handleFileUpload}
-                                currentMedia={uploadedMedia}
-                                onClear={() => {
-                                    setUploadedMedia(null);
-                                    setPreviewMode('demo');
-                                }}
+                        {/* The panel itself */}
+                        <div className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
+                            <AdPreviewPanel
+                                copy={copy}
+                                uploadedMedia={uploadedMedia}
                                 format={activeFormat}
+                                previewMode={previewMode}
+                                selectedPlatforms={selectedPlatforms}
                             />
-
-                            {/* Preview Card */}
-                            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mx-auto max-w-[320px] relative group mt-6">
-
-                                {/* Overlay for Demo Mode */}
-                                {previewMode === 'demo' && !isGenerating && (
-                                    <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-6 text-center">
-                                        <div className="bg-white rounded-xl shadow-lg p-5 border border-gray-100 w-full max-w-[240px]">
-                                            <div className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                                                <Wand2 className="w-4 h-4" />
-                                            </div>
-                                            <h4 className="font-bold text-gray-900 text-sm mb-1">Generate Preview</h4>
-                                            <p className="text-[10px] text-gray-500 mb-3">See how your ad looks with AI generated creative.</p>
-                                            <Button
-                                                size="sm"
-                                                onClick={handleGeneratePreviewClick}
-                                                className="w-full justify-center text-xs py-2 h-8"
-                                            >
-                                                Generate ({currentFormatRec.cost} Credits)
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Loading State */}
-                                {isGenerating && (
-                                    <div className="absolute inset-0 z-20 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center">
-                                        <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mb-3" />
-                                        <p className="text-sm font-medium text-purple-900">Generating...</p>
-                                    </div>
-                                )}
-
-                                {/* Header */}
-                                <div className="p-3 border-b border-gray-50 flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200" />
-                                    <div>
-                                        <div className="w-20 h-2 bg-gray-200 rounded-full mb-1" />
-                                        <div className="w-10 h-1.5 bg-gray-100 rounded-full" />
-                                    </div>
-                                </div>
-
-                                {/* Main Content */}
-                                <div>
-                                    <div className="p-3 pb-2 text-xs text-gray-800 leading-snug">
-                                        {copy.primaryText || "Primary text will appear here..."}
-                                    </div>
-
-                                    {/* Media Display */}
-                                    <div className="aspect-[4/5] bg-gray-100 flex items-center justify-center text-gray-400 relative overflow-hidden">
-
-                                        {/* 1. Uploaded Media */}
-                                        {uploadedMedia && (
-                                            uploadedMedia.type === 'video' ?
-                                                <video src={uploadedMedia.url} className="w-full h-full object-cover" /> :
-                                                <img src={uploadedMedia.url} className="w-full h-full object-cover" alt="Ad Creative" />
-                                        )}
-
-                                        {/* 2. Promoted Post Media */}
-                                        {!uploadedMedia && promotedPost && (
-                                            <img src={promotedPost.image} className="w-full h-full object-cover" alt="Post Creative" />
-                                        )}
-
-                                        {/* 3. Generated / Demo State */}
-                                        {!uploadedMedia && !promotedPost && (
-                                            <>
-                                                {activeFormat === 'image' && <ImageIcon size={32} />}
-                                                {activeFormat === 'video' && <Video size={32} />}
-                                                {activeFormat === 'carousel' && <Layers size={32} />}
-                                                <span className="ml-2 text-sm font-medium opacity-50">
-                                                    {previewMode === 'generated' ? 'AI Generated' : 'Sample Media'}
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
-
-                                    {/* Banner / CTA */}
-                                    <div className="bg-gray-50 p-2.5 flex justify-between items-center border-t border-gray-100">
-                                        <div className="flex-1 mr-4 overflow-hidden">
-                                            <p className="text-[10px] text-gray-500 uppercase font-medium mb-0.5">WEBSITE.COM</p>
-                                            <p className="font-semibold text-gray-900 text-xs leading-tight line-clamp-1">{copy.headline}</p>
-                                        </div>
-                                        <button className="px-3 py-1.5 bg-gray-200 text-gray-700 text-[10px] font-bold rounded uppercase whitespace-nowrap">
-                                            {copy.cta}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Footer Actions */}
-                                <div className="p-2 flex gap-1 border-t border-gray-50">
-                                    <div className="flex-1 h-6 bg-gray-50 rounded" />
-                                    <div className="flex-1 h-6 bg-gray-50 rounded" />
-                                    <div className="flex-1 h-6 bg-gray-50 rounded" />
-                                </div>
-                            </div>
-
-                            <p className="text-center text-[10px] text-gray-400 mt-4">
-                                {previewMode === 'demo' ? 'Previewing with sample data' : 'AI generated preview'}
-                            </p>
                         </div>
                     </div>
                 </div>
