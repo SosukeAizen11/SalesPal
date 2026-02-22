@@ -20,7 +20,8 @@ const INITIAL_DATA = {
         'Combines convenience with cafe-quality taste'
     ],
     location: 'Mumbai, India',
-    currency: 'INR (₹)'
+    currency: 'INR (₹)',
+    businessDescription: ''
 };
 
 const StepAIAnalysis = ({ onComplete, onBack, data, ai }) => {
@@ -549,8 +550,8 @@ const StepAIAnalysis = ({ onComplete, onBack, data, ai }) => {
                         <h3 className="text-lg font-semibold text-gray-900">Add More Business Information</h3>
                         <p className="text-sm text-gray-500">Provide additional files or links to improve AI recommendations.</p>
                     </div>
-                    {/* Only show update button if files added or url changed */}
-                    {(uploadedFiles.length > 0 || websiteUrl) && (
+                    {/* Only show update button if files added, url changed, or description changed */}
+                    {(uploadedFiles.length > 0 || websiteUrl || analysisData.businessDescription !== INITIAL_DATA.businessDescription) && (
                         <Button
                             variant="secondary"
                             onClick={triggerReanalysis}
@@ -561,6 +562,26 @@ const StepAIAnalysis = ({ onComplete, onBack, data, ai }) => {
                             {isReanalyzing ? "Updating Analysis..." : "Update Analysis"}
                         </Button>
                     )}
+                </div>
+
+                {/* Business Description Field */}
+                <div className="mb-8">
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">Business Description</label>
+                    <textarea
+                        className="w-full p-4 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none min-h-[120px] transition-all"
+                        placeholder="Describe your business, products, services, target audience, and unique value proposition."
+                        value={analysisData.businessDescription}
+                        onChange={(e) => setAnalysisData(prev => ({ ...prev, businessDescription: e.target.value }))}
+                        maxLength={1000}
+                    />
+                    <div className="mt-2 flex justify-between items-center">
+                        <p className="text-xs text-gray-500">
+                            This helps generate more accurate ad targeting and creative suggestions.
+                        </p>
+                        <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+                            {analysisData.businessDescription?.length || 0} / 1000
+                        </span>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
