@@ -1,4 +1,5 @@
 import React from 'react';
+import NotificationsTab from '../../profile/tabs/NotificationsTab';
 
 export const MarketingSettingsDefaults = () => (
     <div className="space-y-6 animate-fade-in-up">
@@ -19,10 +20,8 @@ export const MarketingSettingsTracking = () => (
 );
 
 export const MarketingSettingsNotifications = () => (
-    <div className="space-y-6 animate-fade-in-up">
-        <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-        <div className="p-8 text-center text-gray-500 border-2 border-dashed border-gray-200 rounded-xl">
-            Email and in-app notification preferences coming soon.
-        </div>
+    <div className="animate-fade-in-up">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Notification Settings</h1>
+        <NotificationsTab />
     </div>
 );

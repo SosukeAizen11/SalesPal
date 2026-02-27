@@ -39,9 +39,11 @@ const StepBusinessInput = ({ onComplete, data }) => {
     const isTabValid = () => {
         switch (activeTab) {
             case 'description': return description.trim().length > 10;
-            case 'url':
-                // Basic URL regex or simple non-empty check
-                return Boolean(websiteUrl) && websiteUrl.includes('.');
+            case 'url': {
+                const processed = websiteUrl.trim();
+                const urlPattern = /^(https?:\/\/)?(localhost|[\w.-]+\.[a-zA-Z]{2,})(:[0-9]{1,5})?(\/.*)?$/;
+                return Boolean(processed) && urlPattern.test(processed);
+            }
             case 'pdf': return Boolean(pdfFile);
             default: return false;
         }
@@ -54,11 +56,18 @@ const StepBusinessInput = ({ onComplete, data }) => {
             return;
         }
 
+        let finalWebsiteUrl = websiteUrl.trim();
+        if (activeTab === 'url' && finalWebsiteUrl) {
+            if (!finalWebsiteUrl.startsWith('http://') && !finalWebsiteUrl.startsWith('https://')) {
+                finalWebsiteUrl = `https://${finalWebsiteUrl}`;
+            }
+        }
+
         if (onComplete) {
             onComplete({
                 inputMode: activeTab,
                 description,
-                websiteUrl,
+                websiteUrl: activeTab === 'url' ? finalWebsiteUrl : websiteUrl,
                 pdfFile,
                 logoFile
             });
@@ -132,11 +141,11 @@ const StepBusinessInput = ({ onComplete, data }) => {
                                     Your Business Website <span className="text-red-500">*</span>
                                 </label>
                                 <Input
-                                    error={showError && (!websiteUrl || !websiteUrl.includes('.')) ? "Please enter a valid website URL" : undefined}
-                                    type="url"
+                                    error={showError && !isTabValid() ? "Please enter a valid website URL (e.g., example.com)" : undefined}
+                                    type="text"
                                     value={websiteUrl}
                                     onChange={(e) => setWebsiteUrl(e.target.value)}
-                                    placeholder="https://yourbusiness.com"
+                                    placeholder="e.g. example.com or https://example.com"
                                     className="text-lg py-3"
                                     autoFocus
                                 />
