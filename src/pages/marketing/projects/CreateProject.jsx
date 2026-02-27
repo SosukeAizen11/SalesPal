@@ -13,14 +13,43 @@ export default function CreateProject() {
     const [formData, setFormData] = useState({
         name: '',
         industry: '',
+        customIndustry: '',
         website: ''
     });
+    const [urlError, setUrlError] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!formData.name || !formData.website) return;
+        
+        let processedWebsite = formData.website.trim();
+        if (!processedWebsite) return;
 
-        const newProject = createProject(formData);
+        // Basic domain validation
+        const urlPattern = /^(https?:\/\/)?(localhost|[\w.-]+\.[a-zA-Z]{2,})(:[0-9]{1,5})?(\/.*)?$/;
+        if (!urlPattern.test(processedWebsite)) {
+            setUrlError('Please enter a valid URL (e.g., example.com)');
+            return;
+        }
+        
+        setUrlError('');
+
+        if (!processedWebsite.startsWith('http://') && !processedWebsite.startsWith('https://')) {
+            processedWebsite = `https://${processedWebsite}`;
+        }
+
+        if (!formData.name) return;
+        if (formData.industry === 'Other' && !formData.customIndustry.trim()) return;
+
+        const finalIndustry = formData.industry === 'Other' ? formData.customIndustry.trim() : formData.industry;
+
+        const dataToSubmit = {
+            ...formData,
+            industry: finalIndustry,
+            website: processedWebsite
+        };
+        delete dataToSubmit.customIndustry;
+
+        const newProject = createProject(dataToSubmit);
         navigate(`/marketing/projects/${newProject.id}`);
     };
 
@@ -58,15 +87,33 @@ export default function CreateProject() {
                         <option value="E-commerce">E-commerce</option>
                         <option value="Healthcare">Healthcare</option>
                         <option value="Education">Education</option>
+                        <option value="Other">Other</option>
                     </Select>
 
+                    {formData.industry === 'Other' && (
+                        <div className="animate-in fade-in slide-in-from-top-1 duration-300">
+                            <Input
+                                type="text"
+                                label="Enter Industry"
+                                value={formData.customIndustry}
+                                onChange={(e) => setFormData(prev => ({ ...prev, customIndustry: e.target.value }))}
+                                placeholder="Custom Industry"
+                                required={formData.industry === 'Other'}
+                            />
+                        </div>
+                    )}
+
                     <Input
-                        type="url"
+                        type="text"
                         label="Website URL"
                         value={formData.website}
-                        onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-                        placeholder="https://example.com"
+                        onChange={(e) => {
+                            setFormData(prev => ({ ...prev, website: e.target.value }));
+                            if (urlError) setUrlError('');
+                        }}
+                        placeholder="e.g. example.com or https://example.com"
                         required
+                        error={urlError}
                     />
 
                     <div className="pt-4 flex justify-end gap-3">
