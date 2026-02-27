@@ -18,9 +18,9 @@ export default function CreateProject() {
     });
     const [urlError, setUrlError] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         let processedWebsite = formData.website.trim();
         if (!processedWebsite) return;
 
@@ -30,7 +30,7 @@ export default function CreateProject() {
             setUrlError('Please enter a valid URL (e.g., example.com)');
             return;
         }
-        
+
         setUrlError('');
 
         if (!processedWebsite.startsWith('http://') && !processedWebsite.startsWith('https://')) {
@@ -121,11 +121,12 @@ export default function CreateProject() {
                             type="button"
                             variant="secondary"
                             onClick={() => navigate('/marketing/projects')}
+                            disabled={isSubmitting}
                         >
                             Cancel
                         </Button>
-                        <Button type="submit">
-                            Create Project
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? 'Creating...' : 'Create Project'}
                         </Button>
                     </div>
                 </form>
