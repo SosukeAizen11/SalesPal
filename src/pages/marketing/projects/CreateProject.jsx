@@ -15,13 +15,30 @@ export default function CreateProject() {
         industry: '',
         website: ''
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState(null);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.name || !formData.website) return;
+        if (!formData.name || !formData.website || isSubmitting) return;
 
-        const newProject = createProject(formData);
-        navigate(`/marketing/projects/${newProject.id}`);
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            const data = await createProject(formData);
+
+            if (data?.id) {
+                navigate(`/marketing/projects/${data.id}`);
+            } else {
+                setError('Failed to create project. Please try again.');
+            }
+        } catch (err) {
+            console.error('Error creating project:', err);
+            setError('An unexpected error occurred. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -69,16 +86,23 @@ export default function CreateProject() {
                         required
                     />
 
+                    {error && (
+                        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                            {error}
+                        </div>
+                    )}
+
                     <div className="pt-4 flex justify-end gap-3">
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => navigate('/marketing/projects')}
+                            disabled={isSubmitting}
                         >
                             Cancel
                         </Button>
-                        <Button type="submit">
-                            Create Project
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? 'Creating...' : 'Create Project'}
                         </Button>
                     </div>
                 </form>
