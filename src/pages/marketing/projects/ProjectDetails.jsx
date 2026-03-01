@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, FolderOpen, Globe, Settings } from 'lucide-react';
+import { ArrowLeft, Plus, FolderOpen, Globe, Settings, Loader2 } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
 import { useMarketing } from '../../../context/MarketingContext';
 import CampaignCard from '../components/CampaignCard';
 import Button from '../../../components/ui/Button';
@@ -14,7 +15,12 @@ import Select from '../../../components/ui/Select';
 export default function ProjectDetails() {
     const { projectId } = useParams();
     const navigate = useNavigate();
-    const { getProjectById, getCampaignsByProject, updateProject, deleteProject, updateCampaign, deleteCampaign } = useMarketing();
+    const { getCampaignsByProject, updateProject, deleteProject, updateCampaign, deleteCampaign } = useMarketing();
+
+    // Project fetch state
+    const [project, setProject] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [notFound, setNotFound] = useState(false);
 
     // Modals state
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -27,8 +33,30 @@ export default function ProjectDetails() {
     const [selectedCampaign, setSelectedCampaign] = useState(null);
     const [campaignEditData, setCampaignEditData] = useState({ dailyBudget: '', status: 'active' });
 
-    // Safety check if hooks run before data loads or invalid ID
-    const project = getProjectById(projectId);
+    // Fetch project directly from Supabase
+    useEffect(() => {
+        const fetchProject = async () => {
+            setLoading(true);
+            setNotFound(false);
+
+            const { data, error } = await supabase
+                .from('projects')
+                .select('*')
+                .eq('id', projectId)
+                .single();
+
+            if (error || !data) {
+                setNotFound(true);
+            } else {
+                setProject(data);
+            }
+
+            setLoading(false);
+        };
+
+        fetchProject();
+    }, [projectId]);
+
     const campaigns = getCampaignsByProject(projectId);
 
     useEffect(() => {
@@ -79,9 +107,18 @@ export default function ProjectDetails() {
         }
     };
 
-    // ... existing Project handlers ...
+    // Loading state — never show "not found" while still fetching
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-3" />
+                <p className="text-sm text-gray-500">Loading project...</p>
+            </div>
+        );
+    }
 
-    if (!project) {
+    // Only show not-found after loading has completed
+    if (notFound) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
                 <FolderOpen className="w-12 h-12 text-gray-300 mb-4" />
