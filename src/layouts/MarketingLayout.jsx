@@ -1,15 +1,12 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useSubscription } from '../commerce/SubscriptionContext';
 import ProjectSwitcher from '../components/ProjectSwitcher';
 import GlobalCreditDisplay from '../components/GlobalCreditDisplay';
 import TopUpDrawer from '../components/credits/TopUpDrawer';
 import NotificationBell from '../components/notifications/NotificationBell';
 
-const MarketingLayoutContent = () => {
-    // We keep the header for ProjectSwitcher and GlobalCreditDisplay
-    // But remove the sidebar entirely as it's now in AppLayout
+const MarketingLayout = () => {
     const location = useLocation();
     const { isModuleActive } = useSubscription();
     const [isTopUpOpen, setIsTopUpOpen] = useState(false);
@@ -27,9 +24,7 @@ const MarketingLayoutContent = () => {
                     </div>
                     <div className="flex items-center gap-3">
                         {showCredits && <GlobalCreditDisplay onTopUpClick={() => setIsTopUpOpen(true)} />}
-                        {/* Divider */}
                         {showCredits && <div className="w-px h-5 bg-gray-200" />}
-                        {/* Notification Bell — always visible */}
                         <NotificationBell />
                     </div>
                 </header>
@@ -42,18 +37,9 @@ const MarketingLayoutContent = () => {
                 </main>
             </div>
 
-
-            {/* Top Up Drawer */}
             <TopUpDrawer isOpen={isTopUpOpen} onClose={() => setIsTopUpOpen(false)} />
         </div>
     );
 };
 
-const MarketingLayout = () => {
-    return (
-        <MarketingLayoutContent />
-    );
-};
-
 export default MarketingLayout;
-

@@ -1,6 +1,6 @@
 import React, {
     createContext, useContext, useState,
-    useEffect, useCallback, useRef, useMemo
+    useEffect, useCallback, useMemo
 } from 'react';
 
 // ─── Channel constants ─────────────────────────────────────────────────────────
@@ -70,214 +70,10 @@ export const DEFAULT_PREFS = {
     },
 };
 
-// ─── Rich seed notifications (per channel) ─────────────────────────────────────
-const SEED_NOTIFICATIONS = [
-    // ── IN-APP ──────────────────────────────────────────────────────────
-    {
-        id: 'notif_inapp_001',
-        channel_type: CHANNELS.IN_APP,
-        type: 'system',
-        subtype: 'feature_updates',
-        priority: PRIORITY.NORMAL,
-        title: 'Welcome to SalesPal',
-        description: 'Your dashboard is set up and ready. Explore marketing, sales, and analytics tools.',
-        link: '/marketing',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: false,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    },
-    {
-        id: 'notif_inapp_002',
-        channel_type: CHANNELS.IN_APP,
-        type: 'campaign',
-        subtype: 'performance_alerts',
-        priority: PRIORITY.NORMAL,
-        title: 'Campaign "Summer Sale" is live',
-        description: 'Your campaign started running across 3 platforms. Monitor performance in the dashboard.',
-        link: '/marketing',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: true,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    },
-    {
-        id: 'notif_inapp_003',
-        channel_type: CHANNELS.IN_APP,
-        type: 'billing',
-        subtype: 'payment_reminders',
-        priority: PRIORITY.NORMAL,
-        title: 'Next billing on Mar 14, 2026',
-        description: 'Your SalesPal 360 subscription renews in 22 days. Ensure your payment method is up to date.',
-        link: '/settings/notifications',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: false,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    },
-    {
-        id: 'notif_inapp_004',
-        channel_type: CHANNELS.IN_APP,
-        type: 'credit',
-        subtype: 'low_warning',
-        priority: PRIORITY.CRITICAL,
-        title: 'Image credits at 80% — top up soon',
-        description: 'You have used 80% of your monthly image credits. Top up now to avoid campaign interruption.',
-        link: '/settings/notifications',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: false,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    },
-    {
-        id: 'notif_inapp_005',
-        channel_type: CHANNELS.IN_APP,
-        type: 'support',
-        subtype: 'ticket_updates',
-        priority: PRIORITY.LOW,
-        title: 'Support ticket #1042 resolved',
-        description: 'The SalesPal support team has resolved your query about campaign analytics.',
-        link: '/settings',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: true,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    },
-
-    // ── WHATSAPP ─────────────────────────────────────────────────────────
-    {
-        id: 'notif_wa_001',
-        channel_type: CHANNELS.WHATSAPP,
-        type: 'campaign',
-        subtype: 'performance_alerts',
-        priority: PRIORITY.NORMAL,
-        title: 'WhatsApp Campaign "Diwali Offer" sent',
-        description: '2,340 messages delivered successfully. 18% open rate so far.',
-        link: '/marketing/campaigns',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: false,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    },
-    {
-        id: 'notif_wa_002',
-        channel_type: CHANNELS.WHATSAPP,
-        type: 'billing',
-        subtype: 'credit_warnings',
-        priority: PRIORITY.CRITICAL,
-        title: 'WhatsApp credits critically low',
-        description: 'Only 120 WhatsApp messages remaining. Top up now to avoid campaign failure.',
-        link: '/settings/notifications',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: false,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
-    },
-    {
-        id: 'notif_wa_003',
-        channel_type: CHANNELS.WHATSAPP,
-        type: 'campaign',
-        subtype: 'budget_alerts',
-        priority: PRIORITY.NORMAL,
-        title: 'Bulk WhatsApp batch completed',
-        description: '"Summer Deals" broadcast: 5,000 sent, 4,812 delivered, 188 failed.',
-        link: '/marketing/campaigns',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: true,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    },
-
-    // ── RCS ──────────────────────────────────────────────────────────────
-    {
-        id: 'notif_rcs_001',
-        channel_type: CHANNELS.RCS,
-        type: 'campaign',
-        subtype: 'performance_alerts',
-        priority: PRIORITY.NORMAL,
-        title: 'RCS Campaign delivered — 94% success',
-        description: '1,850 rich messages sent. 94% delivered, 62% opened. View detailed analytics.',
-        link: '/marketing/campaigns',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: false,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-    },
-    {
-        id: 'notif_rcs_002',
-        channel_type: CHANNELS.RCS,
-        type: 'system',
-        subtype: 'feature_updates',
-        priority: PRIORITY.LOW,
-        title: 'RCS Fallback to SMS activated',
-        description: '43 devices did not support RCS. Messages automatically fell back to SMS.',
-        link: '/marketing/campaigns',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: true,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    },
-
-    // ── SMS ───────────────────────────────────────────────────────────────
-    {
-        id: 'notif_sms_001',
-        channel_type: CHANNELS.SMS,
-        type: 'billing',
-        subtype: 'invoices',
-        priority: PRIORITY.NORMAL,
-        title: 'Invoice #INV-004 sent via SMS',
-        description: 'Payment reminder SMS dispatched to your registered mobile +91 98765 XXXXX.',
-        link: '/settings/notifications',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: false,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    },
-    {
-        id: 'notif_sms_002',
-        channel_type: CHANNELS.SMS,
-        type: 'system',
-        subtype: 'maintenance_alerts',
-        priority: PRIORITY.CRITICAL,
-        title: 'Urgent: OTP sent for billing update',
-        description: 'A one-time password was sent to verify your billing method update. Expires in 10 mins.',
-        link: '/settings',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: true,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 10).toISOString(),
-    },
-
-    // ── BULK ──────────────────────────────────────────────────────────────
-    {
-        id: 'notif_bulk_001',
-        channel_type: CHANNELS.BULK,
-        type: 'campaign',
-        subtype: 'budget_alerts',
-        priority: PRIORITY.NORMAL,
-        title: 'Bulk Campaign "Republic Day Sale" completed',
-        description: '10,000 messages sent across WhatsApp + SMS. 87% delivery rate. Check report.',
-        link: '/marketing/campaigns',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: false,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-    },
-    {
-        id: 'notif_bulk_002',
-        channel_type: CHANNELS.BULK,
-        type: 'campaign',
-        subtype: 'conversion_insights',
-        priority: PRIORITY.LOW,
-        title: 'RCS Bulk campaign report ready',
-        description: 'Your weekly RCS campaign performance summary is ready to view.',
-        link: '/marketing/campaigns',
-        delivery_status: DELIVERY_STATUS.DELIVERED,
-        read: false,
-        dismissed: false,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    },
-];
+// ─── NOTE: Notification data will be fetched from Supabase (notifications table).
+// ─── The seed data that was here has been removed. Use addNotification() from
+// ─── NotificationContext to push real in-app notifications from other contexts.
+// ─── Supabase Realtime subscription will replace the localStorage persistence.
 
 // ─── Storage helpers ──────────────────────────────────────────────────────────
 const loadNotifications = () => {
@@ -318,14 +114,12 @@ function deepMerge(defaults, override) {
 const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
+    // Initialise from localStorage; starts empty on first load.
+    // TODO: Wire to Supabase notifications table via Realtime subscription.
     const [notifications, setNotifications] = useState(() => {
         const stored = loadNotifications();
-        if (stored && Array.isArray(stored) && stored.length > 0) {
-            const storedIds = new Set(stored.map(n => n.id));
-            const newSeeds = SEED_NOTIFICATIONS.filter(s => !storedIds.has(s.id));
-            return [...newSeeds, ...stored];
-        }
-        return SEED_NOTIFICATIONS;
+        if (stored && Array.isArray(stored) && stored.length > 0) return stored;
+        return [];
     });
 
     const [prefs, setPrefs] = useState(loadPrefs);
@@ -403,27 +197,16 @@ export const NotificationProvider = ({ children }) => {
     const updateFrequencyPref = useCallback((key, val) => setPrefs(p => ({ ...p, frequency: { ...p.frequency, [key]: val } })), []);
     const resetPrefs = useCallback(() => setPrefs(DEFAULT_PREFS), []);
 
-    // ── Polling (simulated push, 60s) ─────────────────────────────────────
-    const pollingRef = useRef(null);
-    useEffect(() => {
-        const incoming = [
-            { id: 'poll_wa', channel_type: CHANNELS.WHATSAPP, type: 'campaign', title: 'WhatsApp: "Flash Sale" delivered', description: '3,200 messages delivered. 22% click rate.', link: '/marketing/campaigns', priority: PRIORITY.NORMAL },
-            { id: 'poll_sms', channel_type: CHANNELS.SMS, type: 'billing', title: 'SMS: Payment reminder sent', description: 'Billing reminder dispatched to +91 98765 XXXXX.', link: '/settings', priority: PRIORITY.NORMAL },
-            { id: 'poll_rcs', channel_type: CHANNELS.RCS, type: 'campaign', title: 'RCS: Analytics report ready', description: 'Weekly RCS campaign insights for Feb 2026 are ready.', link: '/marketing', priority: PRIORITY.LOW },
-        ];
-        let idx = 0;
-        pollingRef.current = setInterval(() => {
-            const c = incoming[idx % incoming.length]; idx++;
-            setNotifications(prev => {
-                if (prev.some(n => n.id === c.id)) return prev;
-                return [{ ...c, delivery_status: DELIVERY_STATUS.DELIVERED, read: false, dismissed: false, timestamp: new Date().toISOString() }, ...prev];
-            });
-        }, 60_000);
-        return () => clearInterval(pollingRef.current);
-    }, []);
+    // ── TODO: Replace localStorage persistence with Supabase Realtime ──────────
+    // When ready:
+    //   1. Connect to supabase.channel('notifications').on('INSERT', ...) here
+    //   2. On INSERT, call addNotification() with the new row
+    //   3. Remove loadNotifications / saveNotifications localStorage helpers
+    //   4. Mark this TODO complete and remove STORAGE_KEY constant
+
 
     return (
-        <NotificationContext.Provider value={{
+        <NotificationContext.Provider value={useMemo(() => ({
             notifications: visibleNotifications,
             allNotifications: notifications,
             unreadCount,
@@ -440,7 +223,10 @@ export const NotificationProvider = ({ children }) => {
             updateSubtypePref,
             updateFrequencyPref,
             resetPrefs,
-        }}>
+        }), [visibleNotifications, notifications, unreadCount, channelUnreadCounts, prefs,
+            markRead, markAllRead, dismissNotification, addNotification, clearAll,
+            updateChannelPref, updateConsent, updateCategoryPref, updateSubtypePref,
+            updateFrequencyPref, resetPrefs])}>
             {children}
         </NotificationContext.Provider>
     );

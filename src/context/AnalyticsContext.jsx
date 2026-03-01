@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 const AnalyticsContext = createContext();
@@ -23,7 +23,7 @@ export const AnalyticsProvider = ({ children }) => {
         }
     };
 
-    const value = {
+    const value = useMemo(() => ({
         timeRange,
         setTimeRange,
         channelFilter,
@@ -32,8 +32,8 @@ export const AnalyticsProvider = ({ children }) => {
         setCompareMode,
         selectedProjectId,
         setProject,
-        isGlobal: selectedProjectId === 'all'
-    };
+        isGlobal: selectedProjectId === 'all',
+    }), [timeRange, channelFilter, compareMode, selectedProjectId]);
 
     return (
         <AnalyticsContext.Provider value={value}>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
@@ -17,7 +17,6 @@ export const OrgProvider = ({ children }) => {
     const [org, setOrg] = useState(null);
     const [orgId, setOrgId] = useState(null);
     const [membership, setMembership] = useState(null);
-    const [subscription, setSubscription] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const bootstrap = useCallback(async () => {
@@ -25,7 +24,6 @@ export const OrgProvider = ({ children }) => {
             setOrg(null);
             setOrgId(null);
             setMembership(null);
-            setSubscription(null);
             setLoading(false);
             return;
         }
@@ -33,7 +31,7 @@ export const OrgProvider = ({ children }) => {
         setLoading(true);
 
         try {
-            // 1. Try to find existing org membership
+            // Try to find existing org membership
             const { data: member, error: memberError } = await supabase
                 .from('org_members')
                 .select('*, organizations(*)')
@@ -51,7 +49,7 @@ export const OrgProvider = ({ children }) => {
                 const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'My';
                 const orgName = `${userName}'s Workspace`;
 
-                const { data: result, error: rpcError } = await supabase.rpc('bootstrap_user_org', {
+                const { error: rpcError } = await supabase.rpc('bootstrap_user_org', {
                     p_org_name: orgName
                 });
 
@@ -74,18 +72,6 @@ export const OrgProvider = ({ children }) => {
                     setOrg(orgData);
                     setOrgId(orgData.id);
                     setMembership({ role: freshMember.role });
-
-                    // Fetch subscription
-                    const { data: sub } = await supabase
-                        .from('subscriptions')
-                        .select('*')
-                        .eq('user_id', user.id)
-                        .eq('module', 'marketing')
-                        .in('status', ['active', 'trial'])
-                        .limit(1)
-                        .maybeSingle();
-
-                    setSubscription(sub || null);
                 }
 
                 setLoading(false);
@@ -97,18 +83,6 @@ export const OrgProvider = ({ children }) => {
             setOrg(orgData);
             setOrgId(orgData.id);
             setMembership({ role: member.role });
-
-            // 2. Check marketing subscription
-            const { data: sub } = await supabase
-                .from('subscriptions')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('module', 'marketing')
-                .in('status', ['active', 'trial'])
-                .limit(1)
-                .maybeSingle();
-
-            setSubscription(sub || null);
         } catch (err) {
             console.error('Org bootstrap error:', err);
         } finally {
@@ -123,13 +97,12 @@ export const OrgProvider = ({ children }) => {
             setOrg(null);
             setOrgId(null);
             setMembership(null);
-            setSubscription(null);
             setLoading(false);
         }
     }, [isAuthenticated, bootstrap]);
 
     // Manual create org (for settings/onboarding page)
-    const createOrganization = async (name) => {
+    const createOrganization = useCallback(async (name) => {
         if (!user) throw new Error('Must be authenticated');
 
         const { data: result, error } = await supabase.rpc('bootstrap_user_org', {
@@ -141,21 +114,19 @@ export const OrgProvider = ({ children }) => {
         // Re-fetch to populate state
         await bootstrap();
         return result;
-    };
+    }, [user, bootstrap]);
 
-    const isMarketingActive = !!subscription;
+    const value = useMemo(() => ({
+        org,
+        orgId,
+        membership,
+        loading,
+        createOrganization,
+        refetch: bootstrap,
+    }), [org, orgId, membership, loading, createOrganization, bootstrap]);
 
     return (
-        <OrgContext.Provider value={{
-            org,
-            orgId,
-            membership,
-            subscription,
-            isMarketingActive,
-            loading,
-            createOrganization,
-            refetch: bootstrap
-        }}>
+        <OrgContext.Provider value={value}>
             {children}
         </OrgContext.Provider>
     );

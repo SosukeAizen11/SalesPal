@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
@@ -142,7 +142,7 @@ export const IntegrationProvider = ({ children }) => {
         return { valid: errors.length === 0, errors };
     }, [integrations]);
 
-    const value = {
+    const value = useMemo(() => ({
         integrations,
         loading,
         connectIntegration,
@@ -151,7 +151,7 @@ export const IntegrationProvider = ({ children }) => {
         getIntegration,
         validateIntegrations,
         refetch: fetchIntegrations,
-    };
+    }), [integrations, loading, connectIntegration, disconnectIntegration, isConnected, getIntegration, validateIntegrations, fetchIntegrations]);
 
     return (
         <IntegrationContext.Provider value={value}>

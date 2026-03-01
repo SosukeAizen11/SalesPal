@@ -55,7 +55,8 @@ import PlaceholderPage from '../pages/marketing/PlaceholderPage';
 
 
 import ModuleAccessWrapper from '../components/access/ModuleAccessWrapper';
-import ModuleAccessGuard from '../components/auth/ModuleAccessGuard';
+
+
 import MarketingSettingsLayout from '../pages/marketing/settings/MarketingSettingsLayout';
 import MarketingSettingsIntegrations from '../pages/marketing/settings/MarketingSettingsIntegrations';
 import MetaIntegration from '../pages/marketing/settings/MetaIntegration';
