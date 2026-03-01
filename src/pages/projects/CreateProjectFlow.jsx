@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import StepIndicator from '../../pages/project/components/StepIndicator';
-import StepProjectInfo from '../../pages/project/steps/StepProjectInfo';
-import StepModuleSelect from '../../pages/project/steps/StepModuleSelect';
-import StepReview from '../../pages/project/steps/StepReview';
+import StepIndicator from './wizard/components/StepIndicator';
+import StepProjectInfo from './wizard/steps/StepProjectInfo';
+import StepModuleSelect from './wizard/steps/StepModuleSelect';
+import StepReview from './wizard/steps/StepReview';
 import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 
