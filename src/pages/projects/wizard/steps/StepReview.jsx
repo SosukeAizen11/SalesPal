@@ -1,6 +1,6 @@
 import React from 'react';
 import StepHeader from '../components/StepHeader';
-import Badge from '../../../components/ui/Badge';
+import Badge from '../../../../components/ui/Badge';
 import { FileText, Layers } from 'lucide-react';
 
 const StepReview = ({ projectData }) => {

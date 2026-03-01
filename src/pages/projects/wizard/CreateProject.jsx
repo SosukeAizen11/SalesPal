@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProject } from '../../context/ProjectContext';
-import Navbar from '../../components/layout/Navbar';
-import SectionWrapper from '../../components/layout/SectionWrapper';
+import { useProject } from '../../../context/ProjectContext';
+import Navbar from '../../../components/layout/Navbar';
+import SectionWrapper from '../../../components/layout/SectionWrapper';
 import StepIndicator from './components/StepIndicator';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 

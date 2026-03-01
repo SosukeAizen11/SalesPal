@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import logo from '../assets/logo.webp';
 import { LayoutGrid, AlertCircle, LogOut, Bell, User } from 'lucide-react';
-import Sidebar from './Sidebar';
+import Sidebar from '../components/layout/Sidebar';
 
 const ProjectLayout = () => {
     const { activeProject, loading } = useProject();
