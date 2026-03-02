@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useOrg } from '../context/OrgContext';
 import { useAuth } from '../context/AuthContext';
@@ -76,7 +76,7 @@ export const SubscriptionProvider = ({ children }) => {
 
     // ─── Subscription management ───
 
-    const activateSubscription = async (input) => {
+    const activateSubscription = useCallback(async (input) => {
         if (!user) return;
         const moduleIds = [];
 
@@ -123,34 +123,34 @@ export const SubscriptionProvider = ({ children }) => {
         }
 
         await fetchAll();
-    };
+    }, [user, orgId, fetchAll]);
 
-    const deactivateSubscription = async (moduleId) => {
+    const deactivateSubscription = useCallback(async (moduleId) => {
         if (!user) return;
         await supabase.from('subscriptions')
             .update({ status: 'cancelled' })
             .eq('user_id', user.id)
             .eq('module', moduleId);
         await fetchAll();
-    };
+    }, [user, fetchAll]);
 
-    const pauseSubscription = async (moduleId) => {
+    const pauseSubscription = useCallback(async (moduleId) => {
         if (!user) return;
         await supabase.from('subscriptions')
             .update({ status: 'paused' })
             .eq('user_id', user.id)
             .eq('module', moduleId);
         await fetchAll();
-    };
+    }, [user, fetchAll]);
 
-    const resumeSubscription = async (moduleId) => {
+    const resumeSubscription = useCallback(async (moduleId) => {
         if (!user) return;
         await supabase.from('subscriptions')
             .update({ status: 'active' })
             .eq('user_id', user.id)
             .eq('module', moduleId);
         await fetchAll();
-    };
+    }, [user, fetchAll]);
 
     const isModuleActive = (moduleId) => {
         return !!subscriptions[moduleId]?.active;
@@ -162,7 +162,7 @@ export const SubscriptionProvider = ({ children }) => {
 
     // ─── Credit management ───
 
-    const consume = async (moduleId, type) => {
+    const consume = useCallback(async (moduleId, type) => {
         if (!orgId || !isModuleActive(moduleId)) return false;
 
         const { data: success, error } = await supabase.rpc('consume_credit', {
@@ -181,9 +181,9 @@ export const SubscriptionProvider = ({ children }) => {
         }
 
         return !!success;
-    };
+    }, [orgId, subscriptions]);
 
-    const addCredits = async (moduleId, resource, amount) => {
+    const addCredits = useCallback(async (moduleId, resource, amount) => {
         if (!orgId) return false;
 
         const { error } = await supabase.rpc('add_credit', {
@@ -197,38 +197,55 @@ export const SubscriptionProvider = ({ children }) => {
         }
 
         return !error;
-    };
+    }, [orgId]);
 
-    const getRemaining = (moduleId, type) => {
+    /**
+     * getRemaining — returns the aggregate credit balance.
+     * NOTE: The backend currently stores a single balance — not per-type.
+     * `moduleId` and `type` params are accepted for future per-type API compatibility
+     * but are not yet used for filtering. See marketing_credits table.
+     */
+    const getRemaining = useCallback((moduleId, type) => {
         return credits.balance;
-    };
+    }, [credits.balance]);
 
-    const canConsume = (moduleId, type) => {
+    /**
+     * canConsume — returns true if the module is active AND balance > 0.
+     * NOTE: Does not check per-type availability — same caveat as getRemaining.
+     */
+    const canConsume = useCallback((moduleId, type) => {
         return isModuleActive(moduleId) && credits.balance > 0;
-    };
+    }, [subscriptions, credits.balance]);
 
     const clearCartAfterPurchase = () => {
         try { localStorage.removeItem('salespal_cart'); } catch { /* noop */ }
     };
 
+    const value = useMemo(() => ({
+        subscriptions,
+        credits,
+        loading,
+        activateSubscription,
+        deactivateSubscription,
+        pauseSubscription,
+        resumeSubscription,
+        isModuleActive,
+        getSubscription,
+        consume,
+        addCredits,
+        getRemaining,
+        canConsume,
+        clearCartAfterPurchase,
+        refetch: fetchAll,
+    }), [
+        subscriptions, credits, loading,
+        fetchAll,
+        activateSubscription, deactivateSubscription, pauseSubscription, resumeSubscription,
+        consume, addCredits, getRemaining, canConsume,
+    ]);
+
     return (
-        <SubscriptionContext.Provider value={{
-            subscriptions,
-            credits,
-            loading,
-            activateSubscription,
-            deactivateSubscription,
-            pauseSubscription,
-            resumeSubscription,
-            isModuleActive,
-            getSubscription,
-            consume,
-            addCredits,
-            getRemaining,
-            canConsume,
-            clearCartAfterPurchase,
-            refetch: fetchAll,
-        }}>
+        <SubscriptionContext.Provider value={value}>
             {children}
         </SubscriptionContext.Provider>
     );

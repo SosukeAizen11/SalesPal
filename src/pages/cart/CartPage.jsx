@@ -4,7 +4,6 @@ import { ShoppingCart, Trash2, ArrowRight, ShieldCheck, CreditCard, Package, Meg
 import { useCart } from '../../commerce/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../commerce/SubscriptionContext';
-import { useMarketing } from '../../context/MarketingContext';
 import { MODULES } from '../../commerce/commerce.config';
 import { useToast } from '../../components/ui/Toast';
 import { usePreferences } from '../../context/PreferencesContext';
@@ -14,8 +13,7 @@ import AuthModal from '../../components/auth/AuthModal';
 const CartPage = () => {
     const { cart, removeItem, getCartTotal, addSubscription, openMiniCart, clearCart } = useCart();
     const { isAuthenticated, user } = useAuth();
-    const { isModuleActive, activateSubscription, clearCartAfterPurchase } = useSubscription();
-    const { addCredits } = useMarketing();
+    const { isModuleActive, activateSubscription, clearCartAfterPurchase, addCredits } = useSubscription();
     const { showToast } = useToast();
     const { formatCurrency } = usePreferences();
     const navigate = useNavigate();
@@ -581,8 +579,8 @@ const CartPage = () => {
                                                 const totalCredits = creditsPerPack * packsPurchased;
 
                                                 if (totalCredits > 0 && item.resource) {
-                                                    // addCredits expects (type, quantity) where type is 'images' or 'videos'
-                                                    addCredits(item.resource, totalCredits);
+                                                    // addCredits signature: (moduleId, resource, amount)
+                                                    addCredits('marketing', item.resource, totalCredits);
                                                 }
                                             }
                                         });

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 // ─── Default Preferences ────────────────────────────────────────────────────
 const DEFAULT_PREFERENCES = {
@@ -203,7 +203,7 @@ export const PreferencesProvider = ({ children }) => {
     const currentTimezone = SUPPORTED_TIMEZONES.find(t => t.value === preferences.timezone) || SUPPORTED_TIMEZONES[0];
 
     return (
-        <PreferencesContext.Provider value={{
+        <PreferencesContext.Provider value={useMemo(() => ({
             preferences,
             updatePreferences,
             // Currency
@@ -220,7 +220,9 @@ export const PreferencesProvider = ({ children }) => {
             // Language
             currentLanguage,
             getLanguageInfo,
-        }}>
+        }), [preferences, updatePreferences, currentCurrency, formatCurrency, convertAmount,
+            getCurrencyInfo, currentTimezone, formatDateTime, formatDate, formatTime,
+            currentLanguage, getLanguageInfo])}>
             {children}
         </PreferencesContext.Provider>
     );

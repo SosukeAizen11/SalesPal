@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
-import ProjectLayout from '../layout/ProjectLayout';
+import ProjectLayout from '../layouts/ProjectLayout';
 import App from './App';
 import Dashboard from '../pages/dashboard/Dashboard';
 import Marketing from '../pages/dashboard/modules/Marketing';
@@ -27,7 +27,7 @@ import SalesPal360Product from '../pages/products/SalesPal360Product';
 import AppLayout from '../components/layout/AppLayout';
 
 // Marketing Shell Components
-import MarketingLayout from '../layout/MarketingLayout';
+import MarketingLayout from '../layouts/MarketingLayout';
 import MarketingDashboard from '../pages/marketing/MarketingDashboard';
 import Campaigns from '../pages/marketing/Campaigns';
 
@@ -55,7 +55,8 @@ import PlaceholderPage from '../pages/marketing/PlaceholderPage';
 
 
 import ModuleAccessWrapper from '../components/access/ModuleAccessWrapper';
-import ModuleAccessGuard from '../components/auth/ModuleAccessGuard';
+
+
 import MarketingSettingsLayout from '../pages/marketing/settings/MarketingSettingsLayout';
 import MarketingSettingsIntegrations from '../pages/marketing/settings/MarketingSettingsIntegrations';
 import MetaIntegration from '../pages/marketing/settings/MetaIntegration';

@@ -5,7 +5,6 @@ import {
     AlertTriangle, Zap, Plus, Sparkles,
     Radio, MessageCircle, Layers
 } from 'lucide-react';
-import { useMarketing } from '../context/MarketingContext';
 import { useSubscription } from '../commerce/SubscriptionContext';
 
 // ─── Warning tier ──────────────────────────────────────────────────────────────
@@ -92,7 +91,6 @@ const GroupDivider = () => <div className="w-px h-8 bg-gray-200 mx-1 self-center
 // ─── Main Component ────────────────────────────────────────────────────────────
 const GlobalCreditDisplay = ({ onTopUpClick }) => {
     const navigate = useNavigate();
-    const { creditState } = useMarketing();
     const { subscriptions } = useSubscription();
 
     const planLimits = useMemo(() => {
@@ -101,14 +99,14 @@ const GlobalCreditDisplay = ({ onTopUpClick }) => {
         const activeSub = sub360?.active ? sub360 : subMkt?.active ? subMkt : null;
         const lim = activeSub?.limits || {};
         return {
-            images: lim.images ?? creditState?.baseLimits?.images ?? 20,
-            videos: lim.videos ?? creditState?.baseLimits?.videos ?? 4,
+            images: lim.images ?? 20,
+            videos: lim.videos ?? 4,
             calls: lim.calls ?? 500,
             sms: lim.sms ?? 1000,
             rcs: lim.rcs ?? 500,
             whatsapp: lim.whatsapp ?? 300,
         };
-    }, [subscriptions, creditState?.baseLimits]);
+    }, [subscriptions]);
 
     const credits = useMemo(() => {
         const sub360 = subscriptions?.salespal360;
@@ -117,20 +115,15 @@ const GlobalCreditDisplay = ({ onTopUpClick }) => {
         const usage = activeSub?.usage || {};
         const remain = (key, total) => Math.max(0, total - (usage[key] ?? 0));
 
-        const imgBase = creditState?.baseLimits?.images ?? planLimits.images;
-        const imgExtra = creditState?.extraCredits?.images ?? 0;
-        const vidBase = creditState?.baseLimits?.videos ?? planLimits.videos;
-        const vidExtra = creditState?.extraCredits?.videos ?? 0;
-
         return {
-            images: { remaining: imgBase + imgExtra, total: planLimits.images },
-            videos: { remaining: vidBase + vidExtra, total: planLimits.videos },
+            images: { remaining: remain('images', planLimits.images), total: planLimits.images },
+            videos: { remaining: remain('videos', planLimits.videos), total: planLimits.videos },
             calls: { remaining: remain('calls', planLimits.calls), total: planLimits.calls },
             sms: { remaining: remain('sms', planLimits.sms), total: planLimits.sms },
             rcs: { remaining: remain('rcs', planLimits.rcs), total: planLimits.rcs },
             whatsapp: { remaining: remain('whatsapp', planLimits.whatsapp), total: planLimits.whatsapp },
         };
-    }, [creditState, subscriptions, planLimits]);
+    }, [subscriptions, planLimits]);
 
     const hasLowCredit = useMemo(() =>
         Object.values(credits).some(({ remaining, total }) => total > 0 && remaining / total <= 0.30)

@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useSubscription } from '../../commerce/SubscriptionContext';
 import { useCart } from '../../commerce/CartContext';
-import { useMarketing } from '../../context/MarketingContext';
 import { usePreferences } from '../../context/PreferencesContext';
 import Button from '../ui/Button';
 
@@ -299,7 +298,6 @@ const BalanceStrip = ({ balances }) => (
 const TopUpDrawer = ({ isOpen, onClose }) => {
     const { isModuleActive } = useSubscription();
     const { addProductToCart } = useCart();
-    const { creditState } = useMarketing();
     const navigate = useNavigate();
     const { formatCurrency } = usePreferences();
 
@@ -308,22 +306,16 @@ const TopUpDrawer = ({ isOpen, onClose }) => {
 
     const isMarketingActive = isModuleActive('marketing');
 
-    // ── Derive real credit balances ──────────────────────────────────
-    const creditBalances = useMemo(() => {
-        const imgBase = creditState?.baseLimits?.images ?? 20;
-        const imgExtra = creditState?.extraCredits?.images ?? 0;
-        const vidBase = creditState?.baseLimits?.videos ?? 4;
-        const vidExtra = creditState?.extraCredits?.videos ?? 0;
-
-        return {
-            images: { remaining: imgBase + imgExtra, total: imgBase + imgExtra || 20 },
-            videos: { remaining: vidBase + vidExtra, total: vidBase + vidExtra || 4 },
-            calls: { remaining: creditState?.baseLimits?.calls ?? 50, total: 500 },
-            sms: { remaining: creditState?.baseLimits?.sms ?? 800, total: 1000 },
-            rcs: { remaining: creditState?.baseLimits?.rcs ?? 120, total: 500 },
-            whatsapp: { remaining: creditState?.baseLimits?.whatsapp ?? 180, total: 300 },
-        };
-    }, [creditState]);
+    // Credit balances — will be wired to real Supabase data in Phase 3+
+    // For now, uses plan-based defaults. creditState.baseLimits not yet populated by backend.
+    const creditBalances = useMemo(() => ({
+        images: { remaining: 20, total: 20 },
+        videos: { remaining: 4, total: 4 },
+        calls: { remaining: 50, total: 500 },
+        sms: { remaining: 800, total: 1000 },
+        rcs: { remaining: 120, total: 500 },
+        whatsapp: { remaining: 180, total: 300 },
+    }), []);
 
     const handleIncrement = (packId) => setSelectedPacks(prev => ({ ...prev, [packId]: (prev[packId] || 0) + 1 }));
     const handleDecrement = (packId) => setSelectedPacks(prev => {

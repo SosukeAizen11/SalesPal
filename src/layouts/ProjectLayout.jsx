@@ -1,16 +1,22 @@
 import React from 'react';
-import { Outlet, Navigate, Link } from 'react-router-dom';
+import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useProject } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
-import { useLocation } from 'react-router-dom';
 import logo from '../assets/logo.webp';
 import { LayoutGrid, AlertCircle, LogOut, Bell, User } from 'lucide-react';
-import Sidebar from './Sidebar';
+import Sidebar from '../components/layout/Sidebar';
 
 const ProjectLayout = () => {
     const { activeProject, loading } = useProject();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const location = useLocation();
+
+    const userInitials = (() => {
+        const name = user?.user_metadata?.full_name || user?.email || '';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return name.slice(0, 2).toUpperCase() || '??';
+    })();
 
     if (loading) return null;
 
@@ -55,7 +61,7 @@ const ProjectLayout = () => {
                             <LogOut className="w-4 h-4" />
                         </button>
                         <div className="ml-2 w-7 h-7 rounded-full bg-gradient-to-tr from-secondary to-blue-500 flex items-center justify-center text-[10px] font-bold text-primary border border-secondary/20">
-                            JD
+                            {userInitials}
                         </div>
                     </div>
                 </header>

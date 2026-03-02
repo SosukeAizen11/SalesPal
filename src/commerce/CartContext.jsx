@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useSubscription } from './SubscriptionContext';
 import { MODULES } from './commerce.config';
 
@@ -198,7 +198,7 @@ export const CartProvider = ({ children }) => {
     const toggleMiniCart = () => setIsMiniCartOpen(prev => !prev);
 
     return (
-        <CartContext.Provider value={{
+        <CartContext.Provider value={useMemo(() => ({
             cart,
             loading,
             isMiniCartOpen,
@@ -210,8 +210,8 @@ export const CartProvider = ({ children }) => {
             getCartTotal,
             openMiniCart,
             closeMiniCart,
-            toggleMiniCart
-        }}>
+            toggleMiniCart,
+        }), [cart, loading, isMiniCartOpen])}>
             {children}
         </CartContext.Provider>
     );

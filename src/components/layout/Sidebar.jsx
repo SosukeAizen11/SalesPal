@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useProject } from '../context/ProjectContext';
-import { sidebarConfig } from '../navigation/sidebarConfig';
+import { useProject } from '../../context/ProjectContext';
+import { sidebarConfig } from '../../navigation/sidebarConfig';
 import { Settings } from 'lucide-react';
 
 const Sidebar = () => {
