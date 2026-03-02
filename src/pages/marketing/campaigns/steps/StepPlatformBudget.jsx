@@ -185,7 +185,7 @@ const PlatformBudgetRow = ({ platform, value, totalBudget, onChange, error, symb
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const StepPlatformBudget = ({ onComplete, onBack, data }) => {
+const StepPlatformBudget = ({ onComplete, onUpdate, onBack, data }) => {
     const { formatCurrency, currentCurrency } = usePreferences();
     const symbol = currentCurrency?.symbol || '₹';
 
@@ -261,6 +261,31 @@ const StepPlatformBudget = ({ onComplete, onBack, data }) => {
     }, [platformBudgets, selectedPlatformIds]);
 
     const hasErrors = Object.keys(errors).length > 0 || isBudgetMismatch || totalCampaignBudget <= 0;
+
+    useEffect(() => {
+        if (onUpdate) {
+            const split = {};
+            const activeBudgets = {};
+            selectedPlatformIds.forEach(id => {
+                activeBudgets[id] = platformBudgets[id] || 0;
+                split[id] = totalCampaignBudget > 0 ? Math.round((platformBudgets[id] / totalCampaignBudget) * 100) : 0;
+            });
+
+            onUpdate({
+                budget: {
+                    daily: totalCampaignBudget,
+                    monthly: totalCampaignBudget * 30,
+                    currency: currentCurrency?.code || 'INR',
+                    perPlatform: activeBudgets,
+                    split,
+                    platforms: selectedPlatformIds,
+                    legacyMeta: platformBudgets['meta'] || 0,
+                    legacyGoogle: platformBudgets['google'] || 0,
+                },
+                platforms: selectedPlatformIds,
+            });
+        }
+    }, [totalCampaignBudget, platformBudgets, selectedPlatformIds, currentCurrency, onUpdate]);
 
     // Handlers
     const handleBudgetChange = useCallback((platformId, value) => {

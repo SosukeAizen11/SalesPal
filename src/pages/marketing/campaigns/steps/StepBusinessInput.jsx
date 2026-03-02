@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Globe, FileText, AlignLeft, Check, Upload, Image as ImageIcon } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import FileUploadBox from '../components/FileUploadBox';
@@ -6,7 +6,7 @@ import Input from '../../../../components/ui/Input';
 import Textarea from '../../../../components/ui/Textarea';
 import Button from '../../../../components/ui/Button';
 
-const StepBusinessInput = ({ onComplete, data }) => {
+const StepBusinessInput = ({ onComplete, onUpdate, data }) => {
     const [activeTab, setActiveTab] = useState('description');
 
     // Form Data
@@ -34,6 +34,16 @@ const StepBusinessInput = ({ onComplete, data }) => {
 
     // Validation State
     const [showError, setShowError] = useState(false);
+
+    useEffect(() => {
+        if (onUpdate) {
+            onUpdate({
+                description,
+                websiteUrl,
+                inputMode: activeTab
+            });
+        }
+    }, [description, websiteUrl, activeTab, onUpdate]);
 
     // Validation
     const isTabValid = () => {

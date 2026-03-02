@@ -24,12 +24,12 @@ const INITIAL_DATA = {
     businessDescription: ''
 };
 
-const StepAIAnalysis = ({ onComplete, onBack, data, ai }) => {
+const StepAIAnalysis = ({ onComplete, onUpdate, onBack, data, ai }) => {
     const [isAnalyzing, setIsAnalyzing] = useState(!ai?.analysisDone);
     const [progress, setProgress] = useState(0);
 
     // Editable State
-    const [analysisData, setAnalysisData] = useState(INITIAL_DATA);
+    const [analysisData, setAnalysisData] = useState(data?.analysisData || INITIAL_DATA);
     const [editMode, setEditMode] = useState({
         business: false,
         audience: false,
@@ -38,7 +38,7 @@ const StepAIAnalysis = ({ onComplete, onBack, data, ai }) => {
     });
 
     // Temporary state for edits (before save)
-    const [tempData, setTempData] = useState(INITIAL_DATA);
+    const [tempData, setTempData] = useState(data?.analysisData || INITIAL_DATA);
 
     // Re-analysis simulation
     const [isReanalyzing, setIsReanalyzing] = useState(false);
@@ -47,6 +47,14 @@ const StepAIAnalysis = ({ onComplete, onBack, data, ai }) => {
     // File Upload State
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [websiteUrl, setWebsiteUrl] = useState('');
+
+    useEffect(() => {
+        if (onUpdate) {
+            onUpdate({
+                analysisData
+            });
+        }
+    }, [analysisData, onUpdate]);
 
     // Mock Analysis Process (Initial)
     useEffect(() => {

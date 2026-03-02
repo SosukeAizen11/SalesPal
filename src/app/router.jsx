@@ -163,10 +163,7 @@ export const router = createBrowserRouter([
                                 path: "campaigns",
                                 element: <Campaigns />
                             },
-                            {
-                                path: "campaigns/new",
-                                element: <NewCampaign />
-                            },
+
                             {
                                 path: "campaigns/:campaignId",
                                 element: <CampaignDetails />

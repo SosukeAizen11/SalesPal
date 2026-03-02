@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 /**
@@ -14,6 +14,9 @@ import { supabase } from '../lib/supabase';
  */
 export function useWizard(orgId, userId, refetchCampaigns) {
     const [activeDraft, setActiveDraft] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [lastSaved, setLastSaved] = useState(null);
+    const saveTimeoutRef = useRef(null);
 
     const startNewDraft = async (projectId) => {
         if (!orgId) return;
@@ -74,6 +77,9 @@ export function useWizard(orgId, userId, refetchCampaigns) {
         };
         setActiveDraft(updatedDraft);
 
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        setIsSaving(true);
+
         // Persist to Supabase
         await supabase
             .from('campaign_drafts')
@@ -82,7 +88,37 @@ export function useWizard(orgId, userId, refetchCampaigns) {
                 updated_at: new Date().toISOString()
             })
             .eq('id', activeDraft.id);
+
+        setIsSaving(false);
+        setLastSaved(new Date());
     };
+
+    const debouncedUpdateDraftData = useCallback((stepData = {}) => {
+        setIsSaving(true);
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+        setActiveDraft(prev => {
+            if (!prev) return prev;
+
+            const newData = { ...prev.data, ...stepData };
+            const updatedDraft = { ...prev, data: newData };
+
+            saveTimeoutRef.current = setTimeout(async () => {
+                await supabase
+                    .from('campaign_drafts')
+                    .update({
+                        draft_data: { steps: updatedDraft.steps, ai: updatedDraft.ai, data: updatedDraft.data },
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', updatedDraft.id);
+
+                setIsSaving(false);
+                setLastSaved(new Date());
+            }, 1500);
+
+            return updatedDraft;
+        });
+    }, []);
 
     const setDraftStepIndex = async (index) => {
         if (!activeDraft) return;
@@ -136,6 +172,9 @@ export function useWizard(orgId, userId, refetchCampaigns) {
         });
 
         if (!error && campaignId) {
+            // Cleanup draft upon launch
+            await supabase.from('campaign_drafts').delete().eq('id', activeDraft.id);
+            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
             setActiveDraft(null);
             await refetchCampaigns();
             return { success: true, campaignId };
@@ -147,6 +186,7 @@ export function useWizard(orgId, userId, refetchCampaigns) {
         if (activeDraft?.id) {
             await supabase.from('campaign_drafts').delete().eq('id', activeDraft.id);
         }
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         setActiveDraft(null);
     };
 
@@ -171,14 +211,99 @@ export function useWizard(orgId, userId, refetchCampaigns) {
         }
     };
 
+    const checkExistingDraft = async (projectId) => {
+        if (!orgId || !userId) return null;
+
+        // Clear in-memory state if switching projects
+        if (activeDraft && activeDraft.projectId !== projectId) {
+            setActiveDraft(null);
+        }
+
+        const { data, error } = await supabase
+            .from('campaign_drafts')
+            .select('*')
+            .eq('org_id', orgId)
+            .eq('project_id', projectId)
+            .eq('user_id', userId)
+            .order('updated_at', { ascending: false })
+            .limit(1);
+
+        if (!error && data && data.length > 0) {
+            return data[0];
+        }
+        return null;
+    };
+
+    const resumeDraftFromData = (row) => {
+        const dd = row.draft_data || {};
+        setActiveDraft({
+            id: row.id,
+            projectId: row.project_id,
+            currentStepIndex: row.wizard_step,
+            status: 'draft',
+            data: dd.data || {},
+            steps: dd.steps || {},
+            ai: dd.ai || { analysisDone: false }
+        });
+    };
+
+    const resetDraftState = () => {
+        setActiveDraft(null);
+    };
+
+    const loadDraftForProject = async (projectId) => {
+        if (!orgId || !userId) return;
+
+        if (activeDraft && activeDraft.projectId === projectId) {
+            return; // already loaded correct draft
+        }
+
+        // Clear in-memory state if switching projects
+        if (activeDraft && activeDraft.projectId !== projectId) {
+            setActiveDraft(null);
+        }
+
+        const { data, error } = await supabase
+            .from('campaign_drafts')
+            .select('*')
+            .eq('org_id', orgId)
+            .eq('project_id', projectId)
+            .eq('user_id', userId)
+            .order('updated_at', { ascending: false })
+            .limit(1);
+
+        if (!error && data && data.length > 0) {
+            const row = data[0];
+            const dd = row.draft_data || {};
+            setActiveDraft({
+                id: row.id,
+                projectId: row.project_id,
+                currentStepIndex: row.wizard_step,
+                status: 'draft',
+                data: dd.data || {},
+                steps: dd.steps || {},
+                ai: dd.ai || { analysisDone: false }
+            });
+        } else {
+            await startNewDraft(projectId);
+        }
+    };
+
     return {
         activeDraft,
+        isSaving,
+        lastSaved,
         startNewDraft,
         updateDraftStep,
+        debouncedUpdateDraftData,
         setDraftStepIndex,
         canAccessStep,
         launchCampaign,
         cancelDraft,
         resumeDraft,
+        resumeDraftFromData,
+        checkExistingDraft,
+        loadDraftForProject,
+        resetDraftState,
     };
 }

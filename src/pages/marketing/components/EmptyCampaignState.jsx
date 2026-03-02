@@ -25,7 +25,7 @@ const EmptyCampaignState = () => {
                 and optimizes performance automatically.
             </p>
 
-            <Link to="/marketing/campaigns/new">
+            <Link to="/marketing/projects">
                 <Button variant="primary" icon={ArrowRight} className="h-12 px-8 text-base shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all">
                     Create New Campaign
                 </Button>

@@ -23,7 +23,7 @@ export default function Projects() {
 
     // Calculate metrics for each project
     const getProjectMetrics = (projectId) => {
-        const projectCampaigns = campaigns.filter(c => c.projectId === projectId);
+        const projectCampaigns = campaigns.filter(c => c.projectId === projectId || c.project_id === projectId);
         const activeCount = projectCampaigns.filter(c => c.status === 'RUNNING' || c.status === 'running' || c.status === 'active').length;
 
         // Mock aggregation - in real app would sum from campaign.metrics
@@ -91,7 +91,7 @@ export default function Projects() {
                                     </h3>
                                     <p className="text-sm text-gray-500 mb-6">{project.industry} • {project.website || 'No website'}</p>
 
-                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
+                                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-50">
                                         <div>
                                             <p className="text-xs text-gray-400 font-medium mb-1 flex items-center gap-1">
                                                 <CurrencyIcon className="w-3 h-3" /> Spend
@@ -103,6 +103,22 @@ export default function Projects() {
                                                 <Users className="w-3 h-3" /> Leads
                                             </p>
                                             <p className="text-sm font-semibold text-gray-900">{metrics.totalLeads}</p>
+                                        </div>
+                                        <div
+                                            className={metrics.campaignCount > 0 ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}
+                                            onClick={(e) => {
+                                                if (metrics.campaignCount > 0) {
+                                                    e.stopPropagation();
+                                                    navigate(`/marketing/projects/${project.id}`);
+                                                }
+                                            }}
+                                        >
+                                            <p className="text-xs text-gray-400 font-medium mb-1 flex items-center gap-1">
+                                                <Megaphone className="w-3 h-3" /> Campaigns
+                                            </p>
+                                            <p className="text-sm font-semibold text-gray-900">
+                                                {metrics.campaignCount > 0 ? metrics.campaignCount : <span className="text-gray-400 font-medium text-xs">No Campaigns</span>}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
