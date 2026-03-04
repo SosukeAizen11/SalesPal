@@ -1,0 +1,22 @@
+const { Router } = require('express');
+const { body, param, query } = require('express-validator');
+const validate = require('../middleware/validate');
+const ctrl = require('../controllers/marketing.controller');
+
+const router = Router();
+
+// Campaigns
+router.get('/campaigns', [query('limit').optional().isInt({ min: 1, max: 100 }), query('offset').optional().isInt({ min: 0 })], validate, ctrl.listCampaigns);
+router.get('/campaigns/:id', [param('id').isUUID()], validate, ctrl.getCampaign);
+router.post('/campaigns', [body('name').notEmpty().withMessage('Campaign name is required')], validate, ctrl.createCampaign);
+router.put('/campaigns/:id', [param('id').isUUID()], validate, ctrl.updateCampaign);
+router.delete('/campaigns/:id', [param('id').isUUID()], validate, ctrl.deleteCampaign);
+
+// Campaign Drafts (Wizard)
+router.get('/drafts', ctrl.listDrafts);
+router.post('/drafts', ctrl.createDraft);
+router.put('/drafts/:id', [param('id').isUUID()], validate, ctrl.updateDraft);
+router.post('/drafts/:id/launch', [param('id').isUUID()], validate, ctrl.launchDraft);
+router.delete('/drafts/:id', [param('id').isUUID()], validate, ctrl.deleteDraft);
+
+module.exports = router;
