@@ -53,9 +53,11 @@ const env = {
   bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12,
 
   // CORS
-  corsOrigins: (process.env.CORS_ORIGINS || "http://localhost:5173")
-    .split(",")
-    .map((s) => s.trim()),
+  corsOrigins: (() => {
+    const raw = process.env.CORS_ORIGINS || "http://localhost:5173";
+    if (raw.trim() === "*") return "*";
+    return raw.split(",").map((s) => s.trim());
+  })(),
 
   // AI
   ai: {

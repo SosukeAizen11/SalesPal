@@ -18,7 +18,7 @@ import { Filter, BarChart2, Globe, Loader2 } from 'lucide-react';
 import { AnalyticsProvider, useAnalytics } from '../../context/AnalyticsContext';
 import { useMarketing } from '../../context/MarketingContext';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
+import api from '../../lib/api';
 import Modal from '../../components/ui/Modal';
 
 // Sections
@@ -62,18 +62,8 @@ const DashboardContent = ({ mode = 'page' }) => {
         }
         setMetricsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('campaign_metrics')
-                .select('*, campaigns(name, platform, project_id)')
-                .eq('user_id', user.id)
-                .order('date', { ascending: true });
-
-            if (error) {
-                console.error('Failed to fetch campaign_metrics:', error);
-                setMetricsRows([]);
-            } else {
-                setMetricsRows(data || []);
-            }
+            const data = await api.get('/analytics/dashboard');
+            setMetricsRows(data.metrics || data || []);
         } catch (err) {
             console.error('Dashboard metrics fetch error:', err);
         } finally {

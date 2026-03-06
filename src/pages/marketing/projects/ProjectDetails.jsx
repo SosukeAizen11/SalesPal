@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, FolderOpen, Globe, Settings, Loader2 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import api from '../../../lib/api';
 import { useMarketing } from '../../../context/MarketingContext';
 import CampaignCard from '../components/CampaignCard';
 import Button from '../../../components/ui/Button';
@@ -39,16 +39,16 @@ export default function ProjectDetails() {
             setLoading(true);
             setNotFound(false);
 
-            const { data, error } = await supabase
-                .from('projects')
-                .select('*')
-                .eq('id', projectId)
-                .single();
-
-            if (error || !data) {
+            try {
+                const result = await api.get(`/projects/${projectId}`);
+                const projectData = result.project || result;
+                if (!projectData) {
+                    setNotFound(true);
+                } else {
+                    setProject(projectData);
+                }
+            } catch {
                 setNotFound(true);
-            } else {
-                setProject(data);
             }
 
             setLoading(false);

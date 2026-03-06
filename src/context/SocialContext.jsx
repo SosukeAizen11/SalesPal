@@ -1,14 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 import { useOrg } from './OrgContext';
 import { useAuth } from './AuthContext';
 
 /**
- * useSocialContext — internal hook, consumed only by MarketingProvider.
- * Owns social posts CRUD with optimistic updates.
- * Extracted from MarketingContext (Phase 4).
- *
- * @param {string|null} selectedProjectId — passed in from MarketingProvider local state
+ * useSocialContext — REST-backed social posts CRUD with optimistic updates.
+ * Replaces Supabase .from('social_posts') calls.
  */
 export function useSocialContext(selectedProjectId) {
     const { orgId } = useOrg();
@@ -20,12 +17,13 @@ export function useSocialContext(selectedProjectId) {
     const fetchSocialPosts = useCallback(async () => {
         if (!orgId) { setSocialPosts([]); setSocialPostsLoading(false); return; }
         setSocialPostsLoading(true);
-        const { data } = await supabase
-            .from('social_posts')
-            .select('*')
-            .eq('org_id', orgId)
-            .order('created_at', { ascending: false });
-        setSocialPosts(data || []);
+        try {
+            const data = await api.get('/social/posts');
+            setSocialPosts(data.posts || data || []);
+        } catch (err) {
+            console.error('Error fetching social posts:', err);
+            setSocialPosts([]);
+        }
         setSocialPostsLoading(false);
     }, [orgId]);
 
@@ -38,55 +36,45 @@ export function useSocialContext(selectedProjectId) {
         const optimistic = { ...post, id: tempId, org_id: orgId, created_at: new Date().toISOString() };
         setSocialPosts(prev => [optimistic, ...prev]);
 
-        const { data, error } = await supabase
-            .from('social_posts')
-            .insert({
-                org_id: orgId,
+        try {
+            const data = await api.post('/social/posts', {
                 project_id: selectedProjectId || null,
-                created_by: user?.id,
                 content: post.content,
                 post_type: post.type || post.post_type || 'image',
                 status: post.status || 'draft',
                 scheduled_for: post.scheduledFor || post.scheduled_for || null,
                 platforms: post.platforms || [],
-                media_urls: post.mediaUrls || post.media_urls || []
-            })
-            .select()
-            .single();
-
-        if (!error && data) {
-            // Replace optimistic with real row
-            setSocialPosts(prev => prev.map(p => p.id === tempId ? data : p));
-            return data;
-        } else {
-            // Rollback on error
+                media_urls: post.mediaUrls || post.media_urls || [],
+            });
+            const newPost = data.post || data;
+            setSocialPosts(prev => prev.map(p => p.id === tempId ? newPost : p));
+            return newPost;
+        } catch (err) {
+            console.error('Error creating social post:', err);
             setSocialPosts(prev => prev.filter(p => p.id !== tempId));
             return null;
         }
     };
 
     const deleteSocialPost = async (postId) => {
-        // Optimistic removal
         setSocialPosts(prev => prev.filter(p => p.id !== postId));
-        const { error } = await supabase
-            .from('social_posts')
-            .delete()
-            .eq('id', postId);
-        if (error) {
-            // Rollback: refetch on failure
+        try {
+            await api.del(`/social/posts/${postId}`);
+        } catch (err) {
+            console.error('Error deleting social post:', err);
             fetchSocialPosts();
         }
     };
 
     const updateSocialPost = async (postId, updates) => {
         setSocialPosts(prev => prev.map(p => p.id === postId ? { ...p, ...updates } : p));
-        const { data, error } = await supabase
-            .from('social_posts')
-            .update(updates)
-            .eq('id', postId)
-            .select()
-            .single();
-        if (!error && data) setSocialPosts(prev => prev.map(p => p.id === postId ? data : p));
+        try {
+            const data = await api.put(`/social/posts/${postId}`, updates);
+            const updated = data.post || data;
+            setSocialPosts(prev => prev.map(p => p.id === postId ? updated : p));
+        } catch (err) {
+            console.error('Error updating social post:', err);
+        }
     };
 
     return {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 import { useAuth } from './AuthContext';
 
 const OrgContext = createContext();
@@ -31,58 +31,20 @@ export const OrgProvider = ({ children }) => {
         setLoading(true);
 
         try {
-            // Try to find existing org membership
-            const { data: member, error: memberError } = await supabase
-                .from('org_members')
-                .select('*, organizations(*)')
-                .eq('user_id', user.id)
-                .limit(1)
-                .maybeSingle();
+            // The /users/me endpoint returns org info if the user has one
+            const data = await api.get('/users/me');
+            const userData = data.user || data;
 
-            if (memberError && memberError.code !== 'PGRST116') {
-                console.error('Org members query error:', memberError);
+            if (userData.org_id) {
+                setOrg({ id: userData.org_id, name: userData.org_name || "My Workspace" });
+                setOrgId(userData.org_id);
+                setMembership({ role: userData.role || 'owner' });
+            } else {
+                // No org yet — this shouldn't happen since backend auto-creates on register
+                setOrg(null);
+                setOrgId(null);
+                setMembership(null);
             }
-
-            if (!member) {
-                // No org — call server-side bootstrap RPC
-                console.log('No org found, calling bootstrap_user_org RPC...');
-                const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'My';
-                const orgName = `${userName}'s Workspace`;
-
-                const { error: rpcError } = await supabase.rpc('bootstrap_user_org', {
-                    p_org_name: orgName
-                });
-
-                if (rpcError) {
-                    console.error('Bootstrap RPC failed:', rpcError);
-                    setLoading(false);
-                    return;
-                }
-
-                // Re-fetch the membership after bootstrap
-                const { data: freshMember } = await supabase
-                    .from('org_members')
-                    .select('*, organizations(*)')
-                    .eq('user_id', user.id)
-                    .limit(1)
-                    .maybeSingle();
-
-                if (freshMember) {
-                    const orgData = freshMember.organizations;
-                    setOrg(orgData);
-                    setOrgId(orgData.id);
-                    setMembership({ role: freshMember.role });
-                }
-
-                setLoading(false);
-                return;
-            }
-
-            // Existing member found
-            const orgData = member.organizations;
-            setOrg(orgData);
-            setOrgId(orgData.id);
-            setMembership({ role: member.role });
         } catch (err) {
             console.error('Org bootstrap error:', err);
         } finally {
@@ -104,16 +66,9 @@ export const OrgProvider = ({ children }) => {
     // Manual create org (for settings/onboarding page)
     const createOrganization = useCallback(async (name) => {
         if (!user) throw new Error('Must be authenticated');
-
-        const { data: result, error } = await supabase.rpc('bootstrap_user_org', {
-            p_org_name: name
-        });
-
-        if (error) throw error;
-
-        // Re-fetch to populate state
+        // Backend doesn't have a separate create-org endpoint yet,
+        // so this is a no-op for now (org is created on register)
         await bootstrap();
-        return result;
     }, [user, bootstrap]);
 
     const value = useMemo(() => ({

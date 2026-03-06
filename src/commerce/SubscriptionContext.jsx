@@ -1,22 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 import { useOrg } from '../context/OrgContext';
 import { useAuth } from '../context/AuthContext';
 import { MODULES } from './commerce.config';
 
 /**
- * SubscriptionContext — Supabase-backed subscription + credit management.
- *
- * DB tables used:
- *   - subscriptions  (user_id, org_id, module, plan, status, activated_at, expires_at)
- *   - marketing_credits (org_id, balance)
- *   - credit_transactions (org_id, type, amount, balance_after, reference_type)
- *
- * DB functions used:
- *   - consume_credit(p_org_id, p_type, p_amount)  → boolean
- *   - add_credit(p_org_id, p_amount, p_source)    → void
- *
- * RLS: subscriptions rows are scoped by user_id = auth.uid()
+ * SubscriptionContext — REST-backed subscription + credit management.
+ * 
+ * Backend routes:
+ *   GET    /billing/subscriptions
+ *   POST   /billing/subscriptions/activate       { moduleId }
+ *   POST   /billing/subscriptions/:moduleId/deactivate
+ *   POST   /billing/subscriptions/:moduleId/pause
+ *   POST   /billing/subscriptions/:moduleId/resume
+ *   GET    /billing/credits
+ *   POST   /billing/credits/consume              { type }
+ *   POST   /billing/credits/add                  { amount }
  */
 
 const SubscriptionContext = createContext();
@@ -28,7 +27,6 @@ export const SubscriptionProvider = ({ children }) => {
     const [credits, setCredits] = useState({ balance: 0 });
     const [loading, setLoading] = useState(true);
 
-    // ─── Fetch subscriptions + credits from Supabase ───
     const fetchAll = useCallback(async () => {
         if (!user) {
             setSubscriptions({});
@@ -39,19 +37,20 @@ export const SubscriptionProvider = ({ children }) => {
         setLoading(true);
 
         try {
-            // Subscriptions are keyed by user_id (RLS enforces user_id = auth.uid())
-            const subPromise = supabase.from('subscriptions').select('*').eq('user_id', user.id);
+            // Fetch subscriptions and credits in parallel
+            const [subRes, creditRes] = await Promise.allSettled([
+                api.get('/billing/subscriptions'),
+                api.get('/billing/credits'),
+            ]);
 
-            // Credits are still org-scoped
-            const creditPromise = orgId
-                ? supabase.from('marketing_credits').select('balance').eq('org_id', orgId).maybeSingle()
-                : Promise.resolve({ data: null });
+            // Process subscriptions
+            const subs = subRes.status === 'fulfilled'
+                ? (subRes.value.subscriptions || subRes.value || [])
+                : [];
 
-            const [subRes, creditRes] = await Promise.all([subPromise, creditPromise]);
-
-            // Build subscriptions map keyed by module
             const subMap = {};
-            (subRes.data || []).forEach(row => {
+            const subArray = Array.isArray(subs) ? subs : (subs ? [subs] : []);
+            subArray.forEach(row => {
                 subMap[row.module] = {
                     id: row.id,
                     module: row.module,
@@ -64,7 +63,10 @@ export const SubscriptionProvider = ({ children }) => {
                 };
             });
             setSubscriptions(subMap);
-            setCredits({ balance: creditRes?.data?.balance ?? 0 });
+
+            // Process credits
+            const creditData = creditRes.status === 'fulfilled' ? creditRes.value : {};
+            setCredits({ balance: creditData?.balance ?? creditData?.credits?.balance ?? 0 });
         } catch (err) {
             console.error('SubscriptionContext fetchAll error:', err);
         } finally {
@@ -93,32 +95,10 @@ export const SubscriptionProvider = ({ children }) => {
         }
 
         for (const moduleId of moduleIds) {
-            const now = new Date().toISOString();
-            const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-            const { error } = await supabase.from('subscriptions').upsert({
-                user_id: user.id,
-                org_id: orgId || null,
-                module: moduleId,
-                status: 'active',
-                plan: 'starter',
-                activated_at: now,
-                expires_at: expiresAt,
-            }, { onConflict: 'user_id,module' });
-
-            if (error) {
-                console.error(`Failed to activate subscription for ${moduleId}:`, error);
-            }
-
-            // Allocate base credits for marketing on activation
-            if (moduleId === 'marketing' && orgId) {
-                const limits = MODULES.marketing?.limits;
-                const baseCredits = (limits?.images || 20) + (limits?.videos || 4);
-                await supabase.rpc('add_credit', {
-                    p_org_id: orgId,
-                    p_amount: baseCredits,
-                    p_source: 'subscription'
-                });
+            try {
+                await api.post('/billing/subscriptions/activate', { moduleId });
+            } catch (err) {
+                console.error(`Failed to activate subscription for ${moduleId}:`, err);
             }
         }
 
@@ -127,28 +107,31 @@ export const SubscriptionProvider = ({ children }) => {
 
     const deactivateSubscription = useCallback(async (moduleId) => {
         if (!user) return;
-        await supabase.from('subscriptions')
-            .update({ status: 'cancelled' })
-            .eq('user_id', user.id)
-            .eq('module', moduleId);
+        try {
+            await api.post(`/billing/subscriptions/${moduleId}/deactivate`);
+        } catch (err) {
+            console.error('Error deactivating subscription:', err);
+        }
         await fetchAll();
     }, [user, fetchAll]);
 
     const pauseSubscription = useCallback(async (moduleId) => {
         if (!user) return;
-        await supabase.from('subscriptions')
-            .update({ status: 'paused' })
-            .eq('user_id', user.id)
-            .eq('module', moduleId);
+        try {
+            await api.post(`/billing/subscriptions/${moduleId}/pause`);
+        } catch (err) {
+            console.error('Error pausing subscription:', err);
+        }
         await fetchAll();
     }, [user, fetchAll]);
 
     const resumeSubscription = useCallback(async (moduleId) => {
         if (!user) return;
-        await supabase.from('subscriptions')
-            .update({ status: 'active' })
-            .eq('user_id', user.id)
-            .eq('module', moduleId);
+        try {
+            await api.post(`/billing/subscriptions/${moduleId}/resume`);
+        } catch (err) {
+            console.error('Error resuming subscription:', err);
+        }
         await fetchAll();
     }, [user, fetchAll]);
 
@@ -165,54 +148,42 @@ export const SubscriptionProvider = ({ children }) => {
     const consume = useCallback(async (moduleId, type) => {
         if (!orgId || !isModuleActive(moduleId)) return false;
 
-        const { data: success, error } = await supabase.rpc('consume_credit', {
-            p_org_id: orgId,
-            p_type: type,
-            p_amount: 1,
-        });
+        try {
+            const data = await api.post('/billing/credits/consume', {
+                type,
+                amount: 1,
+            });
 
-        if (error) {
-            console.error('consume_credit error:', error);
+            if (data.success) {
+                setCredits(prev => ({ balance: Math.max(0, prev.balance - 1) }));
+            }
+            return !!data.success;
+        } catch (err) {
+            console.error('consume_credit error:', err);
             return false;
         }
-
-        if (success) {
-            setCredits(prev => ({ balance: Math.max(0, prev.balance - 1) }));
-        }
-
-        return !!success;
     }, [orgId, subscriptions]);
 
     const addCredits = useCallback(async (moduleId, resource, amount) => {
         if (!orgId) return false;
 
-        const { error } = await supabase.rpc('add_credit', {
-            p_org_id: orgId,
-            p_amount: Number(amount),
-            p_source: `topup_${resource}`
-        });
-
-        if (!error) {
+        try {
+            await api.post('/billing/credits/add', {
+                amount: Number(amount),
+                source: `topup_${resource}`,
+            });
             setCredits(prev => ({ balance: prev.balance + Number(amount) }));
+            return true;
+        } catch (err) {
+            console.error('addCredits error:', err);
+            return false;
         }
-
-        return !error;
     }, [orgId]);
 
-    /**
-     * getRemaining — returns the aggregate credit balance.
-     * NOTE: The backend currently stores a single balance — not per-type.
-     * `moduleId` and `type` params are accepted for future per-type API compatibility
-     * but are not yet used for filtering. See marketing_credits table.
-     */
     const getRemaining = useCallback((moduleId, type) => {
         return credits.balance;
     }, [credits.balance]);
 
-    /**
-     * canConsume — returns true if the module is active AND balance > 0.
-     * NOTE: Does not check per-type availability — same caveat as getRemaining.
-     */
     const canConsume = useCallback((moduleId, type) => {
         return isModuleActive(moduleId) && credits.balance > 0;
     }, [subscriptions, credits.balance]);

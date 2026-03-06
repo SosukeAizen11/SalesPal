@@ -1,12 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 import { useAuth } from './AuthContext';
 
 /**
- * IntegrationContext — Supabase-backed integration state.
- * Uses user_id (not org_id) for RLS simplicity.
- * No OAuth, no sessionStorage, no redirects.
- * Table: integrations (user_id, platform, status)
+ * IntegrationContext — REST-backed integration state.
+ * Replaces Supabase .from('integrations') calls.
  */
 
 const IntegrationContext = createContext();
@@ -23,19 +21,15 @@ export const IntegrationProvider = ({ children }) => {
     const [integrations, setIntegrations] = useState({});
     const [loading, setLoading] = useState(true);
 
-    // Fetch all integrations for the user from Supabase
     const fetchIntegrations = useCallback(async () => {
         if (!user) { setIntegrations({}); setLoading(false); return; }
         setLoading(true);
 
-        const { data, error } = await supabase
-            .from('integrations')
-            .select('*')
-            .eq('user_id', user.id);
-
-        if (!error && data) {
+        try {
+            const data = await api.get('/social/integrations');
+            const rows = data.integrations || data || [];
             const map = {};
-            data.forEach(row => {
+            rows.forEach(row => {
                 map[row.platform] = {
                     id: row.id,
                     platform_id: row.platform,
@@ -47,13 +41,14 @@ export const IntegrationProvider = ({ children }) => {
                 };
             });
             setIntegrations(map);
+        } catch (err) {
+            console.error('Error fetching integrations:', err);
         }
         setLoading(false);
     }, [user]);
 
     useEffect(() => { fetchIntegrations(); }, [fetchIntegrations]);
 
-    // Connect platform — direct insert, no OAuth
     const connectIntegration = useCallback(async (platformId) => {
         if (!user) return;
 
@@ -70,23 +65,14 @@ export const IntegrationProvider = ({ children }) => {
             }
         }));
 
-        const { error } = await supabase
-            .from('integrations')
-            .upsert({
-                user_id: user.id,
-                platform: platformId,
-                status: 'connected',
-                connected_by: user.id,
-                updated_at: new Date().toISOString(),
-            }, { onConflict: 'user_id,platform' });
-
-        if (error) {
-            console.error('Error connecting integration:', error);
+        try {
+            await api.post('/social/integrations/connect', { platform: platformId });
+        } catch (err) {
+            console.error('Error connecting integration:', err);
             await fetchIntegrations(); // rollback
         }
     }, [user, fetchIntegrations]);
 
-    // Disconnect platform — delete the row
     const disconnectIntegration = useCallback(async (platformId) => {
         if (!user) return;
 
@@ -97,14 +83,10 @@ export const IntegrationProvider = ({ children }) => {
             return next;
         });
 
-        const { error } = await supabase
-            .from('integrations')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('platform', platformId);
-
-        if (error) {
-            console.error('Error disconnecting integration:', error);
+        try {
+            await api.post(`/social/integrations/disconnect/${platformId}`);
+        } catch (err) {
+            console.error('Error disconnecting integration:', err);
             await fetchIntegrations(); // rollback
         }
     }, [user, fetchIntegrations]);
