@@ -11,7 +11,9 @@ import {
     ChevronRight,
     LayoutDashboard,
     FolderKanban,
-    Share2
+    Share2,
+    Users,
+    Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SidebarUserMenu from './SidebarUserMenu';
@@ -28,7 +30,10 @@ const AppLayout = () => {
         if (location.pathname.startsWith('/marketing')) {
             setExpandedMenus(prev => ({ ...prev, '/marketing': true }));
         }
-    }, []); // Run once on mount
+        if (location.pathname.startsWith('/sales')) {
+            setExpandedMenus(prev => ({ ...prev, '/sales': true }));
+        }
+    }, [location.pathname]); // Update dependencies so it runs on path change
 
     const toggleMenu = (path) => {
         setExpandedMenus(prev => ({
@@ -48,7 +53,16 @@ const AppLayout = () => {
                 { label: 'Social', path: '/marketing/social', icon: Share2 }
             ]
         },
-        { label: 'Sales', path: '/sales', icon: DollarSign },
+        {
+            label: 'Sales',
+            path: '/sales',
+            icon: DollarSign,
+            children: [
+                { label: 'Dashboard', path: '/sales', icon: LayoutDashboard, end: true },
+                { label: 'Leads', path: '/sales/leads', icon: Users },
+                { label: 'Settings', path: '/sales/settings', icon: Settings }
+            ]
+        },
         { label: 'Post Sales', path: '/post-sales', icon: RefreshCw },
         { label: 'Support', path: '/support', icon: Headphones },
         { label: 'Subscription', path: '/subscription', icon: CreditCard },

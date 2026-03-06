@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { useMarketing } from '../../../context/MarketingContext';
 import { useIntegrations } from '../../../context/IntegrationContext';
+import { useSales } from '../../../context/SalesContext';
 import { canLaunchCampaign } from '../../../utils/campaignGuard';
 import { getProjectsBackRoute, getCampaignEditRoute } from '../../../utils/navigationUtils';
 import { usePreferences } from '../../../context/PreferencesContext';
@@ -60,6 +61,7 @@ export default function CampaignDetails() {
     const { getCampaignById, updateCampaign } = useMarketing();
     const { integrations } = useIntegrations();
     const { formatCurrency } = usePreferences();
+    const { addLead } = useSales();
 
     const [campaign, setCampaign] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -108,6 +110,23 @@ export default function CampaignDetails() {
         setLaunchError(null);
         updateCampaign(campaignId, { status: 'active' });
         setCampaign(prev => ({ ...prev, status: 'active' }));
+    };
+
+    const handleGenerateLead = () => {
+        const leadSources = ['Meta Ads', 'Google Ads', 'Website', 'WhatsApp'];
+        const randomSource = leadSources[Math.floor(Math.random() * leadSources.length)];
+
+        addLead({
+            name: `Lead from ${name.slice(0, 10)}..._${Math.floor(Math.random() * 1000)}`,
+            phone: `+1 555-${Math.floor(1000 + Math.random() * 9000).toString()}`,
+            source: randomSource,
+            project: `Project ${projectId}`,
+            campaign: name,
+            assignedTo: 'Unassigned'
+        });
+
+        // Use an alert or toast to signify success
+        alert('Test lead generated and added to Sales Module!');
     };
 
     const handleEdit = () => navigate(getCampaignEditRoute(projectId, campaignId));
@@ -211,6 +230,11 @@ export default function CampaignDetails() {
                             {isDraft && (
                                 <Button size="sm" onClick={() => handleAction('launch')} disabled={!launchCheck.allowed}>
                                     Launch Campaign
+                                </Button>
+                            )}
+                            {isRunning && (
+                                <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={handleGenerateLead}>
+                                    <Users className="w-4 h-4 mr-1" /> Simulate Lead
                                 </Button>
                             )}
                             <Button variant="ghost" size="sm" onClick={handleEdit}>

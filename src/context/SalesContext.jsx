@@ -1,0 +1,159 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const SalesContext = createContext(null);
+
+export const useSales = () => {
+    const context = useContext(SalesContext);
+    if (!context) {
+        throw new Error('useSales must be used within a SalesProvider');
+    }
+    return context;
+};
+
+// Initial Mock leads
+const initialLeads = [
+    {
+        id: '1',
+        name: 'Priya Sharma',
+        phone: '98xxxx',
+        source: 'Meta Ads',
+        project: 'Real Estate',
+        campaign: 'Summer Sale 2026',
+        status: 'Hot',
+        aiScore: 95,
+        dealProbability: 88,
+        scoreLabel: 'Hot',
+        lastInteraction: 'ready for site visit',
+        assignedTo: 'John Doe',
+        createdDate: new Date().toISOString(),
+        insight: 'Customer requested site visit. High purchase intent detected.',
+        recommendation: 'Call within 30 minutes to confirm site visit time.',
+        timeline: [
+            { id: 101, type: 'capture', action: 'Lead Captured', time: 'Yesterday, 04:10 PM', detail: 'Source: Meta Ads' },
+            { id: 102, type: 'ai_action', action: 'Lead scored hot', time: 'Yesterday, 04:11 PM', detail: 'Assigned 95% intent score based on form answers.' },
+            { id: 103, type: 'call', action: 'Call attempted', time: 'Yesterday, 04:15 PM', detail: 'AI Initial Qualification Call' },
+            { id: 104, type: 'whatsapp', action: 'WhatsApp brochure sent', time: 'Today, 10:30 AM', detail: 'Automated Real Estate Brochure Delivery' },
+            { id: 105, type: 'meeting', action: 'Meeting scheduled', time: 'Today, 02:00 PM', detail: 'Site visit confirmed by Lead.' }
+        ],
+        communications: [
+            {
+                id: 201, type: 'call',
+                time: 'Yesterday, 04:15 PM',
+                duration: '2m 14s',
+                outcome: 'Qualified',
+                recording: 'Recording_0415.mp3',
+                sentiment: 92,
+                transcript: [
+                    { speaker: 'AI', text: 'Hi Priya, this is Alex from SalesPal. I see you downloaded our property brochure. How can I help?' },
+                    { speaker: 'Lead', text: 'Yes, I was looking at the 3BHK options and I wanted to schedule a site visit.' },
+                    { speaker: 'AI', text: 'Absolutely! I can arrange that. What day works best for you?' }
+                ]
+            },
+            {
+                id: 202, type: 'whatsapp',
+                history: [
+                    { id: 301, sender: 'AI', text: 'Hi Priya, here is the detailed brochure you requested! Let me know if you would like me to book a site visit. 🏡', time: '10:30 AM', attachment: 'Brochure_3BHK.pdf' },
+                    { id: 302, sender: 'Lead', text: 'Thanks. Can I come tomorrow at 4 PM?', time: '01:45 PM' },
+                    { id: 303, sender: 'AI', text: 'Absolutely. I have scheduled your visit for tomorrow at 4:00 PM. Our team will meet you at the site.', time: '02:00 PM' }
+                ]
+            }
+        ],
+        followups: [
+            { id: 401, task: 'Send site location pin', status: 'Pending', time: 'Tomorrow, 10:00 AM' }
+        ]
+    },
+    {
+        id: '2',
+        name: 'Rahul Kumar',
+        phone: '99xxxx',
+        source: 'Google Ads',
+        project: 'Coaching',
+        campaign: 'Winter Special',
+        status: 'Warm',
+        aiScore: 72,
+        dealProbability: 45,
+        scoreLabel: 'Warm',
+        lastInteraction: 'requested pricing',
+        assignedTo: 'Jane Smith',
+        createdDate: new Date(Date.now() - 86400000).toISOString(),
+        insight: 'Customer asked for pricing but is hesitant. Medium intent detected.',
+        recommendation: 'Recommend sending price sheet and case studies.',
+        timeline: [
+            { id: 106, type: 'capture', action: 'Lead Captured', time: '2 Days Ago', detail: 'Source: Google Ads' },
+            { id: 107, type: 'call', action: 'Call attempted', time: 'Yesterday, 11:00 AM', detail: 'No answer.' },
+            { id: 108, type: 'whatsapp', action: 'Pricing request received', time: 'Today, 09:15 AM', detail: 'Client asked for coaching packages.' }
+        ],
+        communications: [
+            {
+                id: 203, type: 'call',
+                time: 'Yesterday, 11:00 AM',
+                duration: '0m 15s',
+                outcome: 'No Answer',
+                recording: 'Recording_1100.mp3',
+                sentiment: 0,
+                transcript: [
+                    { speaker: 'AI', text: 'Ringing...' },
+                    { speaker: 'System', text: 'Call forwarded to voicemail.' }
+                ]
+            },
+            {
+                id: 204, type: 'whatsapp',
+                history: [
+                    { id: 304, sender: 'AI', text: 'Hi Rahul, thanks for your interest in our Coaching program! Let me know if we can hop on a quick call.', time: 'Yesterday, 11:05 AM' },
+                    { id: 305, sender: 'Lead', text: 'I am busy. Can you just share the pricing?', time: 'Today, 09:15 AM' }
+                ]
+            }
+        ],
+        followups: [
+            { id: 402, task: 'Follow-up on pricing email', status: 'Pending', time: 'Tomorrow, 02:00 PM' }
+        ]
+    }
+];
+
+export const SalesProvider = ({ children }) => {
+    const [leads, setLeads] = useState(() => {
+        const stored = localStorage.getItem('salespal_leads');
+        return stored ? JSON.parse(stored) : initialLeads;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('salespal_leads', JSON.stringify(leads));
+    }, [leads]);
+
+    const addLead = (leadData) => {
+        const newLead = {
+            id: Date.now().toString(),
+            status: 'New',
+            aiScore: Math.floor(Math.random() * 100),
+            scoreLabel: 'Warm',
+            lastInteraction: 'New Entry',
+            createdDate: new Date().toISOString(),
+            ...leadData
+        };
+        // recalculate scoreLabel for newly added leads
+        if (newLead.aiScore >= 80) newLead.scoreLabel = 'Hot';
+        else if (newLead.aiScore >= 40) newLead.scoreLabel = 'Warm';
+        else newLead.scoreLabel = 'Cold';
+
+        setLeads(prev => [newLead, ...prev]);
+        return newLead;
+    };
+
+    const updateLeadStatus = (leadId, newStatus) => {
+        setLeads(prev => prev.map(lead =>
+            lead.id === leadId ? { ...lead, status: newStatus } : lead
+        ));
+    };
+
+    const value = {
+        leads,
+        addLead,
+        updateLeadStatus
+    };
+
+    return (
+        <SalesContext.Provider value={value}>
+            {children}
+        </SalesContext.Provider>
+    );
+};

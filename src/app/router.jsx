@@ -55,7 +55,11 @@ import PlaceholderPage from '../pages/marketing/PlaceholderPage';
 
 
 import ModuleAccessWrapper from '../components/access/ModuleAccessWrapper';
-
+import SalesLayout from '../layouts/SalesLayout';
+import SalesDashboard from '../pages/sales/SalesDashboard';
+import SalesLeads from '../pages/sales/SalesLeads';
+import SalesSettings from '../pages/sales/SalesSettings';
+import SalesLeadWorkspace from '../pages/sales/SalesLeadWorkspace';
 
 import MarketingSettingsLayout from '../pages/marketing/settings/MarketingSettingsLayout';
 import MarketingSettingsIntegrations from '../pages/marketing/settings/MarketingSettingsIntegrations';
@@ -223,9 +227,15 @@ export const router = createBrowserRouter([
                         path: "/sales",
                         element: (
                             <ModuleAccessWrapper moduleName="sales">
-                                <PlaceholderPage title="Sales Module" description="Manage your sales pipeline and leads." />
+                                <SalesLayout />
                             </ModuleAccessWrapper>
-                        )
+                        ),
+                        children: [
+                            { index: true, element: <SalesDashboard /> },
+                            { path: "leads", element: <SalesLeads /> },
+                            { path: "leads/:id", element: <SalesLeadWorkspace /> },
+                            { path: "settings", element: <SalesSettings /> }
+                        ]
                     },
                     {
                         path: "/post-sales",

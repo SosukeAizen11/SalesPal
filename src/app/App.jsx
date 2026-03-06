@@ -7,6 +7,7 @@ import { CartProvider } from '../commerce/CartContext';
 import { MarketingProvider } from '../context/MarketingContext';
 import { ProjectProvider } from '../context/ProjectContext';
 import { IntegrationProvider } from '../context/IntegrationContext';
+import { SalesProvider } from '../context/SalesContext';
 import MiniCartDrawer from '../components/cart/MiniCartDrawer';
 import { ToastProvider } from '../components/ui/Toast';
 import ScrollToTop from '../components/common/ScrollToTop';
@@ -21,18 +22,20 @@ const App = () => {
                     <SubscriptionProvider>
                         <CartProvider>
                             <IntegrationProvider>
-                                <MarketingProvider>
-                                    <ProjectProvider>
-                                        <NotificationProvider>
-                                            <ToastProvider>
-                                                <ScrollRestoration />
-                                                <ScrollToTop />
-                                                <Outlet />
-                                                <MiniCartDrawer />
-                                            </ToastProvider>
-                                        </NotificationProvider>
-                                    </ProjectProvider>
-                                </MarketingProvider>
+                                <SalesProvider>
+                                    <MarketingProvider>
+                                        <ProjectProvider>
+                                            <NotificationProvider>
+                                                <ToastProvider>
+                                                    <ScrollRestoration />
+                                                    <ScrollToTop />
+                                                    <Outlet />
+                                                    <MiniCartDrawer />
+                                                </ToastProvider>
+                                            </NotificationProvider>
+                                        </ProjectProvider>
+                                    </MarketingProvider>
+                                </SalesProvider>
                             </IntegrationProvider>
                         </CartProvider>
                     </SubscriptionProvider>
