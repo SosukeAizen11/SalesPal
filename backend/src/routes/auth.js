@@ -37,6 +37,10 @@ router.post(
   ctrl.refresh
 );
 
+router.post('/google', ctrl.googleLogin);
+
 router.post('/logout', optionalAuth, ctrl.logout);
+
+router.get('/verify', ctrl.verify);
 
 module.exports = router;

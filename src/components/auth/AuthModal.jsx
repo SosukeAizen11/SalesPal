@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, Loader2, AlertCircle } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../ui/Button';
 
@@ -14,7 +15,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [signUpSuccess, setSignUpSuccess] = useState(false);
 
-    const { login, signup } = useAuth();
+    const { login, signup, loginWithGoogle } = useAuth();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -199,6 +200,39 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                                                 >
                                                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isLogin ? 'Sign In' : 'Create Account')}
                                                 </Button>
+
+                                                <div className="relative mt-6 mb-4">
+                                                    <div className="absolute inset-0 flex items-center">
+                                                        <div className="w-full border-t border-gray-200"></div>
+                                                    </div>
+                                                    <div className="relative flex justify-center text-sm">
+                                                        <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex justify-center w-full mt-4">
+                                                    <GoogleLogin
+                                                        onSuccess={async (credentialResponse) => {
+                                                            try {
+                                                                setError('');
+                                                                setLoading(true);
+                                                                await loginWithGoogle(credentialResponse.credential);
+                                                                if (onSuccess) onSuccess();
+                                                                onClose();
+                                                            } catch (err) {
+                                                                setError(err.message);
+                                                                setLoading(false);
+                                                            }
+                                                        }}
+                                                        onError={() => {
+                                                            setError('Google Login Failed');
+                                                        }}
+                                                        theme="outline"
+                                                        size="large"
+                                                        text={isLogin ? "signin_with" : "signup_with"}
+                                                        width="356"
+                                                    />
+                                                </div>
                                             </form>
 
                                             <div className="mt-8 text-center border-t border-gray-100 pt-6">

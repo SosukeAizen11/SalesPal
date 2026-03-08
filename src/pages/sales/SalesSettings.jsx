@@ -10,11 +10,53 @@ import {
     BrainCircuit,
     ChevronDown,
     ChevronRight,
-    Save
+    Save,
+    Loader2
 } from 'lucide-react';
+import api from '../../lib/api';
 
 const SalesSettings = () => {
     const [openSection, setOpenSection] = useState('calling');
+    const [settings, setSettings] = useState({
+        outboundStart: '09:00',
+        outboundEnd: '21:00',
+        waActive: true,
+        hotScore: 80,
+        warmScore: 40,
+        contactDelay: 'Immediate',
+        notifyHot: true,
+        notifyMeetings: true,
+        aiPrompt: 'Act as a helpful virtual assistant. Keep answers brief and attempt to push the user towards scheduling a calendar evaluation.'
+    });
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    React.useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const data = await api.get('/users/me/settings');
+                if (Object.keys(data).length > 0) {
+                    setSettings(prev => ({ ...prev, ...data }));
+                }
+            } catch (err) {
+                console.error('Failed to fetch settings:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSettings();
+    }, []);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await api.put('/users/me/settings', settings);
+        } catch (err) {
+            console.error('Failed to save settings:', err);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const sections = [
         {
@@ -29,9 +71,9 @@ const SalesSettings = () => {
                             <p className="text-sm text-gray-500">Define active hours for outbound AI voice agent.</p>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-700">
-                            <input type="time" defaultValue="09:00" className="border border-gray-200 rounded-md p-2 bg-gray-50" />
+                            <input type="time" value={settings.outboundStart} onChange={e => setSettings({...settings, outboundStart: e.target.value})} className="border border-gray-200 rounded-md p-2 bg-gray-50" />
                             <span>to</span>
-                            <input type="time" defaultValue="21:00" className="border border-gray-200 rounded-md p-2 bg-gray-50" />
+                            <input type="time" value={settings.outboundEnd} onChange={e => setSettings({...settings, outboundEnd: e.target.value})} className="border border-gray-200 rounded-md p-2 bg-gray-50" />
                         </div>
                     </div>
                 </div>
@@ -44,7 +86,7 @@ const SalesSettings = () => {
             content: (
                 <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                        <input type="checkbox" id="wa-active" defaultChecked className="w-4 h-4 text-blue-600 rounded" />
+                        <input type="checkbox" id="wa-active" checked={settings.waActive} onChange={e => setSettings({...settings, waActive: e.target.checked})} className="w-4 h-4 text-blue-600 rounded" />
                         <div>
                             <label htmlFor="wa-active" className="font-semibold text-gray-900 block">Enable 24/7 AI WhatsApp Agent</label>
                             <p className="text-sm text-gray-500">Respond automatically to inbound messages directly from the WhatsApp API.</p>
@@ -63,12 +105,12 @@ const SalesSettings = () => {
                     <div className="grid grid-cols-3 gap-6">
                         <div className="bg-red-50 p-4 rounded-xl border border-red-100">
                             <p className="font-bold text-red-900 mb-1">🔥 Hot Lead</p>
-                            <input type="number" defaultValue={80} className="w-full border border-gray-200 rounded-md p-2 text-sm" />
+                            <input type="number" value={settings.hotScore} onChange={e => setSettings({...settings, hotScore: Number(e.target.value)})} className="w-full border border-gray-200 rounded-md p-2 text-sm" />
                             <span className="text-xs text-gray-500 mt-1 block">Minimum Score</span>
                         </div>
                         <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
                             <p className="font-bold text-orange-900 mb-1">🌡 Warm Lead</p>
-                            <input type="number" defaultValue={40} className="w-full border border-gray-200 rounded-md p-2 text-sm" />
+                            <input type="number" value={settings.warmScore} onChange={e => setSettings({...settings, warmScore: Number(e.target.value)})} className="w-full border border-gray-200 rounded-md p-2 text-sm" />
                             <span className="text-xs text-gray-500 mt-1 block">Minimum Score</span>
                         </div>
                     </div>
@@ -85,7 +127,7 @@ const SalesSettings = () => {
                     {/* Placeholder config controls */}
                     <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
                         <span className="font-medium text-gray-700">Initial Contact Delay</span>
-                        <select className="border border-gray-200 rounded-md p-1.5 text-sm bg-gray-50">
+                        <select value={settings.contactDelay} onChange={e => setSettings({...settings, contactDelay: e.target.value})} className="border border-gray-200 rounded-md p-1.5 text-sm bg-gray-50">
                             <option>Immediate</option>
                             <option>15 Minutes</option>
                             <option>1 Hour</option>
@@ -119,13 +161,13 @@ const SalesSettings = () => {
             content: (
                 <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                        <input type="checkbox" id="notify-hot" defaultChecked className="w-4 h-4 text-blue-600 rounded" />
+                        <input type="checkbox" id="notify-hot" checked={settings.notifyHot} onChange={e => setSettings({...settings, notifyHot: e.target.checked})} className="w-4 h-4 text-blue-600 rounded" />
                         <div>
                             <label htmlFor="notify-hot" className="font-semibold text-gray-900 block">Alert sales team on HOT new leads.</label>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <input type="checkbox" id="notify-meetings" defaultChecked className="w-4 h-4 text-blue-600 rounded" />
+                        <input type="checkbox" id="notify-meetings" checked={settings.notifyMeetings} onChange={e => setSettings({...settings, notifyMeetings: e.target.checked})} className="w-4 h-4 text-blue-600 rounded" />
                         <div>
                             <label htmlFor="notify-meetings" className="font-semibold text-gray-900 block">Alert when AI successfully books a meeting.</label>
                         </div>
@@ -142,7 +184,8 @@ const SalesSettings = () => {
                     <p className="text-sm text-gray-600">Configure global prompt behavior governing AI outbound scripts and tones.</p>
                     <textarea
                         className="w-full h-32 p-3 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none resize-none"
-                        defaultValue="Act as a helpful virtual assistant. Keep answers brief and attempt to push the user towards scheduling a calendar evaluation."
+                        value={settings.aiPrompt}
+                        onChange={e => setSettings({...settings, aiPrompt: e.target.value})}
                     ></textarea>
                 </div>
             )
@@ -159,14 +202,23 @@ const SalesSettings = () => {
                     </h1>
                     <p className="text-gray-500 mt-1">Configure automation and AI behaviors.</p>
                 </div>
-                <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-sm">
-                    <Save size={18} /> Save Settings
+                <button 
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-70"
+                >
+                    {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                    {saving ? 'Saving...' : 'Save Settings'}
                 </button>
             </div>
 
-            {/* Accordion Layout */}
-            <div className="space-y-4">
-                {sections.map(section => (
+            {loading ? (
+                <div className="flex justify-center items-center py-20">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {sections.map(section => (
                     <div
                         key={section.id}
                         className={`bg-white border rounded-xl overflow-hidden shadow-sm transition-all duration-200 ${openSection === section.id ? 'border-blue-200 ring-1 ring-blue-50' : 'border-gray-200'}`}
@@ -195,7 +247,8 @@ const SalesSettings = () => {
                         )}
                     </div>
                 ))}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

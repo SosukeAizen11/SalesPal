@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api from '../lib/api';
+import { useAuth } from './AuthContext';
 
 const SalesContext = createContext(null);
 
@@ -10,7 +12,7 @@ export const useSales = () => {
     return context;
 };
 
-// Initial Mock leads
+// Map backend deals to frontend lead interface
 const initialLeads = [
     {
         id: '1',
@@ -111,44 +113,84 @@ const initialLeads = [
 ];
 
 export const SalesProvider = ({ children }) => {
-    const [leads, setLeads] = useState(() => {
-        const stored = localStorage.getItem('salespal_leads');
-        return stored ? JSON.parse(stored) : initialLeads;
-    });
+    const { user } = useAuth();
+    const [leads, setLeads] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchLeads = useCallback(async () => {
+        if (!user) { setLeads([]); setLoading(false); return; }
+        setLoading(true);
+        try {
+            const data = await api.get('/sales');
+            const mapped = data.map(deal => ({
+                id: deal.id,
+                name: `${deal.contact_first_name || ''} ${deal.contact_last_name || ''}`.trim() || 'Unknown Contact',
+                phone: deal.contact_email || 'No Contact Data',
+                source: deal.metadata?.source || 'API/Web',
+                project: 'Default Project',
+                campaign: deal.title,
+                status: deal.stage === 'closed_won' ? 'Hot' : deal.stage === 'lead' ? 'Warm' : 'Cold',
+                aiScore: deal.priority === 'high' ? 95 : deal.priority === 'medium' ? 60 : 30,
+                dealProbability: deal.value > 0 ? 80 : 30,
+                scoreLabel: deal.priority || 'medium',
+                lastInteraction: 'Updated from DB',
+                assignedTo: deal.assigned_to || 'Unassigned',
+                createdDate: deal.created_at,
+                rawDeal: deal,
+                timeline: [],
+                communications: [],
+                followups: []
+            }));
+            setLeads(mapped);
+        } catch (err) {
+            console.error('Error fetching deals:', err);
+            // Fallback to initial mock if API is not populated for UI preview
+            setLeads(prev => prev.length === 0 ? initialLeads : prev);
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
 
     useEffect(() => {
-        localStorage.setItem('salespal_leads', JSON.stringify(leads));
-    }, [leads]);
+        fetchLeads();
+    }, [fetchLeads]);
 
-    const addLead = (leadData) => {
-        const newLead = {
-            id: Date.now().toString(),
-            status: 'New',
-            aiScore: Math.floor(Math.random() * 100),
-            scoreLabel: 'Warm',
-            lastInteraction: 'New Entry',
-            createdDate: new Date().toISOString(),
-            ...leadData
-        };
-        // recalculate scoreLabel for newly added leads
-        if (newLead.aiScore >= 80) newLead.scoreLabel = 'Hot';
-        else if (newLead.aiScore >= 40) newLead.scoreLabel = 'Warm';
-        else newLead.scoreLabel = 'Cold';
-
-        setLeads(prev => [newLead, ...prev]);
-        return newLead;
+    const addLead = async (leadData) => {
+        // Optimistic UI update could be applied here
+        try {
+            const newDeal = await api.post('/sales', {
+                title: leadData.campaign || 'New Lead',
+                stage: leadData.status === 'Hot' ? 'negotiation' : 'lead',
+                priority: leadData.aiScore > 80 ? 'high' : 'medium'
+            });
+            await fetchLeads(); // refresh
+            return newDeal;
+        } catch (err) {
+            console.error('Error adding lead:', err);
+            return null;
+        }
     };
 
-    const updateLeadStatus = (leadId, newStatus) => {
+    const updateLeadStatus = async (leadId, newStatus) => {
+        // Optimistic
         setLeads(prev => prev.map(lead =>
             lead.id === leadId ? { ...lead, status: newStatus } : lead
         ));
+        try {
+            const backendStage = newStatus === 'Hot' ? 'negotiation' : newStatus === 'Warm' ? 'qualified' : 'lead';
+            await api.put(`/sales/${leadId}`, { stage: backendStage });
+        } catch (err) {
+            console.error('Error updating status:', err);
+            await fetchLeads(); // rollback
+        }
     };
 
     const value = {
         leads,
+        loading,
         addLead,
-        updateLeadStatus
+        updateLeadStatus,
+        refetchLeads: fetchLeads
     };
 
     return (

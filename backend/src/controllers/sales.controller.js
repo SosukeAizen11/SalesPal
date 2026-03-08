@@ -108,4 +108,23 @@ async function deleteDeal(req, res, next) {
   }
 }
 
-module.exports = { listDeals, getDeal, createDeal, updateDeal, deleteDeal };
+async function listActivities(req, res, next) {
+  try {
+    const { limit = 50, offset = 0 } = req.query;
+    const sql = `
+      SELECT a.*, d.title as deal_title, c.first_name, c.last_name
+      FROM deal_activities a
+      JOIN deals d ON a.deal_id = d.id
+      LEFT JOIN contacts c ON d.contact_id = c.id
+      WHERE d.user_id = $1
+      ORDER BY a.created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+    const { rows } = await db.query(sql, [req.user.id, parseInt(limit), parseInt(offset)]);
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { listDeals, getDeal, createDeal, updateDeal, deleteDeal, listActivities };

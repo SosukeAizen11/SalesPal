@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
 import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
-
+import { GoogleLogin } from '@react-oauth/google';
 
 const SignIn = () => {
     const [email, setEmail] = useState('');
@@ -14,7 +14,7 @@ const SignIn = () => {
     const [isSignUp, setIsSignUp] = useState(false);
     const [signUpSuccess, setSignUpSuccess] = useState(false);
 
-    const { login, signup, isAuthenticated } = useAuth();
+    const { login, loginWithGoogle, signup, isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -45,29 +45,6 @@ const SignIn = () => {
         }
     };
 
-    if (signUpSuccess) {
-        return (
-            <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6">
-                <div className="w-full max-w-md">
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm text-center">
-                        <div className="text-4xl mb-4">✉️</div>
-                        <h2 className="text-xl font-bold text-white mb-2">Check Your Email</h2>
-                        <p className="text-gray-400 mb-6">
-                            We sent a confirmation link to <span className="text-secondary">{email}</span>.
-                            Click it to activate your account.
-                        </p>
-                        <button
-                            onClick={() => { setIsSignUp(false); setSignUpSuccess(false); }}
-                            className="text-secondary hover:underline text-sm"
-                        >
-                            Back to Sign In
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-6">
             <div className="w-full max-w-md">
@@ -82,16 +59,42 @@ const SignIn = () => {
                 </div>
 
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {error && (
-                            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start gap-3 text-red-200 text-sm">
-                                <AlertCircle className="w-5 h-5 shrink-0" />
-                                <span>{error}</span>
+                    {signUpSuccess ? (
+                        <div className="text-center space-y-6">
+                            <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Mail className="w-8 h-8" />
                             </div>
-                        )}
+                            <h3 className="text-xl font-bold text-white">Check your email</h3>
+                            <p className="text-gray-400">
+                                We've sent a verification link to <span className="text-white font-medium">{email}</span>. 
+                                Please click the link to verify your account.
+                            </p>
+                            <p className="text-sm border border-yellow-500/50 bg-yellow-500/10 text-yellow-200 p-3 rounded-md">
+                                <strong>Local Dev Note:</strong> Check the backend console output for the verification link instead of your actual email inbox.
+                            </p>
+                            <Button
+                                onClick={() => {
+                                    setSignUpSuccess(false);
+                                    setIsSignUp(false);
+                                    setPassword('');
+                                }}
+                                className="w-full justify-center"
+                                variant="outline"
+                            >
+                                Back to Sign In
+                            </Button>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {error && (
+                                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start gap-3 text-red-200 text-sm">
+                                    <AlertCircle className="w-5 h-5 shrink-0" />
+                                    <span>{error}</span>
+                                </div>
+                            )}
 
-                        {isSignUp && (
-                            <div>
+                            {isSignUp && (
+                                <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">
                                     Full Name <span className="text-red-500">*</span>
                                 </label>
@@ -143,18 +146,52 @@ const SignIn = () => {
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isSignUp ? 'Create Account' : 'Sign In')}
                             {!loading && <ArrowRight className="w-5 h-5" />}
                         </Button>
-                    </form>
 
-                    <div className="mt-6 text-center">
-                        <button
-                            onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
-                            className="text-sm text-gray-400 hover:text-secondary transition-colors"
-                        >
-                            {isSignUp
-                                ? 'Already have an account? Sign In'
-                                : "Don't have an account? Create one"}
-                        </button>
-                    </div>
+                        <div className="relative mt-6 mb-4">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-white/10"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="px-2 bg-gray-900 text-gray-500">Or continue with</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-center w-full">
+                            <GoogleLogin
+                                onSuccess={async (credentialResponse) => {
+                                    try {
+                                        setError('');
+                                        setLoading(true);
+                                        await loginWithGoogle(credentialResponse.credential);
+                                    } catch (err) {
+                                        setError(err.message);
+                                        setLoading(false);
+                                    }
+                                }}
+                                onError={() => {
+                                    setError('Google Login Failed');
+                                }}
+                                theme="filled_black"
+                                size="large"
+                                text={isSignUp ? "signup_with" : "signin_with"}
+                                width="300"
+                            />
+                        </div>
+                    </form>
+                    )}
+
+                    {!signUpSuccess && (
+                        <div className="mt-6 text-center">
+                            <button
+                                onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
+                                className="text-sm text-gray-400 hover:text-secondary transition-colors"
+                            >
+                                {isSignUp
+                                    ? 'Already have an account? Sign In'
+                                    : "Don't have an account? Create one"}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
-import { LogOut, X, ChevronRight, CheckCircle2, Info, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../../context/AuthContext';
+import { X, ChevronRight, CheckCircle2, Info, Loader2 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { useMarketing } from '../../../context/MarketingContext';
 import { getProjectsBackRoute } from '../../../utils/navigationUtils';
-import { supabase } from '../../../lib/supabase';
+import api from '../../../lib/api';
 
 const timeAgo = (dateString) => {
     if (!dateString) return '';
@@ -86,7 +85,6 @@ const NewCampaign = () => {
     // Derived state directly from context
     const currentStep = activeDraft?.currentStepIndex || 0;
 
-    const [restoredState, setRestoredState] = useState(null);
     const topRef = useRef(null);
 
     const navigate = useNavigate();
@@ -203,7 +201,7 @@ const NewCampaign = () => {
                                 </Button>
                                 <Button variant="outline" className="w-full text-sm py-2.5 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors" onClick={async () => {
                                     if (window.confirm("Starting a new campaign will discard your previous draft. Are you sure?")) {
-                                        await supabase.from('campaign_drafts').delete().eq('id', existingDraft.id);
+                                        await api.delete(`/drafts/${existingDraft.id}`);
                                         await startNewDraft(projectId);
                                         setHasCheckedDraft(true);
                                     }
@@ -229,15 +227,6 @@ const NewCampaign = () => {
     }
 
     if (!activeDraft) return null; // Fallback or loading spinner
-
-    const handleNext = () => {
-        if (currentStep < STEPS.length - 1) {
-            setDraftStepIndex(currentStep + 1);
-        } else {
-            launchCampaign();
-            navigate(getProjectsBackRoute(projectId));
-        }
-    };
 
     const handleBack = () => {
         if (currentStep > 0) {
@@ -269,9 +258,12 @@ const NewCampaign = () => {
             case 1: return <StepAIAnalysis onComplete={(data) => onStepComplete('analysis', data)} ai={activeDraft.ai} {...commonProps} />;
             case 2: return <StepAdCreation onComplete={(data) => onStepComplete('ads', data)} {...commonProps} />;
             case 3: return <StepPlatformBudget onComplete={(data) => onStepComplete('budget', data)} {...commonProps} />;
-            case 4: return <StepReviewLaunch onLaunch={() => {
-                const campaign = launchCampaign();
-                navigate(getProjectsBackRoute(projectId));
+            case 4: return <StepReviewLaunch onLaunch={async () => {
+                const res = await launchCampaign();
+                if (res && res.success) {
+                    navigate(getProjectsBackRoute(projectId));
+                }
+                return res;
             }} {...commonProps} />;
             default: return null;
         }
@@ -355,15 +347,7 @@ const NewCampaign = () => {
 
                     <div className="mt-8 min-h-[400px]">
                         <AnimatePresence mode="wait">
-                            <motion.div
-                                key={currentStep}
-                                initial={{ opacity: 0, y: 15 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -15 }}
-                                transition={{ duration: 0.3, ease: 'easeOut' }}
-                            >
                                 {renderStepContent()}
-                            </motion.div>
                         </AnimatePresence>
                     </div>
                 </div>

@@ -17,6 +17,7 @@ export default function CreateProject() {
         website: ''
     });
     const [urlError, setUrlError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -49,8 +50,15 @@ export default function CreateProject() {
         };
         delete dataToSubmit.customIndustry;
 
-        const newProject = createProject(dataToSubmit);
-        navigate(`/marketing/projects/${newProject.id}`);
+        setIsSubmitting(true);
+        try {
+            const newProject = await createProject(dataToSubmit);
+            navigate(`/marketing/projects/${newProject.id}`);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (

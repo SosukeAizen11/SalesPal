@@ -117,11 +117,37 @@ async function deleteCampaign(req, res, next) {
 
 async function listDrafts(req, res, next) {
   try {
-    const { rows } = await db.query(
-      `SELECT * FROM campaign_drafts WHERE user_id = $1 ORDER BY updated_at DESC`,
-      [req.user.id]
-    );
+    const { projectId } = req.query;
+    let sql = `SELECT * FROM campaign_drafts WHERE user_id = $1`;
+    const params = [req.user.id];
+    let idx = 2;
+
+    if (projectId) {
+      if (projectId === 'null') {
+        sql += ` AND project_id IS NULL`;
+      } else {
+        sql += ` AND project_id = $${idx++}`;
+        params.push(projectId);
+      }
+    }
+
+    sql += ` ORDER BY updated_at DESC`;
+
+    const { rows } = await db.query(sql, params);
     res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getDraft(req, res, next) {
+  try {
+    const { rows } = await db.query(
+      `SELECT * FROM campaign_drafts WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Draft not found' } });
+    res.json(rows[0]);
   } catch (err) {
     next(err);
   }
@@ -184,7 +210,8 @@ async function launchDraft(req, res, next) {
         return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Draft not found' } });
       }
 
-      const data = draft.draft_data || {};
+      const rawDraftData = typeof draft.draft_data === 'string' ? JSON.parse(draft.draft_data) : (draft.draft_data || {});
+      const data = rawDraftData.data || rawDraftData;
 
       // Create the campaign from draft data
       const campaignResult = await client.query(
@@ -222,4 +249,4 @@ async function deleteDraft(req, res, next) {
   }
 }
 
-module.exports = { listCampaigns, getCampaign, createCampaign, updateCampaign, deleteCampaign, listDrafts, createDraft, updateDraft, launchDraft, deleteDraft };
+module.exports = { listCampaigns, getCampaign, createCampaign, updateCampaign, deleteCampaign, listDrafts, getDraft, createDraft, updateDraft, launchDraft, deleteDraft };

@@ -52,6 +52,11 @@ const env = {
   // Auth
   bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12,
 
+  // Google OAuth
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+  },
+
   // CORS
   corsOrigins: (() => {
     const raw = process.env.CORS_ORIGINS || "http://localhost:5173";

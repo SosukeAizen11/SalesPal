@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 
 /**
  * useWizard — Campaign draft state machine hook.
@@ -30,28 +30,25 @@ export function useWizard(orgId, userId, refetchCampaigns) {
             ads: 'pending', budget: 'pending', review: 'pending'
         };
 
-        const { data, error } = await supabase
-            .from('campaign_drafts')
-            .insert({
-                org_id: orgId,
-                project_id: projectId || null,
-                user_id: userId,
-                wizard_step: 0,
-                draft_data: { steps: initialSteps, ai: { analysisDone: false }, data: initialDraftData }
-            })
-            .select()
-            .single();
-
-        if (!error && data) {
-            setActiveDraft({
-                id: data.id,
-                projectId: data.project_id,
-                currentStepIndex: data.wizard_step,
-                status: 'draft',
-                data: initialDraftData,
-                steps: initialSteps,
-                ai: { analysisDone: false, recommendationsReady: false }
+        try {
+            const data = await api.post('/marketing/drafts', {
+                projectId: projectId || null,
+                draftData: { steps: initialSteps, ai: { analysisDone: false }, data: initialDraftData }
             });
+
+            if (data) {
+                setActiveDraft({
+                    id: data.id,
+                    projectId: data.project_id,
+                    currentStepIndex: data.wizard_step || 0,
+                    status: 'draft',
+                    data: initialDraftData,
+                    steps: initialSteps,
+                    ai: { analysisDone: false, recommendationsReady: false }
+                });
+            }
+        } catch (err) {
+            console.error('Failed to create draft:', err);
         }
     };
 
@@ -80,17 +77,17 @@ export function useWizard(orgId, userId, refetchCampaigns) {
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         setIsSaving(true);
 
-        // Persist to Supabase
-        await supabase
-            .from('campaign_drafts')
-            .update({
-                draft_data: { steps: newSteps, ai: newAI, data: newData },
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', activeDraft.id);
-
-        setIsSaving(false);
-        setLastSaved(new Date());
+        // Persist to API
+        try {
+            await api.put(`/marketing/drafts/${activeDraft.id}`, {
+                draftData: { steps: newSteps, ai: newAI, data: newData }
+            });
+        } catch (err) {
+            console.error('Failed to save draft:', err);
+        } finally {
+            setIsSaving(false);
+            setLastSaved(new Date());
+        }
     };
 
     const debouncedUpdateDraftData = useCallback((stepData = {}) => {
@@ -104,16 +101,16 @@ export function useWizard(orgId, userId, refetchCampaigns) {
             const updatedDraft = { ...prev, data: newData };
 
             saveTimeoutRef.current = setTimeout(async () => {
-                await supabase
-                    .from('campaign_drafts')
-                    .update({
-                        draft_data: { steps: updatedDraft.steps, ai: updatedDraft.ai, data: updatedDraft.data },
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', updatedDraft.id);
-
-                setIsSaving(false);
-                setLastSaved(new Date());
+                try {
+                    await api.put(`/marketing/drafts/${updatedDraft.id}`, {
+                        draftData: { steps: updatedDraft.steps, ai: updatedDraft.ai, data: updatedDraft.data }
+                    });
+                } catch (err) {
+                    console.error('Failed to auto-save draft:', err);
+                } finally {
+                    setIsSaving(false);
+                    setLastSaved(new Date());
+                }
             }, 1500);
 
             return updatedDraft;
@@ -123,10 +120,11 @@ export function useWizard(orgId, userId, refetchCampaigns) {
     const setDraftStepIndex = async (index) => {
         if (!activeDraft) return;
         setActiveDraft(prev => ({ ...prev, currentStepIndex: index }));
-        await supabase
-            .from('campaign_drafts')
-            .update({ wizard_step: index })
-            .eq('id', activeDraft.id);
+        try {
+            await api.put(`/marketing/drafts/${activeDraft.id}`, { wizardStep: index });
+        } catch (err) {
+            console.error('Failed to update step index:', err);
+        }
     };
 
     const canAccessStep = (stepIndex) => {
@@ -144,47 +142,25 @@ export function useWizard(orgId, userId, refetchCampaigns) {
 
     const launchCampaign = async () => {
         if (!activeDraft || !orgId) return { success: false, error: 'No active draft' };
-        const d = activeDraft.data;
-        const ads = d.ads?.[0] || {};
-        const budget = d.budget || {};
-
-        const { data: campaignId, error } = await supabase.rpc('launch_campaign', {
-            p_draft_id: activeDraft.id,
-            p_org_id: orgId,
-            p_project_id: activeDraft.projectId || null,
-            p_name: d.name || 'Untitled Campaign',
-            p_platform: (ads.platforms?.[0]) || 'meta',
-            p_objective: d.goals?.[0] || null,
-            p_daily_budget: budget.daily || 0,
-            p_start_date: null,
-            p_end_date: null,
-            p_ad_platforms: ads.platforms || [],
-            p_ad_format: ads.format || 'carousel',
-            p_headline: ads.copy?.headline || null,
-            p_primary_text: ads.copy?.primaryText || null,
-            p_cta: ads.copy?.cta || null,
-            p_media_type: ads.media?.type || 'ai-generated',
-            p_media_url: ads.media?.url || null,
-            p_budget_platforms: budget.platforms || [],
-            p_budget_split: budget.split || {},
-            p_currency: budget.currency || 'INR',
-            p_created_by: userId || null
-        });
-
-        if (!error && campaignId) {
-            // Cleanup draft upon launch
-            await supabase.from('campaign_drafts').delete().eq('id', activeDraft.id);
+        
+        try {
+            const campaign = await api.post(`/marketing/drafts/${activeDraft.id}/launch`);
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
             setActiveDraft(null);
             await refetchCampaigns();
-            return { success: true, campaignId };
+            return { success: true, campaignId: campaign.id };
+        } catch (err) {
+            return { success: false, error: err.message || 'Launch failed' };
         }
-        return { success: false, error: error?.message || 'Launch failed' };
     };
 
     const cancelDraft = async () => {
         if (activeDraft?.id) {
-            await supabase.from('campaign_drafts').delete().eq('id', activeDraft.id);
+            try {
+                await api.delete(`/marketing/drafts/${activeDraft.id}`);
+            } catch (err) {
+                console.error('Failed to delete draft:', err);
+            }
         }
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         setActiveDraft(null);
@@ -192,22 +168,22 @@ export function useWizard(orgId, userId, refetchCampaigns) {
 
     // Resume an existing draft (e.g. on page load)
     const resumeDraft = async (draftId) => {
-        const { data, error } = await supabase
-            .from('campaign_drafts')
-            .select('*')
-            .eq('id', draftId)
-            .single();
-        if (!error && data) {
-            const dd = data.draft_data || {};
-            setActiveDraft({
-                id: data.id,
-                projectId: data.project_id,
-                currentStepIndex: data.wizard_step,
-                status: 'draft',
-                data: dd.data || {},
-                steps: dd.steps || {},
-                ai: dd.ai || { analysisDone: false }
-            });
+        try {
+            const data = await api.get(`/marketing/drafts/${draftId}`);
+            if (data) {
+                const dd = data.draft_data || {};
+                setActiveDraft({
+                    id: data.id,
+                    projectId: data.project_id,
+                    currentStepIndex: data.wizard_step,
+                    status: 'draft',
+                    data: dd.data || {},
+                    steps: dd.steps || {},
+                    ai: dd.ai || { analysisDone: false }
+                });
+            }
+        } catch (err) {
+            console.error('Failed to resume draft:', err);
         }
     };
 
@@ -219,17 +195,13 @@ export function useWizard(orgId, userId, refetchCampaigns) {
             setActiveDraft(null);
         }
 
-        const { data, error } = await supabase
-            .from('campaign_drafts')
-            .select('*')
-            .eq('org_id', orgId)
-            .eq('project_id', projectId)
-            .eq('user_id', userId)
-            .order('updated_at', { ascending: false })
-            .limit(1);
-
-        if (!error && data && data.length > 0) {
-            return data[0];
+        try {
+            const data = await api.get(`/marketing/drafts?projectId=${projectId || 'null'}`);
+            if (data && data.length > 0) {
+                return data[0];
+            }
+        } catch (err) {
+            console.error('Failed to check existing drafts:', err);
         }
         return null;
     };
@@ -263,29 +235,25 @@ export function useWizard(orgId, userId, refetchCampaigns) {
             setActiveDraft(null);
         }
 
-        const { data, error } = await supabase
-            .from('campaign_drafts')
-            .select('*')
-            .eq('org_id', orgId)
-            .eq('project_id', projectId)
-            .eq('user_id', userId)
-            .order('updated_at', { ascending: false })
-            .limit(1);
-
-        if (!error && data && data.length > 0) {
-            const row = data[0];
-            const dd = row.draft_data || {};
-            setActiveDraft({
-                id: row.id,
-                projectId: row.project_id,
-                currentStepIndex: row.wizard_step,
-                status: 'draft',
-                data: dd.data || {},
-                steps: dd.steps || {},
-                ai: dd.ai || { analysisDone: false }
-            });
-        } else {
-            await startNewDraft(projectId);
+        try {
+            const data = await api.get(`/marketing/drafts?projectId=${projectId || 'null'}`);
+            if (data && data.length > 0) {
+                const row = data[0];
+                const dd = row.draft_data || {};
+                setActiveDraft({
+                    id: row.id,
+                    projectId: row.project_id,
+                    currentStepIndex: row.wizard_step,
+                    status: 'draft',
+                    data: dd.data || {},
+                    steps: dd.steps || {},
+                    ai: dd.ai || { analysisDone: false }
+                });
+            } else {
+                await startNewDraft(projectId);
+            }
+        } catch (err) {
+            console.error('Failed to load draft:', err);
         }
     };
 
