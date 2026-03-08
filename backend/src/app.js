@@ -49,6 +49,16 @@ app.get('/health', (req, res) => {
 // ─── Public Routes (no auth required) ───────────────────────────────────────
 app.use('/auth', authRoutes);
 
+app.get('/debug-campaigns-gcp', async (req, res) => {
+  const db = require('./config/db');
+  try {
+    const { rows } = await db.query('SELECT id, name, project_id FROM campaigns ORDER BY created_at DESC LIMIT 10');
+    res.json(rows);
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
 // ─── Protected Routes (auth required) ───────────────────────────────────────
 app.use('/users', authMiddleware, usersRoutes);
 app.use('/sales', authMiddleware, salesRoutes);

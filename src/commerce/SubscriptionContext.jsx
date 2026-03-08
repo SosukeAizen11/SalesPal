@@ -1,32 +1,32 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../lib/api';
-import { useOrg } from '../context/OrgContext';
 import { useAuth } from '../context/AuthContext';
 import { MODULES } from './commerce.config';
 
 /**
- * SubscriptionContext — REST-backed subscription + credit management.
- * 
- * Backend routes:
- *   GET    /billing/subscriptions
- *   POST   /billing/subscriptions/activate       { moduleId }
- *   POST   /billing/subscriptions/:moduleId/deactivate
- *   POST   /billing/subscriptions/:moduleId/pause
- *   POST   /billing/subscriptions/:moduleId/resume
- *   GET    /billing/credits
- *   POST   /billing/credits/consume              { type }
- *   POST   /billing/credits/add                  { amount }
+ * SubscriptionContext — Supabase-backed subscription + credit management.
+ *
+ * DB tables used:
+ *   - subscriptions  (user_id, org_id, module, plan, status, activated_at, expires_at)
+ *   - marketing_credits (org_id, balance)
+ *   - credit_transactions (org_id, type, amount, balance_after, reference_type)
+ *
+ * DB functions used:
+ *   - consume_credit(p_org_id, p_type, p_amount)  → boolean
+ *   - add_credit(p_org_id, p_amount, p_source)    → void
+ *
+ * RLS: subscriptions rows are scoped by user_id = auth.uid()
  */
 
 const SubscriptionContext = createContext();
 
 export const SubscriptionProvider = ({ children }) => {
-    const { orgId } = useOrg();
     const { user } = useAuth();
     const [subscriptions, setSubscriptions] = useState({});
     const [credits, setCredits] = useState({ balance: 0 });
     const [loading, setLoading] = useState(true);
 
+    // ─── Fetch subscriptions + credits from API ───
     const fetchAll = useCallback(async () => {
         if (!user) {
             setSubscriptions({});
@@ -37,20 +37,14 @@ export const SubscriptionProvider = ({ children }) => {
         setLoading(true);
 
         try {
-            // Fetch subscriptions and credits in parallel
-            const [subRes, creditRes] = await Promise.allSettled([
+            const [subRes, creditRes] = await Promise.all([
                 api.get('/billing/subscriptions'),
-                api.get('/billing/credits'),
+                api.get('/billing/credits')
             ]);
 
-            // Process subscriptions
-            const subs = subRes.status === 'fulfilled'
-                ? (subRes.value.subscriptions || subRes.value || [])
-                : [];
-
+            // Build subscriptions map keyed by module
             const subMap = {};
-            const subArray = Array.isArray(subs) ? subs : (subs ? [subs] : []);
-            subArray.forEach(row => {
+            (subRes || []).forEach(row => {
                 subMap[row.module] = {
                     id: row.id,
                     module: row.module,
@@ -63,16 +57,13 @@ export const SubscriptionProvider = ({ children }) => {
                 };
             });
             setSubscriptions(subMap);
-
-            // Process credits
-            const creditData = creditRes.status === 'fulfilled' ? creditRes.value : {};
-            setCredits({ balance: creditData?.balance ?? creditData?.credits?.balance ?? 0 });
+            setCredits({ balance: creditRes?.balance ?? 0 });
         } catch (err) {
             console.error('SubscriptionContext fetchAll error:', err);
         } finally {
             setLoading(false);
         }
-    }, [user, orgId]);
+    }, [user]);
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -97,96 +88,95 @@ export const SubscriptionProvider = ({ children }) => {
         for (const moduleId of moduleIds) {
             try {
                 await api.post('/billing/subscriptions/activate', { moduleId });
-            } catch (err) {
-                console.error(`Failed to activate subscription for ${moduleId}:`, err);
+            } catch (error) {
+                console.error(`Failed to activate subscription for ${moduleId}:`, error);
             }
         }
 
         await fetchAll();
-    }, [user, orgId, fetchAll]);
+    }, [user, fetchAll]);
 
     const deactivateSubscription = useCallback(async (moduleId) => {
         if (!user) return;
         try {
             await api.post(`/billing/subscriptions/${moduleId}/deactivate`);
-        } catch (err) {
-            console.error('Error deactivating subscription:', err);
+            await fetchAll();
+        } catch (error) {
+            console.error('Failed to deactivate subscription:', error);
         }
-        await fetchAll();
     }, [user, fetchAll]);
 
     const pauseSubscription = useCallback(async (moduleId) => {
         if (!user) return;
         try {
             await api.post(`/billing/subscriptions/${moduleId}/pause`);
-        } catch (err) {
-            console.error('Error pausing subscription:', err);
+            await fetchAll();
+        } catch (error) {
+            console.error('Failed to pause subscription:', error);
         }
-        await fetchAll();
     }, [user, fetchAll]);
 
     const resumeSubscription = useCallback(async (moduleId) => {
         if (!user) return;
         try {
             await api.post(`/billing/subscriptions/${moduleId}/resume`);
-        } catch (err) {
-            console.error('Error resuming subscription:', err);
+            await fetchAll();
+        } catch (error) {
+            console.error('Failed to resume subscription:', error);
         }
-        await fetchAll();
     }, [user, fetchAll]);
 
-    const isModuleActive = (moduleId) => {
+    const isModuleActive = useCallback((moduleId) => {
         return !!subscriptions[moduleId]?.active;
-    };
+    }, [subscriptions]);
 
-    const getSubscription = (moduleId) => {
+    const getSubscription = useCallback((moduleId) => {
         return subscriptions[moduleId] || null;
-    };
+    }, [subscriptions]);
 
     // ─── Credit management ───
 
     const consume = useCallback(async (moduleId, type) => {
-        if (!orgId || !isModuleActive(moduleId)) return false;
+        if (!isModuleActive(moduleId)) return false;
 
         try {
-            const data = await api.post('/billing/credits/consume', {
-                type,
-                amount: 1,
-            });
-
-            if (data.success) {
-                setCredits(prev => ({ balance: Math.max(0, prev.balance - 1) }));
-            }
-            return !!data.success;
-        } catch (err) {
-            console.error('consume_credit error:', err);
+            await api.post('/billing/credits/consume', { type });
+            setCredits(prev => ({ balance: Math.max(0, prev.balance - 1) }));
+            return true;
+        } catch (error) {
+            console.error('consume_credit error:', error);
             return false;
         }
-    }, [orgId, subscriptions]);
+    }, [isModuleActive]);
 
     const addCredits = useCallback(async (moduleId, resource, amount) => {
-        if (!orgId) return false;
-
         try {
-            await api.post('/billing/credits/add', {
-                amount: Number(amount),
-                source: `topup_${resource}`,
-            });
+            await api.post('/billing/credits/add', { amount: Number(amount) });
             setCredits(prev => ({ balance: prev.balance + Number(amount) }));
             return true;
-        } catch (err) {
-            console.error('addCredits error:', err);
+        } catch (error) {
+            console.error('addCredits error:', error);
             return false;
         }
-    }, [orgId]);
+    }, []);
 
-    const getRemaining = useCallback((moduleId, type) => {
+    /**
+     * getRemaining — returns the aggregate credit balance.
+     * NOTE: The backend currently stores a single balance — not per-type.
+     * `moduleId` and `type` params are accepted for future per-type API compatibility
+     * but are not yet used for filtering. See marketing_credits table.
+     */
+    const getRemaining = useCallback((_moduleId, _type) => {
         return credits.balance;
     }, [credits.balance]);
 
-    const canConsume = useCallback((moduleId, type) => {
+    /**
+     * canConsume — returns true if the module is active AND balance > 0.
+     * NOTE: Does not check per-type availability — same caveat as getRemaining.
+     */
+    const canConsume = useCallback((moduleId, _type) => {
         return isModuleActive(moduleId) && credits.balance > 0;
-    }, [subscriptions, credits.balance]);
+    }, [isModuleActive, credits.balance]);
 
     const clearCartAfterPurchase = () => {
         try { localStorage.removeItem('salespal_cart'); } catch { /* noop */ }
@@ -212,6 +202,7 @@ export const SubscriptionProvider = ({ children }) => {
         subscriptions, credits, loading,
         fetchAll,
         activateSubscription, deactivateSubscription, pauseSubscription, resumeSubscription,
+        isModuleActive, getSubscription,
         consume, addCredits, getRemaining, canConsume,
     ]);
 

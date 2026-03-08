@@ -51,12 +51,13 @@ export default function CreateProject() {
         delete dataToSubmit.customIndustry;
 
         setIsSubmitting(true);
-        const result = await createProject(dataToSubmit);
-        setIsSubmitting(false);
-        if (result?.data?.id) {
-            navigate(`/marketing/projects/${result.data.id}`);
-        } else {
-            navigate('/marketing/projects');
+        try {
+            const newProject = await createProject(dataToSubmit);
+            navigate(`/marketing/projects/${newProject.id}`);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 

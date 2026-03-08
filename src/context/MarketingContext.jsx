@@ -79,13 +79,20 @@ export const MarketingProvider = ({ children }) => {
     // ─── Campaign Draft Wizard ────────────────────────────────────────────────────
     const {
         activeDraft,
+        isSaving,
+        lastSaved,
         startNewDraft,
         updateDraftStep,
+        debouncedUpdateDraftData,
         setDraftStepIndex,
         canAccessStep,
         launchCampaign,
         cancelDraft,
         resumeDraft,
+        resumeDraftFromData,
+        checkExistingDraft,
+        loadDraftForProject,
+        resetDraftState,
     } = useWizard(orgId, user?.id, refetchCampaigns);
 
     // ─── Memoized value ───────────────────────────────────────────────────────────
@@ -122,13 +129,20 @@ export const MarketingProvider = ({ children }) => {
 
         // Draft state machine
         activeDraft,
+        isSaving,
+        lastSaved,
         startNewDraft,
         updateDraftStep,
+        debouncedUpdateDraftData,
         setDraftStepIndex,
         canAccessStep,
         launchCampaign,
         cancelDraft,
         resumeDraft,
+        resumeDraftFromData,
+        checkExistingDraft,
+        loadDraftForProject,
+        resetDraftState,
     }), [
         projects, projectsLoading, selectedProjectId,
         campaigns, campaignsLoading,

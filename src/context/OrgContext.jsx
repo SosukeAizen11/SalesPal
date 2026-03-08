@@ -31,20 +31,46 @@ export const OrgProvider = ({ children }) => {
         setLoading(true);
 
         try {
-            // The /users/me endpoint returns org info if the user has one
-            const data = await api.get('/users/me');
-            const userData = data.user || data;
-
-            if (userData.org_id) {
-                setOrg({ id: userData.org_id, name: userData.org_name || "My Workspace" });
-                setOrgId(userData.org_id);
-                setMembership({ role: userData.role || 'owner' });
-            } else {
-                // No org yet — this shouldn't happen since backend auto-creates on register
-                setOrg(null);
-                setOrgId(null);
-                setMembership(null);
+            // Try to find existing org membership
+            let orgData = null;
+            try {
+                orgData = await api.get('/users/me/org');
+            } catch (err) {
+                if (err.status !== 404) {
+                    console.error('Org members query error:', err);
+                }
             }
+
+            if (!orgData) {
+                // No org — call server-side bootstrap endpoint
+                console.log('No org found, calling bootstrap API...');
+                const userName = user.user_metadata?.full_name || user.fullName || user.email?.split('@')[0] || 'My';
+                const orgName = `${userName}'s Workspace`;
+
+                try {
+                    orgData = await api.post('/users/me/org', { name: orgName });
+                } catch (rpcError) {
+                    console.error('Bootstrap API failed:', rpcError);
+                    setLoading(false);
+                    return;
+                }
+                
+                // Note: The POST /me/org returns the org object directly, 
+                // but we fetch it again just to ensure we have the role 
+                // structured the exact same way as the GET endpoint
+                try {
+                    orgData = await api.get('/users/me/org');
+                } catch (e) {
+                     console.error('Failed to refetch org after bootstrap:', e);
+                }
+            }
+
+            if (orgData) {
+                setOrg(orgData);
+                setOrgId(orgData.id);
+                setMembership({ role: orgData.user_role });
+            }
+
         } catch (err) {
             console.error('Org bootstrap error:', err);
         } finally {
@@ -66,9 +92,11 @@ export const OrgProvider = ({ children }) => {
     // Manual create org (for settings/onboarding page)
     const createOrganization = useCallback(async (name) => {
         if (!user) throw new Error('Must be authenticated');
-        // Backend doesn't have a separate create-org endpoint yet,
-        // so this is a no-op for now (org is created on register)
+
+        const result = await api.post('/users/me/org', { name });
+        // Re-fetch to populate state
         await bootstrap();
+        return result;
     }, [user, bootstrap]);
 
     const value = useMemo(() => ({

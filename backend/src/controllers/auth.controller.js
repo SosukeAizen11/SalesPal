@@ -5,11 +5,7 @@ async function register(req, res, next) {
     const { email, password, fullName } = req.body;
     const result = await authService.registerUser({ email, password, fullName });
 
-    res.status(201).json({
-      user: result.user,
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-    });
+    res.status(201).json(result);
   } catch (err) {
     next(err);
   }
@@ -69,4 +65,42 @@ async function logout(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, logout };
+const googleLogin = async (req, res, next) => {
+    try {
+        const { token } = req.body;
+        if (!token) {
+            return res.status(400).json({ message: 'Google token is required' });
+        }
+        
+        const result = await authService.googleLogin(token);
+        res.json(result);
+    } catch (err) {
+        next(err);
+    }
+};
+
+async function verify(req, res, next) {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res.status(400).json({ error: { message: 'Token is required' } });
+    }
+
+    await authService.verifyEmailToken(token);
+    
+    // Redirect to frontend login with a success message
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?verified=true`);
+  } catch (err) {
+    // Redirect to frontend login with an error message
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=invalid_token`);
+  }
+}
+
+module.exports = {
+    register,
+    login,
+    refresh,
+    logout,
+    googleLogin,
+    verify
+};

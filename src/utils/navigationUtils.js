@@ -37,7 +37,8 @@ export const getNewCampaignRoute = (projectId) => {
     if (typeof projectId === 'string' && projectId.length > 0 && projectId !== 'undefined' && projectId !== 'null') {
         return `/marketing/projects/${projectId}/campaigns/new`;
     }
-    return '/marketing/campaigns/new';
+    // Campaigns must belong to a project, so fallback to projects hub if missing.
+    return '/marketing/projects';
 };
 
 /**

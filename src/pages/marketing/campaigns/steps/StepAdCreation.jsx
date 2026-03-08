@@ -156,14 +156,14 @@ const AD_FORMAT_RECOMMENDATIONS = {
     }
 };
 
-const StepAdCreation = ({ onComplete, onBack, data }) => {
+const StepAdCreation = ({ onComplete, onUpdate, onBack, data }) => {
     // Context
     const { getRemaining, consume } = useSubscription();
 
     // State
-    const [selectedPlatforms, setSelectedPlatforms] = useState(['meta', 'google']);
-    const [activeFormat, setActiveFormat] = useState('carousel'); // AI recommended default
-    const [copy, setCopy] = useState({
+    const [selectedPlatforms, setSelectedPlatforms] = useState(data?.adSettings?.platforms || ['meta', 'google']);
+    const [activeFormat, setActiveFormat] = useState(data?.adSettings?.format || 'carousel'); // AI recommended default
+    const [copy, setCopy] = useState(data?.adSettings?.copy || {
         headline: "Luxury Living in South Mumbai | Sea Facing Apartments",
         primaryText: "Experience the pinnacle of luxury with our new sea-facing apartments. World-class amenities, prime location, and exclusive community.",
         cta: "Sign Up"
@@ -175,6 +175,18 @@ const StepAdCreation = ({ onComplete, onBack, data }) => {
     const [promotedPost, setPromotedPost] = useState(null);
     const [showCreditWarning, setShowCreditWarning] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+
+    useEffect(() => {
+        if (onUpdate) {
+            onUpdate({
+                adSettings: {
+                    platforms: selectedPlatforms,
+                    format: activeFormat,
+                    copy
+                }
+            });
+        }
+    }, [selectedPlatforms, activeFormat, copy, onUpdate]);
 
     const recommendedPlatforms = useMemo(() => ALL_PLATFORMS.filter(p => p.recommended), []);
     const otherPlatforms = useMemo(() => ALL_PLATFORMS.filter(p => !p.recommended), []);

@@ -14,5 +14,6 @@ router.get('/leads/timeline', periodValidator, validate, ctrl.getLeadsOverTime);
 router.get('/platforms', periodValidator, validate, ctrl.getPlatforms);
 router.get('/daily', periodValidator, validate, ctrl.getDailyMetrics);
 router.get('/comparison', periodValidator, validate, ctrl.getComparison);
+router.get('/campaign-metrics', validate, ctrl.getCampaignMetricsRaw);
 
 module.exports = router;

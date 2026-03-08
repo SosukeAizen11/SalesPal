@@ -4,8 +4,12 @@ import { useOrg } from './OrgContext';
 import { useAuth } from './AuthContext';
 
 /**
- * useCampaignContext — REST-backed campaign CRUD.
- * Replaces Supabase .from('campaigns') calls with REST endpoints.
+ * useCampaignContext — internal hook, consumed only by MarketingProvider.
+ * Owns all campaign CRUD, AI action stubs, and the fetchCampaigns + launchCampaign
+ * dependency on the wizard. Extracted from MarketingContext (Phase 4).
+ *
+ * @param {string|null} selectedProjectId — passed in from MarketingProvider local state
+ * @param {Function}    onLaunchSuccess   — called after launch_campaign RPC succeeds
  */
 export function useCampaignContext(selectedProjectId, onLaunchSuccess) {
     const { orgId } = useOrg();
@@ -19,9 +23,9 @@ export function useCampaignContext(selectedProjectId, onLaunchSuccess) {
         setCampaignsLoading(true);
         try {
             const data = await api.get('/marketing/campaigns');
-            setCampaigns(data.campaigns || data || []);
-        } catch (err) {
-            console.error('Error fetching campaigns:', err);
+            setCampaigns(data || []);
+        } catch (error) {
+            console.error('Failed to fetch campaigns', error);
             setCampaigns([]);
         }
         setCampaignsLoading(false);
@@ -43,13 +47,13 @@ export function useCampaignContext(selectedProjectId, onLaunchSuccess) {
                 dailyBudget: campaignData.dailyBudget || campaignData.daily_budget || null,
                 totalBudget: campaignData.totalBudget || campaignData.total_budget || null,
                 startDate: campaignData.startDate || campaignData.start_date || null,
-                endDate: campaignData.endDate || campaignData.end_date || null,
+                endDate: campaignData.endDate || campaignData.end_date || null
             });
-            const campaign = data.campaign || data;
-            setCampaigns(prev => [campaign, ...prev]);
-            return campaign;
-        } catch (err) {
-            console.error('Error creating campaign:', err);
+
+            if (data) setCampaigns(prev => [data, ...prev]);
+            return data;
+        } catch (error) {
+            console.error('Failed to create campaign', error);
             return null;
         }
     };
@@ -57,37 +61,24 @@ export function useCampaignContext(selectedProjectId, onLaunchSuccess) {
     const getCampaignById = (id) => campaigns.find(c => c.id === id) || null;
 
     const updateCampaignData = async (campaignId, updates) => {
-        const dbUpdates = {};
-        if (updates.name !== undefined) dbUpdates.name = updates.name;
-        if (updates.status !== undefined) dbUpdates.status = updates.status;
-        if (updates.platform !== undefined) dbUpdates.platform = updates.platform;
-        if (updates.objective !== undefined) dbUpdates.objective = updates.objective;
-        if (updates.dailyBudget !== undefined) dbUpdates.daily_budget = updates.dailyBudget;
-        if (updates.daily_budget !== undefined) dbUpdates.daily_budget = updates.daily_budget;
-        if (updates.totalBudget !== undefined) dbUpdates.total_budget = updates.totalBudget;
-        if (updates.total_budget !== undefined) dbUpdates.total_budget = updates.total_budget;
-        if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate;
-        if (updates.start_date !== undefined) dbUpdates.start_date = updates.start_date;
-        if (updates.endDate !== undefined) dbUpdates.end_date = updates.endDate;
-        if (updates.end_date !== undefined) dbUpdates.end_date = updates.end_date;
-
+        // Map camelCase to snake_case for known fields, although API takes camelCase too,
+        // we just pass updates directly as api handles mapping in controller
         try {
-            const data = await api.put(`/marketing/campaigns/${campaignId}`, dbUpdates);
-            const campaign = data.campaign || data;
-            setCampaigns(prev => prev.map(c => c.id === campaignId ? campaign : c));
-            return campaign;
-        } catch (err) {
-            console.error('Error updating campaign:', err);
+            const data = await api.put(`/marketing/campaigns/${campaignId}`, updates);
+            if (data) setCampaigns(prev => prev.map(c => c.id === campaignId ? data : c));
+            return data;
+        } catch (error) {
+            console.error('Failed to update campaign', error);
             return null;
         }
     };
 
     const deleteCampaign = async (campaignId) => {
         try {
-            await api.del(`/marketing/campaigns/${campaignId}`);
+            await api.delete(`/marketing/campaigns/${campaignId}`);
             setCampaigns(prev => prev.filter(c => c.id !== campaignId));
-        } catch (err) {
-            console.error('Error deleting campaign:', err);
+        } catch (error) {
+            console.error('Failed to delete campaign', error);
         }
     };
 
@@ -107,7 +98,10 @@ export function useCampaignContext(selectedProjectId, onLaunchSuccess) {
                 break;
             }
             case 'OPTIMIZE_BUDGET':
+                // Will call AI edge function in Phase E
+                break;
             case 'ROTATE_CREATIVES':
+                // Will call AI edge function in Phase E
                 break;
             default:
                 break;
@@ -128,6 +122,7 @@ export function useCampaignContext(selectedProjectId, onLaunchSuccess) {
         getCampaignById,
         getCampaignsByProject,
         applyAIAction,
+        // Exposed so useWizard can call fetchCampaigns after launchCampaign
         refetchCampaigns: fetchCampaigns,
     };
 }

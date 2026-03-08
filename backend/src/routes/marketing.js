@@ -14,6 +14,7 @@ router.delete('/campaigns/:id', [param('id').isUUID()], validate, ctrl.deleteCam
 
 // Campaign Drafts (Wizard)
 router.get('/drafts', ctrl.listDrafts);
+router.get('/drafts/:id', [param('id').isUUID()], validate, ctrl.getDraft);
 router.post('/drafts', ctrl.createDraft);
 router.put('/drafts/:id', [param('id').isUUID()], validate, ctrl.updateDraft);
 router.post('/drafts/:id/launch', [param('id').isUUID()], validate, ctrl.launchDraft);

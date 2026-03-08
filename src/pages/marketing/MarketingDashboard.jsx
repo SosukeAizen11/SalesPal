@@ -35,12 +35,12 @@ import {
 } from '../../utils/analyticsCalculations';
 
 // --- MAIN CONTENT COMPONENT ---
-const DashboardContent = ({ mode = 'page' }) => {
+const DashboardContent = () => {
     const {
-        isGlobal, selectedProjectId, timeRange, channelFilter,
+        selectedProjectId, timeRange, channelFilter,
         setTimeRange, setChannelFilter, setCompareMode, compareMode, setProject
     } = useAnalytics();
-    const { projects, campaigns } = useMarketing();
+    const { projects } = useMarketing();
     const { user } = useAuth();
     const { formatCurrency } = usePreferences();
 
@@ -62,10 +62,11 @@ const DashboardContent = ({ mode = 'page' }) => {
         }
         setMetricsLoading(true);
         try {
-            const data = await api.get('/analytics/dashboard');
-            setMetricsRows(data.metrics || data || []);
+            const data = await api.get('/analytics/campaign-metrics');
+            setMetricsRows(data || []);
         } catch (err) {
-            console.error('Dashboard metrics fetch error:', err);
+            console.error('Failed to fetch campaign_metrics via API:', err);
+            setMetricsRows([]);
         } finally {
             setMetricsLoading(false);
         }
@@ -280,11 +281,6 @@ const DashboardContent = ({ mode = 'page' }) => {
             cpa: '/marketing/insights/cpa',
         };
         if (routes[metric]) navigate(routes[metric]);
-    };
-
-    const handleCampaignClick = (campaign) => {
-        setModalContext({ type: 'campaign', data: campaign, title: 'Campaign Details' });
-        setDetailModalOpen(true);
     };
 
     const handleActionPreview = (action) => {

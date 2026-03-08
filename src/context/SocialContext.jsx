@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { useOrg } from './OrgContext';
-import { useAuth } from './AuthContext';
 
 /**
- * useSocialContext — REST-backed social posts CRUD with optimistic updates.
- * Replaces Supabase .from('social_posts') calls.
+ * useSocialContext — internal hook, consumed only by MarketingProvider.
+ * Owns social posts CRUD with optimistic updates.
+ * Extracted from MarketingContext (Phase 4).
+ *
+ * @param {string|null} selectedProjectId — passed in from MarketingProvider local state
  */
 export function useSocialContext(selectedProjectId) {
     const { orgId } = useOrg();
-    const { user } = useAuth();
 
     const [socialPosts, setSocialPosts] = useState([]);
     const [socialPostsLoading, setSocialPostsLoading] = useState(true);
@@ -19,9 +20,9 @@ export function useSocialContext(selectedProjectId) {
         setSocialPostsLoading(true);
         try {
             const data = await api.get('/social/posts');
-            setSocialPosts(data.posts || data || []);
+            setSocialPosts(data || []);
         } catch (err) {
-            console.error('Error fetching social posts:', err);
+            console.error('Failed to fetch posts:', err);
             setSocialPosts([]);
         }
         setSocialPostsLoading(false);
@@ -38,30 +39,36 @@ export function useSocialContext(selectedProjectId) {
 
         try {
             const data = await api.post('/social/posts', {
-                project_id: selectedProjectId || null,
+                projectId: selectedProjectId || null,
                 content: post.content,
-                post_type: post.type || post.post_type || 'image',
+                postType: post.type || post.post_type || 'image',
                 status: post.status || 'draft',
-                scheduled_for: post.scheduledFor || post.scheduled_for || null,
+                scheduledFor: post.scheduledFor || post.scheduled_for || null,
                 platforms: post.platforms || [],
-                media_urls: post.mediaUrls || post.media_urls || [],
+                mediaUrls: post.mediaUrls || post.media_urls || []
             });
-            const newPost = data.post || data;
-            setSocialPosts(prev => prev.map(p => p.id === tempId ? newPost : p));
-            return newPost;
+            // Replace optimistic with real row
+            if (data) {
+                setSocialPosts(prev => prev.map(p => p.id === tempId ? data : p));
+                return data;
+            }
         } catch (err) {
-            console.error('Error creating social post:', err);
-            setSocialPosts(prev => prev.filter(p => p.id !== tempId));
-            return null;
+            console.error('Failed to create post:', err);
         }
+        
+        // Rollback on error or no data
+        setSocialPosts(prev => prev.filter(p => p.id !== tempId));
+        return null;
     };
 
     const deleteSocialPost = async (postId) => {
+        // Optimistic removal
         setSocialPosts(prev => prev.filter(p => p.id !== postId));
         try {
-            await api.del(`/social/posts/${postId}`);
+            await api.delete(`/social/posts/${postId}`);
         } catch (err) {
-            console.error('Error deleting social post:', err);
+            console.error('Failed to delete post:', err);
+            // Rollback: refetch on failure
             fetchSocialPosts();
         }
     };
@@ -69,11 +76,17 @@ export function useSocialContext(selectedProjectId) {
     const updateSocialPost = async (postId, updates) => {
         setSocialPosts(prev => prev.map(p => p.id === postId ? { ...p, ...updates } : p));
         try {
-            const data = await api.put(`/social/posts/${postId}`, updates);
-            const updated = data.post || data;
-            setSocialPosts(prev => prev.map(p => p.id === postId ? updated : p));
+            const payload = { ...updates };
+            if (payload.post_type) { payload.postType = payload.post_type; delete payload.post_type; }
+            if (payload.scheduled_for) { payload.scheduledFor = payload.scheduled_for; delete payload.scheduled_for; }
+            if (payload.media_urls) { payload.mediaUrls = payload.media_urls; delete payload.media_urls; }
+
+            const data = await api.put(`/social/posts/${postId}`, payload);
+            if (data) setSocialPosts(prev => prev.map(p => p.id === postId ? data : p));
         } catch (err) {
-            console.error('Error updating social post:', err);
+            console.error('Failed to update post:', err);
+            // Rollback by refetching
+            fetchSocialPosts();
         }
     };
 

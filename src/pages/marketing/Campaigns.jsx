@@ -14,7 +14,7 @@ const Campaigns = () => {
     const { campaigns } = useMarketing();
 
     const handleCreateCampaign = () => {
-        navigate('/marketing/campaigns/new');
+        navigate('/marketing/projects'); // Always route to projects hub to pick a project 
     };
 
     // Filter and Sort Logic

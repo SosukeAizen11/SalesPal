@@ -1,10 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
-import { LogOut, X, ChevronRight, CheckCircle2, Info } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../../context/AuthContext';
+import { X, ChevronRight, CheckCircle2, Info, Loader2 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { useMarketing } from '../../../context/MarketingContext';
 import { getProjectsBackRoute } from '../../../utils/navigationUtils';
+import api from '../../../lib/api';
+
+const timeAgo = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    if (seconds < 60) return `Just now`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days} day${days !== 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
 
 // Components
 import StepHeader from './components/StepHeader';
@@ -51,18 +66,25 @@ const NewCampaign = () => {
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const {
         activeDraft,
+        isSaving,
+        lastSaved,
         startNewDraft,
         updateDraftStep,
+        debouncedUpdateDraftData,
         setDraftStepIndex,
         canAccessStep,
         launchCampaign,
-        cancelDraft
+        checkExistingDraft,
+        resumeDraftFromData,
     } = useMarketing();
+
+    // Draft modal state
+    const [hasCheckedDraft, setHasCheckedDraft] = useState(false);
+    const [existingDraft, setExistingDraft] = useState(null);
 
     // Derived state directly from context
     const currentStep = activeDraft?.currentStepIndex || 0;
 
-    const [restoredState, setRestoredState] = useState(null);
     const topRef = useRef(null);
 
     const navigate = useNavigate();
@@ -87,14 +109,34 @@ const NewCampaign = () => {
         }
     }, [location.search]);
 
-    // Initialize draft from Supabase.
-    // activeDraft already persists across page refreshes and OAuth redirects
-    // via the campaign_drafts table — no localStorage needed.
+    // Check for existing draft on mount before allowing access
     useEffect(() => {
-        if (!activeDraft) {
-            startNewDraft(projectId);
+        let mounted = true;
+
+        const init = async () => {
+            if (activeDraft && activeDraft.projectId === projectId) {
+                // We already have a valid active draft for this project
+                setHasCheckedDraft(true);
+                return;
+            }
+
+            const draftRow = await checkExistingDraft(projectId);
+            if (!mounted) return;
+
+            if (draftRow) {
+                setExistingDraft(draftRow); // Opens the modal
+            } else {
+                await startNewDraft(projectId);
+                if (mounted) setHasCheckedDraft(true);
+            }
+        };
+
+        if (!hasCheckedDraft && !existingDraft) {
+            init();
         }
-    }, [projectId]);
+
+        return () => { mounted = false; };
+    }, [projectId, checkExistingDraft, startNewDraft, hasCheckedDraft, existingDraft, activeDraft]);
 
     // Guard: Prevent deep linking to locked steps
     React.useEffect(() => {
@@ -122,16 +164,69 @@ const NewCampaign = () => {
         }
     }, [currentStep]);
 
-    if (!activeDraft) return null; // or loading spinner
+    if (!hasCheckedDraft) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                {existingDraft ? (
+                    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in">
+                        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in-up">
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">You have an unfinished campaign</h3>
+                            <p className="text-gray-600 mb-6 text-sm">
+                                You previously started creating a campaign in this project. Would you like to resume it or start a new one?
+                            </p>
 
-    const handleNext = () => {
-        if (currentStep < STEPS.length - 1) {
-            setDraftStepIndex(currentStep + 1);
-        } else {
-            launchCampaign();
-            navigate(getProjectsBackRoute(projectId));
-        }
-    };
+                            <div className="mb-6 bg-gray-50 rounded-lg p-3 text-xs border border-gray-100">
+                                <div className="flex justify-between mb-1.5">
+                                    <span className="text-gray-500 font-medium">Last edited:</span>
+                                    <span className="text-gray-900 font-medium">{timeAgo(existingDraft.updated_at)}</span>
+                                </div>
+                                <div className="flex justify-between mb-1.5">
+                                    <span className="text-gray-500 font-medium">Stopped at:</span>
+                                    <span className="text-gray-900 font-medium">Step {existingDraft.wizard_step + 1} - {STEPS[existingDraft.wizard_step]?.label || ''}</span>
+                                </div>
+                                {existingDraft.draft_data?.data?.name && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500 font-medium">Campaign:</span>
+                                        <span className="text-gray-900 font-medium truncate max-w-[150px]">{existingDraft.draft_data.data.name}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-3">
+                                <Button className="w-full text-sm py-2.5" onClick={() => {
+                                    resumeDraftFromData(existingDraft);
+                                    setHasCheckedDraft(true);
+                                }}>
+                                    Resume Campaign
+                                </Button>
+                                <Button variant="outline" className="w-full text-sm py-2.5 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors" onClick={async () => {
+                                    if (window.confirm("Starting a new campaign will discard your previous draft. Are you sure?")) {
+                                        await api.delete(`/drafts/${existingDraft.id}`);
+                                        await startNewDraft(projectId);
+                                        setHasCheckedDraft(true);
+                                    }
+                                }}>
+                                    Start New Campaign
+                                </Button>
+                                <Button variant="ghost" className="w-full text-sm py-2.5" onClick={() => {
+                                    navigate(-1);
+                                }}>
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center gap-4 animate-fade-in">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <p className="text-sm text-gray-500 font-medium">Preparing campaign wizard...</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    if (!activeDraft) return null; // Fallback or loading spinner
 
     const handleBack = () => {
         if (currentStep > 0) {
@@ -140,10 +235,7 @@ const NewCampaign = () => {
     };
 
     const handleExit = () => {
-        if (window.confirm('Are you sure you want to exit? Process will be lost.')) {
-            cancelDraft();
-            navigate(getProjectsBackRoute(projectId));
-        }
+        navigate(getProjectsBackRoute(projectId), { replace: true });
     };
 
     // Inject handleNext/save logic into steps
@@ -157,7 +249,8 @@ const NewCampaign = () => {
     const renderStepContent = () => {
         const commonProps = {
             data: activeDraft.data,
-            onBack: handleBack // Pass the handleBack function we already defined
+            onBack: handleBack,
+            onUpdate: debouncedUpdateDraftData
         };
 
         switch (currentStep) {
@@ -165,9 +258,12 @@ const NewCampaign = () => {
             case 1: return <StepAIAnalysis onComplete={(data) => onStepComplete('analysis', data)} ai={activeDraft.ai} {...commonProps} />;
             case 2: return <StepAdCreation onComplete={(data) => onStepComplete('ads', data)} {...commonProps} />;
             case 3: return <StepPlatformBudget onComplete={(data) => onStepComplete('budget', data)} {...commonProps} />;
-            case 4: return <StepReviewLaunch onLaunch={() => {
-                const campaign = launchCampaign();
-                navigate(getProjectsBackRoute(projectId));
+            case 4: return <StepReviewLaunch onLaunch={async () => {
+                const res = await launchCampaign();
+                if (res && res.success) {
+                    navigate(getProjectsBackRoute(projectId));
+                }
+                return res;
             }} {...commonProps} />;
             default: return null;
         }
@@ -209,13 +305,30 @@ const NewCampaign = () => {
                     <ChevronRight className="w-4 h-4 text-gray-400" />
                     <span className="font-medium text-gray-900">New Campaign</span>
                 </div>
-                <Button
-                    variant="secondary"
-                    onClick={handleExit}
-                >
-                    <X className="w-4 h-4 mr-2" />
-                    Exit
-                </Button>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center text-xs text-gray-400 font-medium bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100">
+                        {isSaving ? (
+                            <>
+                                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin text-primary" />
+                                Saving...
+                            </>
+                        ) : lastSaved ? (
+                            <>
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 text-green-500" />
+                                All changes saved
+                            </>
+                        ) : (
+                            <span className="px-1 text-gray-400">Draft</span>
+                        )}
+                    </div>
+                    <Button
+                        variant="secondary"
+                        onClick={handleExit}
+                    >
+                        <X className="w-4 h-4 mr-2" />
+                        Exit
+                    </Button>
+                </div>
             </div>
 
             {/* Step Indicator - OUTSIDE CARD */}
@@ -234,15 +347,7 @@ const NewCampaign = () => {
 
                     <div className="mt-8 min-h-[400px]">
                         <AnimatePresence mode="wait">
-                            <motion.div
-                                key={currentStep}
-                                initial={{ opacity: 0, y: 15 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -15 }}
-                                transition={{ duration: 0.3, ease: 'easeOut' }}
-                            >
                                 {renderStepContent()}
-                            </motion.div>
                         </AnimatePresence>
                     </div>
                 </div>

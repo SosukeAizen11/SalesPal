@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import api, { setTokens, clearTokens, getAccessToken, getRefreshToken } from '../lib/api';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import api, { getAccessToken, setTokens, clearTokens } from '../lib/api';
 
 const AuthContext = createContext();
 
@@ -8,67 +8,88 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState(null);
+    const [session, setSession] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // ─── Bootstrap: check for existing JWT on mount ──────────────────────
     useEffect(() => {
         const token = getAccessToken();
-        if (!token) {
+        if (token) {
+            api.get('/users/me')
+                .then(data => {
+                    setUser(data.user || data);
+                    setIsAuthenticated(true);
+                    setSession({ access_token: token });
+                })
+                .catch(() => {
+                    clearTokens();
+                    setUser(null);
+                    setIsAuthenticated(false);
+                })
+                .finally(() => setLoading(false));
+        } else {
             setLoading(false);
-            return;
         }
-
-        api.get('/users/me')
-            .then((data) => {
-                setUser(data.user || data);
-                setIsAuthenticated(true);
-            })
-            .catch(() => {
-                clearTokens();
-                setIsAuthenticated(false);
-                setUser(null);
-            })
-            .finally(() => setLoading(false));
     }, []);
 
-    // ─── Login ───────────────────────────────────────────────────────────
-    const login = useCallback(async (email, password) => {
-        const data = await api.post('/auth/login', { email, password });
-        setTokens(data.accessToken, data.refreshToken);
-        setUser(data.user);
-        setIsAuthenticated(true);
-        return { success: true, user: data.user };
-    }, []);
-
-    // ─── Signup ──────────────────────────────────────────────────────────
-    const signup = useCallback(async (email, password, fullName) => {
-        const data = await api.post('/auth/register', { email, password, fullName });
-        setTokens(data.accessToken, data.refreshToken);
-        setUser(data.user);
-        setIsAuthenticated(true);
-        return { success: true, user: data.user };
-    }, []);
-
-    // ─── Logout ──────────────────────────────────────────────────────────
-    const logout = useCallback(async () => {
-        const refreshToken = getRefreshToken();
+    const login = async (email, password) => {
         try {
-            await api.post('/auth/logout', { refreshToken });
-        } catch { /* ignore */ }
+            const data = await api.post('/auth/login', { email, password });
+            setTokens(data.accessToken, data.refreshToken);
+            setUser(data.user);
+            setSession({ access_token: data.accessToken });
+            setIsAuthenticated(true);
+            return { success: true, user: data.user };
+        } catch (error) {
+            throw { message: error.message || 'Login failed' };
+        }
+    };
+
+    const loginWithGoogle = async (credential) => {
+        try {
+            const data = await api.post('/auth/google', { token: credential });
+            setTokens(data.accessToken, data.refreshToken);
+            setUser(data.user);
+            setSession({ access_token: data.accessToken });
+            setIsAuthenticated(true);
+            return { success: true, user: data.user };
+        } catch (error) {
+            throw { message: error.message || 'Google login failed' };
+        }
+    };
+
+    const signup = async (email, password, fullName) => {
+        try {
+            const data = await api.post('/auth/register', { email, password, fullName });
+            // Email verification is required. Do not log in automatically.
+            return { success: true, message: data.message };
+        } catch (error) {
+            throw { message: error.message || 'Registration failed' };
+        }
+    };
+
+    const logout = async () => {
+        try {
+            // Optional: call backend to invalidate refresh token if supported
+            await api.post('/auth/logout');
+        } catch(e) {
+            // ignore
+        }
         clearTokens();
         setIsAuthenticated(false);
         setUser(null);
-    }, []);
+        setSession(null);
+    };
 
     const value = useMemo(() => ({
         isAuthenticated,
         user,
-        session: null, // no Supabase session — JWT-based now
+        session,
         login,
+        loginWithGoogle,
         signup,
         logout,
         loading,
-    }), [isAuthenticated, user, loading, login, signup, logout]);
+    }), [isAuthenticated, user, session, loading]);
 
     return (
         <AuthContext.Provider value={value}>

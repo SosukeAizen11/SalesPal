@@ -3,8 +3,8 @@ import api from '../lib/api';
 import { useOrg } from '../context/OrgContext';
 
 /**
- * useProjects — REST-backed projects CRUD hook.
- * Replaces Supabase .from('projects') calls.
+ * useProjects — Supabase-backed projects CRUD hook
+ * Replaces localStorage project persistence from ProjectContext + MarketingContext
  */
 export function useProjects() {
     const { orgId } = useOrg();
@@ -23,14 +23,14 @@ export function useProjects() {
         setError(null);
 
         try {
-            const data = await api.get('/projects');
-            setProjects(data.projects || data || []);
+            const data = await api.get('/projects?status=active');
+            setProjects(data || []);
         } catch (err) {
             console.error('Error fetching projects:', err);
             setError(err.message);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     }, [orgId]);
 
     useEffect(() => {
@@ -41,12 +41,9 @@ export function useProjects() {
         if (!orgId) return { data: null, error: 'No organization' };
 
         try {
-            const data = await api.post('/projects', {
-                name: projectData.name,
-            });
-            const project = data.project || data;
-            setProjects(prev => [project, ...prev]);
-            return { data: project, error: null };
+            const data = await api.post('/projects', { name: projectData.name });
+            setProjects(prev => [data, ...prev]);
+            return { data, error: null };
         } catch (err) {
             console.error('Error creating project:', err);
             return { data: null, error: err.message };
@@ -56,9 +53,8 @@ export function useProjects() {
     const updateProject = async (projectId, updates) => {
         try {
             const data = await api.put(`/projects/${projectId}`, updates);
-            const project = data.project || data;
-            setProjects(prev => prev.map(p => p.id === projectId ? project : p));
-            return { data: project, error: null };
+            setProjects(prev => prev.map(p => p.id === projectId ? data : p));
+            return { data, error: null };
         } catch (err) {
             console.error('Error updating project:', err);
             return { data: null, error: err.message };
@@ -67,7 +63,7 @@ export function useProjects() {
 
     const archiveProject = async (projectId) => {
         try {
-            await api.del(`/projects/${projectId}`);
+            await api.post(`/projects/${projectId}/archive`);
             setProjects(prev => prev.filter(p => p.id !== projectId));
             return { error: null };
         } catch (err) {

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, FolderOpen, Globe, Settings, Loader2 } from 'lucide-react';
-import api from '../../../lib/api';
 import { useMarketing } from '../../../context/MarketingContext';
 import CampaignCard from '../components/CampaignCard';
 import Button from '../../../components/ui/Button';
@@ -15,7 +14,7 @@ import Select from '../../../components/ui/Select';
 export default function ProjectDetails() {
     const { projectId } = useParams();
     const navigate = useNavigate();
-    const { getCampaignsByProject, updateProject, deleteProject, updateCampaign, deleteCampaign } = useMarketing();
+    const { projects, projectsLoading, getCampaignsByProject, updateProject, deleteProject, updateCampaign, deleteCampaign } = useMarketing();
 
     // Project fetch state
     const [project, setProject] = useState(null);
@@ -33,29 +32,23 @@ export default function ProjectDetails() {
     const [selectedCampaign, setSelectedCampaign] = useState(null);
     const [campaignEditData, setCampaignEditData] = useState({ dailyBudget: '', status: 'active' });
 
-    // Fetch project directly from Supabase
+    // Set project from context
     useEffect(() => {
-        const fetchProject = async () => {
+        if (projectsLoading) {
             setLoading(true);
+            return;
+        }
+
+        const foundProject = projects.find(p => p.id === projectId);
+        if (!foundProject) {
+            setNotFound(true);
+        } else {
+            setProject(foundProject);
             setNotFound(false);
+        }
 
-            try {
-                const result = await api.get(`/projects/${projectId}`);
-                const projectData = result.project || result;
-                if (!projectData) {
-                    setNotFound(true);
-                } else {
-                    setProject(projectData);
-                }
-            } catch {
-                setNotFound(true);
-            }
-
-            setLoading(false);
-        };
-
-        fetchProject();
-    }, [projectId]);
+        setLoading(false);
+    }, [projectId, projects, projectsLoading]);
 
     const campaigns = getCampaignsByProject(projectId);
 

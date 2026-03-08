@@ -94,4 +94,31 @@ async function getLeadsOverTime(req, res, next) {
   }
 }
 
-module.exports = { getDashboard, getRevenue, getLeads, getPlatforms, getDailyMetrics, getComparison, getLeadsOverTime };
+async function getCampaignMetricsRaw(req, res, next) {
+  try {
+    const orgId = await getOrgId(req.user.id);
+    if (!orgId) return res.json([]);
+    
+    // We fetch raw campaign_metrics and join with campaigns
+    // to match Supabase's `select('*, campaigns(name, platform, project_id)')`
+    const { rows } = await db.query(`
+      SELECT 
+        m.*, 
+        json_build_object(
+          'name', c.name, 
+          'platform', c.platform, 
+          'project_id', c.project_id
+        ) as campaigns
+      FROM campaign_metrics m
+      JOIN campaigns c ON m.campaign_id = c.id
+      WHERE m.user_id = $1 AND m.org_id = $2
+      ORDER BY m.date ASC
+    `, [req.user.id, orgId]);
+    
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getDashboard, getRevenue, getLeads, getPlatforms, getDailyMetrics, getComparison, getLeadsOverTime, getCampaignMetricsRaw };
