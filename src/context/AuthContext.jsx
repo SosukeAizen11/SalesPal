@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import api, { getAccessToken, setTokens, clearTokens } from '../lib/api';
 
 const AuthContext = createContext();
 
@@ -12,58 +12,69 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-            setSession(currentSession);
-            setUser(currentSession?.user ?? null);
-            setIsAuthenticated(!!currentSession);
+        const token = getAccessToken();
+        if (token) {
+            api.get('/users/me')
+                .then(data => {
+                    setUser(data.user || data);
+                    setIsAuthenticated(true);
+                    setSession({ access_token: token });
+                })
+                .catch(() => {
+                    clearTokens();
+                    setUser(null);
+                    setIsAuthenticated(false);
+                })
+                .finally(() => setLoading(false));
+        } else {
             setLoading(false);
-        });
-
-        // Listen for auth state changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            (_event, currentSession) => {
-                setSession(currentSession);
-                setUser(currentSession?.user ?? null);
-                setIsAuthenticated(!!currentSession);
-                setLoading(false);
-            }
-        );
-
-        return () => subscription.unsubscribe();
+        }
     }, []);
 
     const login = async (email, password) => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error) {
-            throw { message: error.message };
+        try {
+            const data = await api.post('/auth/login', { email, password });
+            setTokens(data.accessToken, data.refreshToken);
+            setUser(data.user);
+            setSession({ access_token: data.accessToken });
+            setIsAuthenticated(true);
+            return { success: true, user: data.user };
+        } catch (error) {
+            throw { message: error.message || 'Login failed' };
         }
+    };
 
-        return { success: true, user: data.user };
+    const loginWithGoogle = async (credential) => {
+        try {
+            const data = await api.post('/auth/google', { token: credential });
+            setTokens(data.accessToken, data.refreshToken);
+            setUser(data.user);
+            setSession({ access_token: data.accessToken });
+            setIsAuthenticated(true);
+            return { success: true, user: data.user };
+        } catch (error) {
+            throw { message: error.message || 'Google login failed' };
+        }
     };
 
     const signup = async (email, password, fullName) => {
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: { full_name: fullName }
-            }
-        });
-
-        if (error) {
-            throw { message: error.message };
+        try {
+            const data = await api.post('/auth/register', { email, password, fullName });
+            // Email verification is required. Do not log in automatically.
+            return { success: true, message: data.message };
+        } catch (error) {
+            throw { message: error.message || 'Registration failed' };
         }
-
-        return { success: true, user: data.user };
     };
 
     const logout = async () => {
-        await supabase.auth.signOut();
+        try {
+            // Optional: call backend to invalidate refresh token if supported
+            await api.post('/auth/logout');
+        } catch(e) {
+            // ignore
+        }
+        clearTokens();
         setIsAuthenticated(false);
         setUser(null);
         setSession(null);
@@ -74,6 +85,7 @@ export const AuthProvider = ({ children }) => {
         user,
         session,
         login,
+        loginWithGoogle,
         signup,
         logout,
         loading,

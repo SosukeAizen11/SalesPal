@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 import { useOrg } from './OrgContext';
-import { useAuth } from './AuthContext';
 
 /**
  * useSocialContext — internal hook, consumed only by MarketingProvider.
@@ -12,7 +11,6 @@ import { useAuth } from './AuthContext';
  */
 export function useSocialContext(selectedProjectId) {
     const { orgId } = useOrg();
-    const { user } = useAuth();
 
     const [socialPosts, setSocialPosts] = useState([]);
     const [socialPostsLoading, setSocialPostsLoading] = useState(true);
@@ -20,12 +18,13 @@ export function useSocialContext(selectedProjectId) {
     const fetchSocialPosts = useCallback(async () => {
         if (!orgId) { setSocialPosts([]); setSocialPostsLoading(false); return; }
         setSocialPostsLoading(true);
-        const { data } = await supabase
-            .from('social_posts')
-            .select('*')
-            .eq('org_id', orgId)
-            .order('created_at', { ascending: false });
-        setSocialPosts(data || []);
+        try {
+            const data = await api.get('/social/posts');
+            setSocialPosts(data || []);
+        } catch (err) {
+            console.error('Failed to fetch posts:', err);
+            setSocialPosts([]);
+        }
         setSocialPostsLoading(false);
     }, [orgId]);
 
@@ -38,41 +37,37 @@ export function useSocialContext(selectedProjectId) {
         const optimistic = { ...post, id: tempId, org_id: orgId, created_at: new Date().toISOString() };
         setSocialPosts(prev => [optimistic, ...prev]);
 
-        const { data, error } = await supabase
-            .from('social_posts')
-            .insert({
-                org_id: orgId,
-                project_id: selectedProjectId || null,
-                created_by: user?.id,
+        try {
+            const data = await api.post('/social/posts', {
+                projectId: selectedProjectId || null,
                 content: post.content,
-                post_type: post.type || post.post_type || 'image',
+                postType: post.type || post.post_type || 'image',
                 status: post.status || 'draft',
-                scheduled_for: post.scheduledFor || post.scheduled_for || null,
+                scheduledFor: post.scheduledFor || post.scheduled_for || null,
                 platforms: post.platforms || [],
-                media_urls: post.mediaUrls || post.media_urls || []
-            })
-            .select()
-            .single();
-
-        if (!error && data) {
+                mediaUrls: post.mediaUrls || post.media_urls || []
+            });
             // Replace optimistic with real row
-            setSocialPosts(prev => prev.map(p => p.id === tempId ? data : p));
-            return data;
-        } else {
-            // Rollback on error
-            setSocialPosts(prev => prev.filter(p => p.id !== tempId));
-            return null;
+            if (data) {
+                setSocialPosts(prev => prev.map(p => p.id === tempId ? data : p));
+                return data;
+            }
+        } catch (err) {
+            console.error('Failed to create post:', err);
         }
+        
+        // Rollback on error or no data
+        setSocialPosts(prev => prev.filter(p => p.id !== tempId));
+        return null;
     };
 
     const deleteSocialPost = async (postId) => {
         // Optimistic removal
         setSocialPosts(prev => prev.filter(p => p.id !== postId));
-        const { error } = await supabase
-            .from('social_posts')
-            .delete()
-            .eq('id', postId);
-        if (error) {
+        try {
+            await api.delete(`/social/posts/${postId}`);
+        } catch (err) {
+            console.error('Failed to delete post:', err);
             // Rollback: refetch on failure
             fetchSocialPosts();
         }
@@ -80,13 +75,19 @@ export function useSocialContext(selectedProjectId) {
 
     const updateSocialPost = async (postId, updates) => {
         setSocialPosts(prev => prev.map(p => p.id === postId ? { ...p, ...updates } : p));
-        const { data, error } = await supabase
-            .from('social_posts')
-            .update(updates)
-            .eq('id', postId)
-            .select()
-            .single();
-        if (!error && data) setSocialPosts(prev => prev.map(p => p.id === postId ? data : p));
+        try {
+            const payload = { ...updates };
+            if (payload.post_type) { payload.postType = payload.post_type; delete payload.post_type; }
+            if (payload.scheduled_for) { payload.scheduledFor = payload.scheduled_for; delete payload.scheduled_for; }
+            if (payload.media_urls) { payload.mediaUrls = payload.media_urls; delete payload.media_urls; }
+
+            const data = await api.put(`/social/posts/${postId}`, payload);
+            if (data) setSocialPosts(prev => prev.map(p => p.id === postId ? data : p));
+        } catch (err) {
+            console.error('Failed to update post:', err);
+            // Rollback by refetching
+            fetchSocialPosts();
+        }
     };
 
     return {

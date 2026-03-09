@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 import { useAuth } from './AuthContext';
 
 const OrgContext = createContext();
@@ -32,57 +32,45 @@ export const OrgProvider = ({ children }) => {
 
         try {
             // Try to find existing org membership
-            const { data: member, error: memberError } = await supabase
-                .from('org_members')
-                .select('*, organizations(*)')
-                .eq('user_id', user.id)
-                .limit(1)
-                .maybeSingle();
-
-            if (memberError && memberError.code !== 'PGRST116') {
-                console.error('Org members query error:', memberError);
+            let orgData = null;
+            try {
+                orgData = await api.get('/users/me/org');
+            } catch (err) {
+                if (err.status !== 404) {
+                    console.error('Org members query error:', err);
+                }
             }
 
-            if (!member) {
-                // No org — call server-side bootstrap RPC
-                console.log('No org found, calling bootstrap_user_org RPC...');
-                const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'My';
+            if (!orgData) {
+                // No org — call server-side bootstrap endpoint
+                console.log('No org found, calling bootstrap API...');
+                const userName = user.user_metadata?.full_name || user.fullName || user.email?.split('@')[0] || 'My';
                 const orgName = `${userName}'s Workspace`;
 
-                const { error: rpcError } = await supabase.rpc('bootstrap_user_org', {
-                    p_org_name: orgName
-                });
-
-                if (rpcError) {
-                    console.error('Bootstrap RPC failed:', rpcError);
+                try {
+                    orgData = await api.post('/users/me/org', { name: orgName });
+                } catch (rpcError) {
+                    console.error('Bootstrap API failed:', rpcError);
                     setLoading(false);
                     return;
                 }
-
-                // Re-fetch the membership after bootstrap
-                const { data: freshMember } = await supabase
-                    .from('org_members')
-                    .select('*, organizations(*)')
-                    .eq('user_id', user.id)
-                    .limit(1)
-                    .maybeSingle();
-
-                if (freshMember) {
-                    const orgData = freshMember.organizations;
-                    setOrg(orgData);
-                    setOrgId(orgData.id);
-                    setMembership({ role: freshMember.role });
+                
+                // Note: The POST /me/org returns the org object directly, 
+                // but we fetch it again just to ensure we have the role 
+                // structured the exact same way as the GET endpoint
+                try {
+                    orgData = await api.get('/users/me/org');
+                } catch (e) {
+                     console.error('Failed to refetch org after bootstrap:', e);
                 }
-
-                setLoading(false);
-                return;
             }
 
-            // Existing member found
-            const orgData = member.organizations;
-            setOrg(orgData);
-            setOrgId(orgData.id);
-            setMembership({ role: member.role });
+            if (orgData) {
+                setOrg(orgData);
+                setOrgId(orgData.id);
+                setMembership({ role: orgData.user_role });
+            }
+
         } catch (err) {
             console.error('Org bootstrap error:', err);
         } finally {
@@ -105,12 +93,7 @@ export const OrgProvider = ({ children }) => {
     const createOrganization = useCallback(async (name) => {
         if (!user) throw new Error('Must be authenticated');
 
-        const { data: result, error } = await supabase.rpc('bootstrap_user_org', {
-            p_org_name: name
-        });
-
-        if (error) throw error;
-
+        const result = await api.post('/users/me/org', { name });
         // Re-fetch to populate state
         await bootstrap();
         return result;

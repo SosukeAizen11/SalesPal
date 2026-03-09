@@ -107,9 +107,13 @@ const StepReviewLaunch = ({ onLaunch, onBack, data }) => {
         setLaunchError(null);
         setIsLaunching(true);
 
-        setTimeout(() => {
+        setTimeout(async () => {
             if (onLaunch) {
-                onLaunch(); // This sets campaign.status = 'running' in parent
+                const res = await onLaunch();
+                if (res && res.error) {
+                    setLaunchError({ message: res.error });
+                    setIsLaunching(false);
+                }
             }
         }, 1500);
     };
