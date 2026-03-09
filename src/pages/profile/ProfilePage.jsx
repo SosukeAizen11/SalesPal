@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { User, Shield, CreditCard, Bell, Users } from 'lucide-react';
+import { User, Shield, CreditCard, Bell, Users, TrendingUp } from 'lucide-react';
 import ProfileTab from './tabs/ProfileTab';
 import SecurityTab from './tabs/SecurityTab';
 import BillingTab from './tabs/BillingTab';
 import NotificationsTab from './tabs/NotificationsTab';
 import WorkspaceTab from './tabs/WorkspaceTab';
+import SalesSettings from '../sales/SalesSettings';
 
 const ProfilePage = () => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -14,6 +15,7 @@ const ProfilePage = () => {
         { id: 'security', label: 'Security', icon: Shield },
         { id: 'billing', label: 'Billing', icon: CreditCard },
         { id: 'notifications', label: 'Notifications', icon: Bell },
+        { id: 'sales', label: 'Sales', icon: TrendingUp },
         { id: 'workspace', label: 'Team / Workspace', icon: Users }
     ];
 
@@ -27,6 +29,8 @@ const ProfilePage = () => {
                 return <BillingTab />;
             case 'notifications':
                 return <NotificationsTab />;
+            case 'sales':
+                return <SalesSettings />;
             case 'workspace':
                 return <WorkspaceTab />;
             default:
@@ -55,8 +59,8 @@ const ProfilePage = () => {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${isActive
-                                            ? 'border-blue-600 text-blue-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-blue-600 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     <Icon size={18} strokeWidth={1.5} />

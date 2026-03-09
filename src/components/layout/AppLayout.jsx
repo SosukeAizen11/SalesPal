@@ -60,7 +60,7 @@ const AppLayout = () => {
             children: [
                 { label: 'Dashboard', path: '/sales', icon: LayoutDashboard, end: true },
                 { label: 'Leads', path: '/sales/leads', icon: Users },
-                { label: 'Settings', path: '/sales/settings', icon: Settings }
+                { label: 'Interactions', path: '/sales/interactions', icon: Activity },
             ]
         },
         { label: 'Post Sales', path: '/post-sales', icon: RefreshCw },

@@ -145,10 +145,114 @@ export const SalesProvider = ({ children }) => {
         ));
     };
 
+    const addActionToLead = (leadId, type, action, detail, additionalData = {}) => {
+        setLeads(prev => prev.map(lead => {
+            if (lead.id !== leadId) return lead;
+
+            const now = new Date();
+            const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const newEvent = {
+                id: Date.now(),
+                type,
+                action,
+                time: timeStr,
+                detail
+            };
+
+            const updatedTimeline = [newEvent, ...(lead.timeline || [])];
+            let updatedCommunications = lead.communications || [];
+            let updatedFollowups = lead.followups || [];
+
+            if (type === 'call') {
+                updatedCommunications = [
+                    {
+                        id: Date.now() + 1,
+                        type: 'call',
+                        time: timeStr,
+                        duration: additionalData.duration || '0m 0s',
+                        outcome: additionalData.outcome || 'Logged',
+                        recording: additionalData.recording,
+                        transcript: additionalData.transcript
+                    },
+                    ...updatedCommunications
+                ];
+            } else if (type === 'whatsapp') {
+                // Find existing whatsapp comm or create new
+                const existingWaIdx = updatedCommunications.findIndex(c => c.type === 'whatsapp');
+                const newMsg = {
+                    id: Date.now() + 2,
+                    sender: 'SalesRep',
+                    text: detail,
+                    time: timeStr
+                };
+
+                if (existingWaIdx >= 0) {
+                    const existingWa = updatedCommunications[existingWaIdx];
+                    updatedCommunications[existingWaIdx] = {
+                        ...existingWa,
+                        history: [...(existingWa.history || []), newMsg]
+                    };
+                } else {
+                    updatedCommunications = [
+                        {
+                            id: Date.now() + 1,
+                            type: 'whatsapp',
+                            history: [newMsg]
+                        },
+                        ...updatedCommunications
+                    ];
+                }
+            } else if (type === 'meeting' && additionalData.date) {
+                updatedFollowups = [
+                    {
+                        id: Date.now() + 3,
+                        task: `Meeting scheduled: ${detail}`,
+                        status: 'Pending',
+                        time: additionalData.date + (additionalData.time ? ' ' + additionalData.time : '')
+                    },
+                    ...updatedFollowups
+                ];
+            } else if (type === 'note') {
+                // Note just goes to timeline, no extra collections
+            }
+
+            return {
+                ...lead,
+                timeline: updatedTimeline,
+                communications: updatedCommunications,
+                followups: updatedFollowups,
+                lastInteraction: action
+            };
+        }));
+    };
+
+    const assignLead = (leadId, agentName) => {
+        setLeads(prev => prev.map(lead => {
+            if (lead.id !== leadId) return lead;
+            return {
+                ...lead,
+                assignedTo: agentName,
+                timeline: [
+                    {
+                        id: Date.now(),
+                        type: 'ai_action',
+                        action: 'Lead Assigned',
+                        time: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        detail: `Lead assigned to ${agentName}`
+                    },
+                    ...(lead.timeline || [])
+                ]
+            };
+        }));
+    };
+
     const value = {
         leads,
         addLead,
-        updateLeadStatus
+        updateLeadStatus,
+        addActionToLead,
+        assignLead
     };
 
     return (
