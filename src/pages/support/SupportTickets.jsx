@@ -1,0 +1,209 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Phone, Mail, MessageCircle, Bell, Loader2 } from 'lucide-react';
+import api from '../../lib/api';
+
+const categories = ['All', 'Queries', 'Complaints', 'Status', 'Feedback', 'Escalations'];
+
+const SupportTickets = () => {
+    const navigate = useNavigate();
+    const [activeFilter, setActiveFilter] = useState('All');
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const [tickets, setTickets] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchTickets() {
+            try {
+                const data = await api.get('/support/tickets');
+                setTickets(data || []);
+            } catch (error) {
+                console.error("Failed to fetch support tickets:", error);
+                setTickets([]);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchTickets();
+    }, []);
+
+    const filteredTickets = tickets.filter(ticket => {
+        const matchesFilter = activeFilter === 'All' || ticket.category === activeFilter;
+        const searchLower = searchQuery.toLowerCase();
+        
+        // Defensive customer parsing
+        const customerName = ticket.customer?.name || (typeof ticket.customer === 'string' ? ticket.customer : '');
+        
+        const matchesSearch = customerName.toLowerCase().includes(searchLower) || ticket.id?.toString().includes(searchLower);
+        return matchesFilter && matchesSearch;
+    });
+
+    const handleTicketClick = (id) => {
+        navigate(`/support/tickets/${id}`);
+    };
+
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case 'Open':
+                return 'bg-yellow-100 text-yellow-700';
+            case 'Resolved':
+                return 'bg-green-100 text-green-700';
+            case 'Escalated':
+                return 'bg-red-100 text-red-700';
+            case 'In Progress':
+                return 'bg-blue-100 text-blue-700';
+            default:
+                return 'bg-gray-100 text-gray-700';
+        }
+    };
+
+    const getPriorityStyle = (priority) => {
+        switch (priority) {
+            case 'High':
+            case 'Urgent':
+                return 'bg-red-100 text-red-700';
+            case 'Medium':
+                return 'bg-yellow-100 text-yellow-700';
+            case 'Low':
+                return 'bg-blue-100 text-blue-700';
+            default:
+                return 'bg-gray-100 text-gray-700';
+        }
+    };
+
+    const getChannelIconWithStyle = (channel) => {
+        switch (channel.toLowerCase()) {
+            case 'whatsapp':
+                return <MessageCircle size={16} className="text-green-600" />;
+            case 'phone':
+            case 'call':
+                return <Phone size={16} className="text-blue-600" />;
+            case 'email':
+                return <Mail size={16} className="text-gray-600" />;
+            case 'notification':
+                return <Bell size={16} className="text-yellow-600" />;
+            case 'chat':
+                return <MessageCircle size={16} className="text-green-600" />;
+            default:
+                return null;
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Page Header */}
+            <div>
+                <h1 className="text-xl font-semibold text-gray-900">Support Tickets</h1>
+                <p className="text-sm text-gray-500 mt-1">View and manage all customer support requests.</p>
+            </div>
+
+            {/* Filters Bar & Search */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-wrap gap-2 mt-4 sm:mt-0">
+                    {categories.map((category) => (
+                        <button
+                            key={category}
+                            onClick={() => setActiveFilter(category)}
+                            className={`px-3 py-1.5 text-sm rounded-md border border-gray-200 transition-colors ${
+                                activeFilter === category ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 hover:bg-gray-100'
+                            }`}
+                        >
+                            {category}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search tickets..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border border-gray-300 rounded-md pl-10 px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+            </div>
+
+            {/* Tickets Table */}
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket ID</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Channel</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {filteredTickets.map((ticket) => (
+                                <tr 
+                                    key={ticket.id} 
+                                    onClick={() => handleTicketClick(ticket.id)}
+                                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                >
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        TCK-{ticket.id}
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <div>
+                                            <p className="font-medium text-gray-900">{ticket.customer?.name || ticket.customer || 'Unknown Customer'}</p>
+                                            <p className="text-xs text-gray-500">{ticket.customer?.email || ticket.email || ''}</p>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <div className="flex items-center gap-2 text-sm text-gray-900">
+                                            {getChannelIconWithStyle(ticket.channel || 'Email')}
+                                            <span>{ticket.channel || 'Email'}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                        {ticket.category}
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${getPriorityStyle(ticket.priority)}`}>
+                                            {ticket.priority}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusStyle(ticket.status)}`}>
+                                            {ticket.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                        {ticket.date || new Date().toLocaleDateString()}
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredTickets.length === 0 && (
+                                <tr>
+                                    <td colSpan="7" className="px-6 py-8 text-center text-sm text-gray-500">
+                                        No tickets found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default SupportTickets;

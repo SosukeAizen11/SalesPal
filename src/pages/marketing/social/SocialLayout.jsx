@@ -19,6 +19,7 @@ const TABS = [
 const SocialLayout = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const { socialPosts } = useMarketing();
+    const safePosts = Array.isArray(socialPosts) ? socialPosts : [];
 
     // Render content based on active tab
     const renderContent = () => {
@@ -34,7 +35,7 @@ const SocialLayout = () => {
             case 'published':
                 return <SocialList status="published" onNavigate={setActiveTab} />;
             case 'engage':
-                return <SocialEngagementDashboard posts={socialPosts} />;
+                return <SocialEngagementDashboard posts={safePosts} />;
             case 'analytics':
                 return <SocialAnalyticsPlaceholder />;
             default:
@@ -95,9 +96,11 @@ const SocialOverviewInline = ({ onNavigate }) => {
     const { socialPosts } = useMarketing();
     const { integrations } = useIntegrations();
 
-    const scheduledCount = socialPosts.filter(p => p.status === 'scheduled').length;
-    const draftsCount = socialPosts.filter(p => p.status === 'draft').length;
-    const publishedCount = socialPosts.filter(p => p.status === 'published').length;
+    const safePosts = Array.isArray(socialPosts) ? socialPosts : [];
+
+    const scheduledCount = safePosts.filter(p => p.status === 'scheduled').length;
+    const draftsCount = safePosts.filter(p => p.status === 'draft').length;
+    const publishedCount = safePosts.filter(p => p.status === 'published').length;
 
     const channels = [
         {
@@ -188,7 +191,7 @@ const SocialOverviewInline = ({ onNavigate }) => {
             </div>
 
             {/* Create CTA */}
-            <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 flex items-center justify-between">
+            <div className="p-6 bg-linear-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 flex items-center justify-between">
                 <div>
                     <h3 className="font-semibold text-gray-900">Ready to create?</h3>
                     <p className="text-sm text-gray-600 mt-1">Compose and schedule your next post</p>

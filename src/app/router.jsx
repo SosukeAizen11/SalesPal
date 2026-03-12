@@ -61,6 +61,13 @@ import SalesLeads from '../pages/sales/SalesLeads';
 import SalesSettings from '../pages/sales/SalesSettings';
 import SalesLeadWorkspace from '../pages/sales/SalesLeadWorkspace';
 
+// Support Module
+import SupportLayout from '../pages/support/SupportLayout';
+import SupportDashboard from '../pages/support/SupportDashboard';
+import SupportTickets from '../pages/support/SupportTickets';
+import SupportTicketDetails from '../pages/support/SupportTicketDetails';
+import SupportAnalytics from '../pages/support/SupportAnalytics';
+
 import MarketingSettingsLayout from '../pages/marketing/settings/MarketingSettingsLayout';
 import MarketingSettingsIntegrations from '../pages/marketing/settings/MarketingSettingsIntegrations';
 import MetaIntegration from '../pages/marketing/settings/MetaIntegration';
@@ -249,9 +256,27 @@ export const router = createBrowserRouter([
                         path: "/support",
                         element: (
                             <ModuleAccessWrapper moduleName="support">
-                                <PlaceholderPage title="Support Module" description="Manage tickets and customer support." />
+                                <SupportLayout />
                             </ModuleAccessWrapper>
-                        )
+                        ),
+                        children: [
+                            {
+                                index: true,
+                                element: <SupportDashboard />
+                            },
+                            {
+                                path: "tickets",
+                                element: <SupportTickets />
+                            },
+                            {
+                                path: "tickets/:id",
+                                element: <SupportTicketDetails />
+                            },
+                            {
+                                path: "analytics",
+                                element: <SupportAnalytics />
+                            }
+                        ]
                     },
                     {
                         path: "/subscription",

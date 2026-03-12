@@ -26,6 +26,7 @@ export function clearTokens() {
 }
 
 // ─── Core fetch wrapper ──────────────────────────────────────────────────────
+
 let isRefreshing = false;
 let refreshPromise = null;
 
@@ -59,7 +60,12 @@ async function request(method, path, body = null, options = {}) {
   const config = { method, headers };
   if (body && method !== "GET") config.body = JSON.stringify(body);
 
-  let res = await fetch(url, config);
+  let res;
+  try {
+    res = await fetch(url, config);
+  } catch (error) {
+    throw error;
+  }
 
   // Auto-refresh on 401
   if (res.status === 401 && getRefreshToken() && !options._retried) {

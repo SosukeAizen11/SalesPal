@@ -63,7 +63,7 @@ const DashboardContent = () => {
         setMetricsLoading(true);
         try {
             const data = await api.get('/analytics/campaign-metrics');
-            setMetricsRows(data || []);
+            setMetricsRows(Array.isArray(data) ? data : (data?.data || []));
         } catch (err) {
             console.error('Failed to fetch campaign_metrics via API:', err);
             setMetricsRows([]);
@@ -77,7 +77,7 @@ const DashboardContent = () => {
     // --- DATA AGGREGATION FROM REAL METRICS ---
     const dashboardData = useMemo(() => {
         // Filter metrics by project and channel
-        const filtered = metricsRows.filter(row => {
+        const filtered = (Array.isArray(metricsRows) ? metricsRows : []).filter(row => {
             const projectMatch = selectedProjectId === 'all' || (row.campaigns?.project_id === selectedProjectId);
 
             if (channelFilter === 'all') return projectMatch;
