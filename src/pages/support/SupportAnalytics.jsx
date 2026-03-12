@@ -58,11 +58,11 @@ const SupportAnalytics = () => {
     } = analyticsData || {};
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* Page Header */}
-            <div>
+            <div className="space-y-3">
                 <h1 className="text-xl font-semibold text-gray-900">Support Analytics</h1>
-                <p className="text-sm text-gray-500 mt-1">Track support performance and ticket trends.</p>
+                <p className="text-sm text-gray-500">Track support performance and ticket trends.</p>
             </div>
 
             {/* Metrics Cards */}
@@ -70,7 +70,7 @@ const SupportAnalytics = () => {
                 {metrics.map((metric, index) => (
                     <div key={index} className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
                         <p className="text-sm text-gray-500">{metric.title}</p>
-                        <h3 className="text-2xl font-semibold text-gray-900 mt-2">{metric.value}</h3>
+                        <h3 className="text-2xl font-semibold text-gray-900">{metric.value}</h3>
                     </div>
                 ))}
             </div>

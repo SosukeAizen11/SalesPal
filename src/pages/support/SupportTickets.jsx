@@ -99,7 +99,7 @@ const SupportTickets = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* Page Header */}
             <div>
                 <h1 className="text-xl font-semibold text-gray-900">Support Tickets</h1>
@@ -108,14 +108,16 @@ const SupportTickets = () => {
 
             {/* Filters Bar & Search */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex flex-wrap gap-2 mt-4 sm:mt-0">
+                <div className="flex flex-wrap gap-4 mt-4 sm:mt-0">
                     {categories.map((category) => (
                         <button
                             key={category}
                             onClick={() => setActiveFilter(category)}
-                            className={`px-3 py-1.5 text-sm rounded-md border border-gray-200 transition-colors ${
-                                activeFilter === category ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 hover:bg-gray-100'
-                            }`}
+                            className={
+                                activeFilter === category 
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm' 
+                                : 'border border-gray-300 text-gray-700 bg-white px-4 py-2 rounded-md text-sm hover:bg-gray-50'
+                            }
                         >
                             {category}
                         </button>
@@ -131,7 +133,7 @@ const SupportTickets = () => {
                         placeholder="Search tickets..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="border border-gray-300 rounded-md pl-10 px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="pl-10 w-full sm:w-64 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                 </div>
             </div>
@@ -142,13 +144,13 @@ const SupportTickets = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket ID</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Channel</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticket ID</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Channel</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -156,37 +158,37 @@ const SupportTickets = () => {
                                 <tr 
                                     key={ticket.id} 
                                     onClick={() => handleTicketClick(ticket.id)}
-                                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                    className="hover:bg-gray-50 cursor-pointer transition-colors text-sm text-gray-700"
                                 >
-                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <td className="px-4 py-3 whitespace-nowrap">
                                         TCK-{ticket.id}
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">
                                         <div>
-                                            <p className="font-medium text-gray-900">{ticket.customer?.name || ticket.customer || 'Unknown Customer'}</p>
+                                            <p>{ticket.customer?.name || ticket.customer || 'Unknown Customer'}</p>
                                             <p className="text-xs text-gray-500">{ticket.customer?.email || ticket.email || ''}</p>
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">
-                                        <div className="flex items-center gap-2 text-sm text-gray-900">
+                                        <div className="flex items-center gap-2">
                                             {getChannelIconWithStyle(ticket.channel || 'Email')}
                                             <span>{ticket.channel || 'Email'}</span>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                    <td className="px-4 py-3 whitespace-nowrap">
                                         {ticket.category}
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">
-                                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${getPriorityStyle(ticket.priority)}`}>
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityStyle(ticket.priority)}`}>
                                             {ticket.priority}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">
-                                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusStyle(ticket.status)}`}>
+                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusStyle(ticket.status)}`}>
                                             {ticket.status}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                    <td className="px-4 py-3 whitespace-nowrap">
                                         {ticket.date || new Date().toLocaleDateString()}
                                     </td>
                                 </tr>
