@@ -81,8 +81,6 @@ const AppLayout = () => {
                 { label: 'Automations', path: '/post-sales/automations', icon: Settings }
             ]
         },
-        { label: 'Support', path: '/support', icon: Headphones },
-        { label: 'Post Sales', path: '/post-sales', icon: RefreshCw },
         {
             label: 'Support',
             path: '/support',
