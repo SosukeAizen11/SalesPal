@@ -33,6 +33,9 @@ const AppLayout = () => {
         if (location.pathname.startsWith('/sales')) {
             setExpandedMenus(prev => ({ ...prev, '/sales': true }));
         }
+        if (location.pathname.startsWith('/post-sales')) {
+            setExpandedMenus(prev => ({ ...prev, '/post-sales': true }));
+        }
     }, [location.pathname]); // Update dependencies so it runs on path change
 
     const toggleMenu = (path) => {
@@ -63,7 +66,16 @@ const AppLayout = () => {
                 { label: 'Settings', path: '/sales/settings', icon: Settings }
             ]
         },
-        { label: 'Post Sales', path: '/post-sales', icon: RefreshCw },
+        {
+            label: 'Post Sales',
+            path: '/post-sales',
+            icon: RefreshCw,
+            children: [
+                { label: 'Dashboard', path: '/post-sales', icon: LayoutDashboard, end: true },
+                { label: 'Customers', path: '/post-sales/customers', icon: Users },
+                { label: 'Automations', path: '/post-sales/automations', icon: Settings }
+            ]
+        },
         { label: 'Support', path: '/support', icon: Headphones },
         { label: 'Subscription', path: '/subscription', icon: CreditCard },
         { label: 'Settings', path: '/settings', icon: Settings },
