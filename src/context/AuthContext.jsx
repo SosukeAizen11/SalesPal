@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const token = getAccessToken();
+
         if (token) {
             api.get('/users/me')
                 .then(data => {
