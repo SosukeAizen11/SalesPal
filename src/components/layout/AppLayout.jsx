@@ -37,6 +37,7 @@ const AppLayout = () => {
         }
         if (location.pathname.startsWith('/post-sales')) {
             setExpandedMenus(prev => ({ ...prev, '/post-sales': true }));
+        }
         if (location.pathname.startsWith('/support')) {
             setExpandedMenus(prev => ({ ...prev, '/support': true }));
         }
