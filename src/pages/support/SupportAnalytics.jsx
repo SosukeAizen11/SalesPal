@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowUpRight, Ticket, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import {
     LineChart,
     Line,
@@ -37,6 +37,21 @@ const SupportAnalytics = () => {
         fetchAnalytics();
     }, []);
 
+    const getMetricConfig = (title) => {
+        switch (title) {
+            case 'Total Tickets':
+                return { icon: <Ticket className="w-5 h-5 text-blue-600" />, style: 'bg-blue-100' };
+            case 'Resolution Rate':
+                return { icon: <CheckCircle className="w-5 h-5 text-green-600" />, style: 'bg-green-100' };
+            case 'Escalation Rate':
+                return { icon: <AlertCircle className="w-5 h-5 text-red-600" />, style: 'bg-red-100' };
+            case 'Avg Response Time':
+                return { icon: <Clock className="w-5 h-5 text-yellow-600" />, style: 'bg-yellow-100' };
+            default:
+                return { icon: <Ticket className="w-5 h-5 text-gray-600" />, style: 'bg-gray-100' };
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-[80vh]">
@@ -66,13 +81,28 @@ const SupportAnalytics = () => {
             </div>
 
             {/* Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {metrics.map((metric, index) => (
-                    <div key={index} className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-                        <p className="text-sm text-gray-500">{metric.title}</p>
-                        <h3 className="text-2xl font-semibold text-gray-900">{metric.value}</h3>
-                    </div>
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {metrics.map((metric, index) => {
+                    const { icon, style } = getMetricConfig(metric.title);
+                    return (
+                        <div key={index} className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 hover:shadow-md transition">
+                            <div className="flex items-start justify-between">
+                                <div className={`p-2 rounded-lg ${style}`}>
+                                    {icon}
+                                </div>
+                                <ArrowUpRight className="w-4 h-4 text-gray-400" />
+                            </div>
+
+                            <div className="mt-4 text-2xl font-semibold text-gray-900">
+                                {metric.value}
+                            </div>
+
+                            <div className="text-sm text-gray-500 mt-1">
+                                {metric.title}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Chart Sections (Row 1) */}
