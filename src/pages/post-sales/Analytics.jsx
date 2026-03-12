@@ -31,15 +31,8 @@ const Analytics = () => {
     });
     const healthDist = Object.entries(healthMap).map(([name, value]) => ({ name, value, fill: HEALTH_COLORS[name] }));
 
-    // Payment revenue by month (mock)
-    const revenueData = [
-        { month: 'Oct', revenue: 9998, paid: 9998 },
-        { month: 'Nov', revenue: 4999, paid: 4999 },
-        { month: 'Dec', revenue: 4999, paid: 0 },
-        { month: 'Jan', revenue: 4999, paid: 4999 },
-        { month: 'Feb', revenue: 9998, paid: 4999 },
-        { month: 'Mar', revenue: 4999, paid: 0 },
-    ];
+    // Payment revenue by month (requires backend aggregation)
+    const revenueData = [];
 
     // Radar - module completeness
     const radarData = [

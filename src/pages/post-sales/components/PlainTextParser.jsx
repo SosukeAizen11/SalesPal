@@ -16,31 +16,15 @@ const PlainTextParser = ({ onCancel, onSuccess }) => {
 
         // Simulate AI delay
         setTimeout(() => {
-            const nameMatch = text.match(/([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)/);
-            const name = nameMatch ? nameMatch[0] : 'Unknown Customer';
-            const numbers = text.match(/\d+(?:,\d+)?/g)?.map(n => parseInt(n.replace(/,/g, ''), 10)) || [];
-
-            let totalDue = 0;
-            let paid = 0;
-
-            if (numbers.length >= 2) {
-                totalDue = Math.max(...numbers.slice(0, 2));
-                paid = Math.min(...numbers.slice(0, 2));
-            } else if (numbers.length === 1) {
-                totalDue = numbers[0];
-            }
-
-            const remaining = Math.max(0, totalDue - paid);
-            const status = remaining > 0 ? (remaining === totalDue ? 'Upcoming' : 'Due Today') : 'Confirm Payment';
-
+            // For now, return an empty template since real AI parsing is bypassed
             const newCustomer = {
-                name,
-                phone: '+91 98765 43210',
+                name: '',
+                phone: '',
                 email: '',
-                totalDue,
-                remaining,
-                dueDate: new Date(Date.now() + 86400000 * 7).toISOString(),
-                status
+                totalDue: 0,
+                remaining: 0,
+                dueDate: new Date().toISOString(),
+                status: 'New'
             };
 
             setIsParsing(false);

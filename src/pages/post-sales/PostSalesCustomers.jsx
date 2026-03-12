@@ -45,18 +45,18 @@ const PostSalesCustomers = () => {
             setIsProcessing(false);
             setShowToast(true);
 
-            // Generate dummy extracted data based on method
-            const mockData = {
-                name: manualForm.name || 'Amit Sharma',
-                phone: manualForm.phone || '+91 98765 43210',
-                email: 'amit.sharma@example.com',
-                dueDate: manualForm.date ? new Date(manualForm.date).toISOString() : new Date(Date.now() + 86400000 * 7).toISOString(),
-                totalDue: parseInt(manualForm.amount) || 32000,
-                remaining: parseInt(manualForm.amount) ? parseInt(manualForm.amount) - 12000 : 20000,
-                status: 'Upcoming'
+            // Generate extracted data purely from the form (no mock data)
+            const extracted = {
+                name: manualForm.name || '',
+                phone: manualForm.phone || '',
+                email: '',
+                dueDate: manualForm.date ? new Date(manualForm.date).toISOString() : new Date().toISOString(),
+                totalDue: parseInt(manualForm.amount) || 0,
+                remaining: parseInt(manualForm.amount) || 0,
+                status: 'New'
             };
 
-            setExtractedData(mockData);
+            setExtractedData(extracted);
 
             // Auto close toast
             setTimeout(() => {

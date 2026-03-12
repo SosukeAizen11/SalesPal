@@ -10,72 +10,6 @@ const nextWeek = new Date(today);
 nextWeek.setDate(nextWeek.getDate() + 4);
 const nextWeekStr = `${nextWeek.getFullYear()}-${pad(nextWeek.getMonth() + 1)}-${pad(nextWeek.getDate())}`;
 
-const DEMO_CUSTOMERS = [
-    {
-        id: 'c-001',
-        name: 'Amit Sharma',
-        phone: '+91 98765 43210',
-        totalDue: 32000,
-        remaining: 20000,
-        dueDate: nextWeekStr,
-        status: 'Upcoming',
-        lastContact: '2025-10-10'
-    },
-    {
-        id: 'c-002',
-        name: 'Priya Patel',
-        phone: '+91 98765 43211',
-        totalDue: 124500,
-        remaining: 124500,
-        dueDate: todayStr,
-        status: 'Due Today',
-        lastContact: '2025-10-12'
-    },
-    {
-        id: 'c-003',
-        name: 'Rahul Kumar',
-        phone: '+91 98765 43212',
-        totalDue: 45000,
-        remaining: 0,
-        dueDate: '2025-10-10',
-        status: 'pending',
-        lastContact: '2025-10-14'
-    },
-    {
-        id: 'c-004',
-        name: 'Neha Gupta',
-        phone: '+91 98765 43213',
-        totalDue: 85000,
-        remaining: 85000,
-        dueDate: nextWeekStr,
-        status: 'Upcoming',
-        lastContact: '2025-10-08'
-    },
-    {
-        id: 'c-005',
-        name: 'Vikram Singh',
-        phone: '+91 98765 43214',
-        totalDue: 60000,
-        remaining: 0,
-        dueDate: '2025-10-05',
-        status: 'pending',
-        lastContact: '2025-10-13'
-    }
-];
-
-const DEMO_AUTOMATIONS = [
-    { id: 'auto-1', customerId: 'c-001', trigger: 'payment_due_date', action: 'send_whatsapp', condition: '1_day_before', active: true },
-];
-
-const DEMO_PAYMENTS = [
-    { id: 'p-001', customerId: 'c-003', amount: 45000, paymentDate: todayStr },
-    { id: 'p-002', customerId: 'c-005', amount: 60000, paymentDate: todayStr }
-];
-
-const DEMO_FOLLOWUPS = [
-    { id: 'f-001', customerId: 'c-001', date: todayStr, notes: 'Called regarding payment' }
-];
-
 export const PostSalesProvider = ({ children }) => {
     const loadState = (key, defaultState) => {
         try {
@@ -95,15 +29,21 @@ export const PostSalesProvider = ({ children }) => {
         }
     };
 
-    const [customers, setCustomersState] = useState(() => loadState('salespal_postsales_customers', DEMO_CUSTOMERS));
-    const [automations, setAutomationsState] = useState(() => loadState('salespal_postsales_automations', DEMO_AUTOMATIONS));
-    const [payments, setPaymentsState] = useState(() => loadState('salespal_postsales_payments', DEMO_PAYMENTS));
-    const [followUps, setFollowUpsState] = useState(() => loadState('salespal_postsales_followups', DEMO_FOLLOWUPS));
+    const [customers, setCustomersState] = useState(() => loadState('salespal_postsales_customers', []));
+    const [automations, setAutomationsState] = useState(() => loadState('salespal_postsales_automations', []));
+    const [payments, setPaymentsState] = useState(() => loadState('salespal_postsales_payments', []));
+    const [followUps, setFollowUpsState] = useState(() => loadState('salespal_postsales_followups', []));
+
+    // Adding missing state variables to prevent crashes on Analytics and Onboarding pages
+    const [documents, setDocumentsState] = useState(() => loadState('salespal_postsales_documents', []));
+    const [onboardingFlows, setOnboardingFlowsState] = useState(() => loadState('salespal_postsales_onboarding', {}));
 
     useEffect(() => saveState('salespal_postsales_customers', customers), [customers]);
     useEffect(() => saveState('salespal_postsales_automations', automations), [automations]);
     useEffect(() => saveState('salespal_postsales_payments', payments), [payments]);
     useEffect(() => saveState('salespal_postsales_followups', followUps), [followUps]);
+    useEffect(() => saveState('salespal_postsales_documents', documents), [documents]);
+    useEffect(() => saveState('salespal_postsales_onboarding', onboardingFlows), [onboardingFlows]);
 
     const addCustomer = (customer) => {
         setCustomersState(prev => [{ ...customer, id: `c-${Date.now()}`, lastContact: new Date().toISOString().split('T')[0] }, ...prev]);
@@ -146,7 +86,8 @@ export const PostSalesProvider = ({ children }) => {
             customers, addCustomer, updateCustomer, deleteCustomer, getCustomer,
             automations, toggleAutomation, addAutomation, updateAutomation, getCustomerAutomations,
             payments, addPayment,
-            followUps, addFollowUp
+            followUps, addFollowUp,
+            documents, onboardingFlows
         }}>
             {children}
         </PostSalesContext.Provider>
