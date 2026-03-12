@@ -207,19 +207,19 @@ const SupportTicketDetails = () => {
                     <div className="flex items-center gap-2 ml-auto w-full sm:w-auto mt-2 sm:mt-0">
                         <button 
                             onClick={() => handleStatusChange("In Progress")}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
                         >
                             Mark In Progress
                         </button>
                         <button 
                             onClick={() => handleStatusChange("Resolved")}
-                            className="border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 px-4 py-2 rounded-md text-sm transition-colors"
+                            className="border border-gray-300 text-gray-700 bg-white px-4 py-2 rounded-md text-sm"
                         >
                             Resolve Ticket
                         </button>
                         <button 
                             onClick={() => handleStatusChange("Escalated")}
-                            className="border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-md text-sm transition-colors"
+                            className="border border-red-200 text-red-600 bg-red-50 px-4 py-2 rounded-md text-sm"
                         >
                             Escalate Ticket
                         </button>
@@ -418,7 +418,7 @@ const SupportTicketDetails = () => {
                         <select 
                             value={assignedAgent}
                             onChange={(e) => setAssignedAgent(e.target.value)}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 w-full"
                         >
                             {agents.map((agent) => (
                                 <option key={agent} value={agent}>
