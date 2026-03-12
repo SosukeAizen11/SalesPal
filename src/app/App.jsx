@@ -8,6 +8,7 @@ import { MarketingProvider } from '../context/MarketingContext';
 import { ProjectProvider } from '../context/ProjectContext';
 import { IntegrationProvider } from '../context/IntegrationContext';
 import { SalesProvider } from '../context/SalesContext';
+import { PostSalesProvider } from '../context/PostSalesContext';
 import MiniCartDrawer from '../components/cart/MiniCartDrawer';
 import { ToastProvider } from '../components/ui/Toast';
 import ScrollToTop from '../components/common/ScrollToTop';
@@ -25,14 +26,16 @@ const App = () => {
                                 <SalesProvider>
                                     <MarketingProvider>
                                         <ProjectProvider>
-                                            <NotificationProvider>
-                                                <ToastProvider>
-                                                    <ScrollRestoration />
-                                                    <ScrollToTop />
-                                                    <Outlet />
-                                                    <MiniCartDrawer />
-                                                </ToastProvider>
-                                            </NotificationProvider>
+                                            <PostSalesProvider>
+                                                <NotificationProvider>
+                                                    <ToastProvider>
+                                                        <ScrollRestoration />
+                                                        <ScrollToTop />
+                                                        <Outlet />
+                                                        <MiniCartDrawer />
+                                                    </ToastProvider>
+                                                </NotificationProvider>
+                                            </PostSalesProvider>
                                         </ProjectProvider>
                                     </MarketingProvider>
                                 </SalesProvider>

@@ -11,7 +11,6 @@ const ProtectedRoute = ({ children }) => {
     }
 
     if (!isAuthenticated) {
-        // Redirect to home page but save the attempted url
         return <Navigate to="/" state={{ from: location, openAuth: true }} replace />;
     }
 

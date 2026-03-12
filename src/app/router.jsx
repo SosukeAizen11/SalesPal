@@ -61,6 +61,18 @@ import SalesLeads from '../pages/sales/SalesLeads';
 import SalesSettings from '../pages/sales/SalesSettings';
 import SalesLeadWorkspace from '../pages/sales/SalesLeadWorkspace';
 
+import PostSalesLayout from '../layouts/PostSalesLayout';
+import PostSalesDashboard from '../pages/post-sales/PostSalesDashboard';
+import AddCustomer from '../pages/post-sales/AddCustomer';
+import Customers from '../pages/post-sales/Customers';
+import CustomerDetails from '../pages/post-sales/CustomerDetails';
+import Onboarding from '../pages/post-sales/Onboarding';
+import Documents from '../pages/post-sales/Documents';
+import Payments from '../pages/post-sales/Payments';
+import Automations from '../pages/post-sales/Automations';
+import Analytics from '../pages/post-sales/Analytics';
+import PostSalesCustomers from '../pages/post-sales/PostSalesCustomers';
+import PostSalesAutomations from '../pages/post-sales/PostSalesAutomations';
 // Support Module
 import SupportLayout from '../pages/support/SupportLayout';
 import SupportDashboard from '../pages/support/SupportDashboard';
@@ -248,9 +260,19 @@ export const router = createBrowserRouter([
                         path: "/post-sales",
                         element: (
                             <ModuleAccessWrapper moduleName="postSale">
-                                <PlaceholderPage title="Post-Sales Module" description="Manage customer onboarding and retention." />
+                                <PostSalesLayout />
                             </ModuleAccessWrapper>
-                        )
+                        ),
+                        children: [
+                            { index: true, element: <PostSalesDashboard /> },
+                            { path: "customers", element: <PostSalesCustomers /> },
+                            { path: "customers/:id", element: <CustomerDetails /> },
+                            { path: "onboarding", element: <Onboarding /> },
+                            { path: "documents", element: <Documents /> },
+                            { path: "payments", element: <Payments /> },
+                            { path: "automations", element: <PostSalesAutomations /> },
+                            { path: "analytics", element: <Analytics /> }
+                        ]
                     },
                     {
                         path: "/support",
