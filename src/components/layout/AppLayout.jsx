@@ -13,7 +13,9 @@ import {
     FolderKanban,
     Share2,
     Users,
-    Activity
+    Activity,
+    Ticket,
+    BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SidebarUserMenu from './SidebarUserMenu';
@@ -35,6 +37,8 @@ const AppLayout = () => {
         }
         if (location.pathname.startsWith('/post-sales')) {
             setExpandedMenus(prev => ({ ...prev, '/post-sales': true }));
+        if (location.pathname.startsWith('/support')) {
+            setExpandedMenus(prev => ({ ...prev, '/support': true }));
         }
     }, [location.pathname]); // Update dependencies so it runs on path change
 
@@ -77,6 +81,17 @@ const AppLayout = () => {
             ]
         },
         { label: 'Support', path: '/support', icon: Headphones },
+        { label: 'Post Sales', path: '/post-sales', icon: RefreshCw },
+        {
+            label: 'Support',
+            path: '/support',
+            icon: Headphones,
+            children: [
+                { label: 'Dashboard', path: '/support', icon: LayoutDashboard, end: true },
+                { label: 'Tickets', path: '/support/tickets', icon: Ticket },
+                { label: 'Analytics', path: '/support/analytics', icon: BarChart3 }
+            ]
+        },
         { label: 'Subscription', path: '/subscription', icon: CreditCard },
         { label: 'Settings', path: '/settings', icon: Settings },
     ];
