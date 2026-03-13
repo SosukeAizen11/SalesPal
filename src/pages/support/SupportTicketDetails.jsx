@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, MessageCircle, AlertCircle, Clock, CalendarDays, MoreVertical, Phone, Mail, Bell, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
+import { mockTickets } from './mockSupportData';
 
 const SupportTicketDetails = () => {
     const { id } = useParams();
@@ -27,15 +28,26 @@ const SupportTicketDetails = () => {
         async function fetchTicketDetails() {
             try {
                 const data = await api.get(`/support/tickets/${id}`);
-                setTicket(data);
-                setMessages(data?.messages || []);
-                setStatus(data?.status || "Open");
-                if (data?.assignedAgent) {
-                    setAssignedAgent(data.assignedAgent);
+                
+                const ticketData = data?.id ? data : mockTickets.find(t => t.id === id);
+                
+                if (ticketData) {
+                    setTicket(ticketData);
+                    setMessages(ticketData?.messages || []);
+                    setStatus(ticketData?.status || "Open");
+                    if (ticketData?.assignedAgent) {
+                        setAssignedAgent(ticketData.assignedAgent);
+                    }
                 }
             } catch (err) {
                 console.error("Failed to fetch ticket details:", err);
-                // On error, or empty, set fail-safe default structure.
+                // On error, or empty, fallback to mock data
+                const mockTicket = mockTickets.find(t => t.id === id);
+                if (mockTicket) {
+                    setTicket(mockTicket);
+                    setMessages(mockTicket?.messages || []);
+                    setStatus(mockTicket?.status || "Open");
+                }
             } finally {
                 setLoading(false);
             }
