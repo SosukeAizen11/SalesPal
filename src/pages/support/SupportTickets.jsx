@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Phone, Mail, MessageCircle, Bell, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 import { mockTickets } from './mockSupportData';
@@ -8,6 +8,12 @@ const categories = ['All', 'Queries', 'Complaints', 'Status', 'Feedback', 'Escal
 
 const SupportTickets = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    
+    const searchParams = new URLSearchParams(location.search);
+    const statusFilter = searchParams.get("status");
+    const priorityFilter = searchParams.get("priority");
+
     const [activeFilter, setActiveFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -31,14 +37,33 @@ const SupportTickets = () => {
 
     const filteredTickets = tickets.filter(ticket => {
         const matchesFilter = activeFilter === 'All' || ticket.category === activeFilter;
+        
+        let matchesStatus = true;
+        if (statusFilter) {
+            matchesStatus = ticket.status?.toLowerCase() === statusFilter.toLowerCase();
+        }
+        
+        let matchesPriority = true;
+        if (priorityFilter) {
+            matchesPriority = ticket.priority?.toLowerCase() === priorityFilter.toLowerCase();
+        }
+
         const searchLower = searchQuery.toLowerCase();
         
         // Defensive customer parsing
         const customerName = ticket.customer?.name || (typeof ticket.customer === 'string' ? ticket.customer : '');
         
         const matchesSearch = customerName.toLowerCase().includes(searchLower) || ticket.id?.toString().includes(searchLower);
-        return matchesFilter && matchesSearch;
+        return matchesFilter && matchesSearch && matchesStatus && matchesPriority;
     });
+
+    const getFilterBadgeLabel = () => {
+        if (statusFilter === 'open') return 'Showing Open Tickets';
+        if (statusFilter === 'resolved') return 'Showing Resolved Tickets';
+        if (priorityFilter === 'high') return 'Showing Escalations';
+        return null;
+    };
+    const filterBadgeLabel = getFilterBadgeLabel();
 
     const handleTicketClick = (id) => {
         navigate(`/support/tickets/${id}`);
@@ -140,8 +165,23 @@ const SupportTickets = () => {
             </div>
 
             {/* Tickets Table */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
+            <div className="space-y-4">
+                {filterBadgeLabel && (
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-blue-100 text-blue-800">
+                            {filterBadgeLabel}
+                        </span>
+                        <button 
+                            onClick={() => navigate('/support/tickets')} 
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                        >
+                            Clear Filter
+                        </button>
+                    </div>
+                )}
+                
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
@@ -204,6 +244,7 @@ const SupportTickets = () => {
                         </tbody>
                     </table>
                 </div>
+            </div>
             </div>
         </div>
     );

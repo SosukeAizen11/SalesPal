@@ -108,7 +108,21 @@ const SupportDashboard = () => {
                 {metrics.map((metric, index) => {
                     const { icon, style } = getMetricConfig(metric.title);
                     return (
-                        <div key={index} className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 hover:shadow-md transition">
+                        <div 
+                            key={index} 
+                            onClick={() => {
+                                if (metric.title === 'Open Tickets') {
+                                    navigate('/support/tickets?status=open');
+                                } else if (metric.title === 'Resolved Tickets') {
+                                    navigate('/support/tickets?status=resolved');
+                                } else if (metric.title === 'Escalations') {
+                                    navigate('/support/tickets?priority=high');
+                                } else if (metric.title === 'Avg Response Time') {
+                                    navigate('/support/analytics#response-time');
+                                }
+                            }}
+                            className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 hover:shadow-md transition cursor-pointer"
+                        >
                             <div className="flex items-start justify-between">
                                 <div className={`p-2 rounded-lg ${style}`}>
                                     {icon}
