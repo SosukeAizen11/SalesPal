@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, ArrowUpRight, Ticket, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import api from '../../lib/api';
 import { mockTickets } from './mockSupportData';
 
 
 const SupportDashboard = () => {
+    const navigate = useNavigate();
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
 
