@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Link as LinkIcon, Megaphone, Target, Bell } from 'lucide-react';
+import { Link as LinkIcon, Megaphone, Target, Bell, TrendingUp } from 'lucide-react';
 
 const MarketingSettingsLayout = () => {
     const [isVisible, setIsVisible] = useState(true);
@@ -29,6 +29,7 @@ const MarketingSettingsLayout = () => {
         { path: 'defaults', label: 'Campaign Defaults', icon: Megaphone },
         { path: 'tracking', label: 'Tracking & Attribution', icon: Target },
         { path: 'notifications', label: 'Notifications', icon: Bell },
+        { path: 'sales', label: 'Sales', icon: TrendingUp },
     ];
 
     return (
@@ -40,8 +41,8 @@ const MarketingSettingsLayout = () => {
 
             <div
                 className={`border-b border-gray-200 mb-8 -mx-6 px-6 md:-mx-8 md:px-8 py-3 transition-all duration-300 ease-in-out ${isVisible
-                        ? 'opacity-100 translate-y-0'
-                        : 'opacity-0 -translate-y-[10px] pointer-events-none'
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 -translate-y-[10px] pointer-events-none'
                     }`}
             >
                 <nav className="-mb-px flex space-x-8 overflow-x-auto no-scrollbar" aria-label="Tabs">

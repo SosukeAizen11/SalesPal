@@ -60,6 +60,8 @@ import SalesDashboard from '../pages/sales/SalesDashboard';
 import SalesLeads from '../pages/sales/SalesLeads';
 import SalesSettings from '../pages/sales/SalesSettings';
 import SalesLeadWorkspace from '../pages/sales/SalesLeadWorkspace';
+import SalesCallLogs from '../pages/sales/SalesCallLogs';
+import SalesWhatsAppHistory from '../pages/sales/SalesWhatsAppHistory';
 
 import PostSalesLayout from '../layouts/PostSalesLayout';
 import PostSalesDashboard from '../pages/post-sales/PostSalesDashboard';
@@ -253,6 +255,9 @@ export const router = createBrowserRouter([
                             { index: true, element: <SalesDashboard /> },
                             { path: "leads", element: <SalesLeads /> },
                             { path: "leads/:id", element: <SalesLeadWorkspace /> },
+                            { path: "calls", element: <SalesCallLogs /> },
+                            { path: "interactions", element: <SalesCallLogs /> },
+                            { path: "whatsapp", element: <SalesWhatsAppHistory /> },
                             { path: "settings", element: <SalesSettings /> }
                         ]
                     },
@@ -329,7 +334,8 @@ export const router = createBrowserRouter([
                                     { path: "integrations/linkedin", element: <MetaIntegration /> },
                                     { path: "defaults", element: <MarketingSettingsDefaults /> },
                                     { path: "tracking", element: <MarketingSettingsTracking /> },
-                                    { path: "notifications", element: <MarketingSettingsNotifications /> }
+                                    { path: "notifications", element: <MarketingSettingsNotifications /> },
+                                    { path: "sales", element: <SalesSettings /> }
                                 ]
                             }
                         ]
