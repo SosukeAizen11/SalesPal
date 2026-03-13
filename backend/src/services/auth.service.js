@@ -368,6 +368,10 @@ const googleLogin = async (token) => {
 
     } catch (error) {
         logger.error(`Google login failed: ${error.message}`);
+        console.error("====== FULL GOOGLE AUTH ERROR ======");
+        console.error(error);
+        console.error("Token received:", token);
+        console.error("Configured Client ID:", env.google.clientId);
         const err = new Error('Failed to authenticate with Google');
         err.statusCode = 401;
         err.code = 'UNAUTHORIZED';
