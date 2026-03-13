@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Phone, Mail, MessageCircle, Bell, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
+import { mockTickets } from './mockSupportData';
 
 const categories = ['All', 'Queries', 'Complaints', 'Status', 'Feedback', 'Escalations'];
 
@@ -17,10 +18,10 @@ const SupportTickets = () => {
         async function fetchTickets() {
             try {
                 const data = await api.get('/support/tickets');
-                setTickets(data || []);
+                setTickets(data?.length ? data : mockTickets);
             } catch (error) {
                 console.error("Failed to fetch support tickets:", error);
-                setTickets([]);
+                setTickets(mockTickets);
             } finally {
                 setLoading(false);
             }
