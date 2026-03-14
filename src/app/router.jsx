@@ -12,11 +12,9 @@ import ContactPage from '../pages/contact/ContactPage';
 import SignIn from '../pages/auth/SignIn';
 import ConnectPlatform from '../pages/auth/ConnectPlatform';
 import MainLayout from '../layouts/MainLayout';
+import DashboardRedirect from '../components/routing/DashboardRedirect';
 import CartPage from '../pages/cart/CartPage';
 import PurchaseSuccess from '../pages/purchase/PurchaseSuccess';
-
-// ... (existing imports)
-
 
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import MarketingProduct from '../pages/products/MarketingProduct';
@@ -53,7 +51,6 @@ import SocialPostDetails from '../pages/marketing/social/SocialPostDetails';
 import SubscriptionPage from '../pages/subscription/SubscriptionPage';
 import PlaceholderPage from '../pages/marketing/PlaceholderPage';
 
-
 import ModuleAccessWrapper from '../components/access/ModuleAccessWrapper';
 import SalesLayout from '../layouts/SalesLayout';
 import SalesDashboard from '../pages/sales/SalesDashboard';
@@ -79,14 +76,10 @@ export const router = createBrowserRouter([
         path: "/",
         element: <App />,
         children: [
-
-
             {
                 path: "/connect/:platformId",
                 element: <ConnectPlatform />
             },
-
-            // ...
 
             {
                 element: <MainLayout />,
@@ -148,7 +141,13 @@ export const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
                 children: [
-                    // Marketing Module
+                    // ─── Global Dashboard Redirect (hierarchy-based) ───────────────
+                    {
+                        path: "/dashboard",
+                        element: <DashboardRedirect />
+                    },
+
+                    // ─── Marketing Module ──────────────────────────────────────────
                     {
                         path: "/marketing",
                         element: (
@@ -159,6 +158,10 @@ export const router = createBrowserRouter([
                         children: [
                             {
                                 index: true,
+                                element: <Navigate to="dashboard" replace />
+                            },
+                            {
+                                path: "dashboard",
                                 element: <MarketingDashboard />
                             },
                             {
@@ -169,7 +172,6 @@ export const router = createBrowserRouter([
                                 path: "campaigns",
                                 element: <Campaigns />
                             },
-
                             {
                                 path: "campaigns/:campaignId",
                                 element: <CampaignDetails />
@@ -216,7 +218,6 @@ export const router = createBrowserRouter([
                                 path: "settings/*",
                                 element: <Navigate to="/settings" replace />
                             },
-
                             { path: "photos", element: <PlaceholderPage title="My Photos" description="Manage your image assets and generated photos here." /> },
                             { path: "videos", element: <PlaceholderPage title="My Videos" description="Manage your video assets and generated content here." /> },
                             { path: "calls", element: <PlaceholderPage title="Call History" description="View call logs and manage communication credits." /> },
@@ -224,7 +225,7 @@ export const router = createBrowserRouter([
                         ]
                     },
 
-                    // Other Modules (Wrapped with Access Control)
+                    // ─── Sales Module ──────────────────────────────────────────────
                     {
                         path: "/sales",
                         element: (
@@ -233,7 +234,8 @@ export const router = createBrowserRouter([
                             </ModuleAccessWrapper>
                         ),
                         children: [
-                            { index: true, element: <SalesDashboard /> },
+                            { index: true, element: <Navigate to="dashboard" replace /> },
+                            { path: "dashboard", element: <SalesDashboard /> },
                             { path: "leads", element: <SalesLeads /> },
                             { path: "leads/:id", element: <SalesLeadWorkspace /> },
                             { path: "calls", element: <SalesCallLogs /> },
@@ -242,22 +244,41 @@ export const router = createBrowserRouter([
                             { path: "settings", element: <SalesSettings /> }
                         ]
                     },
+
+                    // ─── Post-Sales Module ─────────────────────────────────────────
                     {
                         path: "/post-sales",
                         element: (
                             <ModuleAccessWrapper moduleName="postSale">
-                                <PlaceholderPage title="Post-Sales Module" description="Manage customer onboarding and retention." />
+                                <Outlet />
                             </ModuleAccessWrapper>
-                        )
+                        ),
+                        children: [
+                            { index: true, element: <Navigate to="dashboard" replace /> },
+                            {
+                                path: "dashboard",
+                                element: <PlaceholderPage title="Post-Sales Module" description="Manage customer onboarding and retention." />
+                            }
+                        ]
                     },
+
+                    // ─── Support Module ────────────────────────────────────────────
                     {
                         path: "/support",
                         element: (
                             <ModuleAccessWrapper moduleName="support">
-                                <PlaceholderPage title="Support Module" description="Manage tickets and customer support." />
+                                <Outlet />
                             </ModuleAccessWrapper>
-                        )
+                        ),
+                        children: [
+                            { index: true, element: <Navigate to="dashboard" replace /> },
+                            {
+                                path: "dashboard",
+                                element: <PlaceholderPage title="Support Module" description="Manage tickets and customer support." />
+                            }
+                        ]
                     },
+
                     {
                         path: "/subscription",
                         element: <SubscriptionPage />

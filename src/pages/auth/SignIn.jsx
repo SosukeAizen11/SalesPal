@@ -18,13 +18,12 @@ const SignIn = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const from = location.state?.from?.pathname || '/marketing';
-
+    // After login, always go through /dashboard which applies hierarchy logic
     React.useEffect(() => {
         if (isAuthenticated) {
-            navigate(from, { replace: true });
+            navigate('/dashboard', { replace: true });
         }
-    }, [isAuthenticated, navigate, from]);
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -66,7 +65,7 @@ const SignIn = () => {
                             </div>
                             <h3 className="text-xl font-bold text-white">Check your email</h3>
                             <p className="text-gray-400">
-                                We've sent a verification link to <span className="text-white font-medium">{email}</span>. 
+                                We've sent a verification link to <span className="text-white font-medium">{email}</span>.
                                 Please click the link to verify your account.
                             </p>
                             <p className="text-sm border border-yellow-500/50 bg-yellow-500/10 text-yellow-200 p-3 rounded-md">
@@ -95,89 +94,90 @@ const SignIn = () => {
 
                             {isSignUp && (
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Full Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        placeholder="John Doe"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-secondary transition-colors"
+                                        required
+                                    />
+                                </div>
+                            )}
+
+                            <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    Full Name <span className="text-red-500">*</span>
+                                    Email Address <span className="text-red-500">*</span>
                                 </label>
                                 <input
-                                    type="text"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    placeholder="John Doe"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="name@company.com"
                                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-secondary transition-colors"
                                     required
                                 />
                             </div>
-                        )}
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Email Address <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="name@company.com"
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-secondary transition-colors"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Password <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-secondary transition-colors"
-                                required
-                                minLength={6}
-                            />
-                        </div>
-
-                        <Button
-                            type="submit"
-                            className="w-full justify-center"
-                            disabled={loading}
-                        >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isSignUp ? 'Create Account' : 'Sign In')}
-                            {!loading && <ArrowRight className="w-5 h-5" />}
-                        </Button>
-
-                        <div className="relative mt-6 mb-4">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-white/10"></div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    Password <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-secondary transition-colors"
+                                    required
+                                    minLength={6}
+                                />
                             </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-gray-900 text-gray-500">Or continue with</span>
-                            </div>
-                        </div>
 
-                        <div className="flex justify-center w-full">
-                            <GoogleLogin
-                                onSuccess={async (credentialResponse) => {
-                                    try {
-                                        setError('');
-                                        setLoading(true);
-                                        await loginWithGoogle(credentialResponse.credential);
-                                    } catch (err) {
-                                        setError(err.message);
-                                        setLoading(false);
-                                    }
-                                }}
-                                onError={() => {
-                                    setError('Google Login Failed');
-                                }}
-                                theme="filled_black"
-                                size="large"
-                                text={isSignUp ? "signup_with" : "signin_with"}
-                                width="300"
-                            />
-                        </div>
-                    </form>
+                            <Button
+                                type="submit"
+                                className="w-full justify-center"
+                                disabled={loading}
+                            >
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isSignUp ? 'Create Account' : 'Sign In')}
+                                {!loading && <ArrowRight className="w-5 h-5" />}
+                            </Button>
+
+                            <div className="relative mt-6 mb-4">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-white/10"></div>
+                                </div>
+                                <div className="relative flex justify-center text-sm">
+                                    <span className="px-2 bg-gray-900 text-gray-500">Or continue with</span>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-center w-full">
+                                <GoogleLogin
+                                    onSuccess={async (credentialResponse) => {
+                                        try {
+                                            setError('');
+                                            setLoading(true);
+                                            await loginWithGoogle(credentialResponse.credential);
+                                            // useEffect will redirect to /dashboard once isAuthenticated flips
+                                        } catch (err) {
+                                            setError(err.message);
+                                            setLoading(false);
+                                        }
+                                    }}
+                                    onError={() => {
+                                        setError('Google Login Failed');
+                                    }}
+                                    theme="filled_black"
+                                    size="large"
+                                    text={isSignUp ? "signup_with" : "signin_with"}
+                                    width="300"
+                                />
+                            </div>
+                        </form>
                     )}
 
                     {!signUpSuccess && (
@@ -199,4 +199,3 @@ const SignIn = () => {
 };
 
 export default SignIn;
-

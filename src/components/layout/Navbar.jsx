@@ -172,7 +172,7 @@ const Navbar = () => {
                     {isAuthenticated ? (
                         <>
                             <Link
-                                to="/marketing"
+                                to="/dashboard"
                                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                             >
                                 Dashboard
@@ -199,8 +199,8 @@ const Navbar = () => {
                 isOpen={showAuthModal}
                 onClose={() => setShowAuthModal(false)}
                 onSuccess={() => {
-                    navigate('/marketing');
                     setShowAuthModal(false);
+                    navigate('/dashboard');
                 }}
             />
         </motion.nav >

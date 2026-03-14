@@ -4,10 +4,13 @@ import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Check, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscription } from '../../commerce/SubscriptionContext';
+import { getTopModuleRoute } from '../../utils/moduleRouting';
 
 const PurchaseSuccess = () => {
     const navigate = useNavigate();
     const { isAuthenticated, loading } = useAuth();
+    const { subscriptions, loading: subLoading, fetchAll } = useSubscription();
     const [isNavigating, setIsNavigating] = useState(false);
 
     // Redirect if not authenticated
@@ -18,7 +21,6 @@ const PurchaseSuccess = () => {
     useEffect(() => {
         // Trigger refined confetti burst on mount
         const end = Date.now() + 1000;
-
         const colors = ['#3b82f6', '#9ca3af', '#10b981'];
 
         (function frame() {
@@ -48,17 +50,22 @@ const PurchaseSuccess = () => {
             spread: 70,
             origin: { y: 0.6 },
             colors: colors,
-            zIndex: 999, // Ensure it's on top
+            zIndex: 999,
             disableForReducedMotion: true
         });
 
+        // Refresh subscriptions so we pick up the new purchase
+        if (fetchAll) {
+            fetchAll();
+        }
     }, []);
 
     const handleDashboardNavigation = () => {
         setIsNavigating(true);
-        // Simulate a brief loading state for better UX
         setTimeout(() => {
-            navigate('/marketing');
+            // Navigate using the hierarchy — picks the top-priority active module
+            const route = getTopModuleRoute(subscriptions);
+            navigate(route);
         }, 800);
     };
 
@@ -143,7 +150,7 @@ const PurchaseSuccess = () => {
                         }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleDashboardNavigation}
-                        disabled={isNavigating}
+                        disabled={isNavigating || subLoading}
                         className="w-full sm:w-auto min-w-[200px] inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 md:text-lg transition-all duration-200 shadow-md shadow-blue-200"
                     >
                         {isNavigating ? (
@@ -175,4 +182,3 @@ const PurchaseSuccess = () => {
 };
 
 export default PurchaseSuccess;
-
