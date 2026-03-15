@@ -25,12 +25,14 @@ export const SubscriptionProvider = ({ children }) => {
     const [subscriptions, setSubscriptions] = useState({});
     const [credits, setCredits] = useState({ balance: 0 });
     const [loading, setLoading] = useState(true);
+    const [fetchedUserId, setFetchedUserId] = useState(null);
 
     // ─── Fetch subscriptions + credits from API ───
     const fetchAll = useCallback(async () => {
         if (!user) {
             setSubscriptions({});
             setCredits({ balance: 0 });
+            setFetchedUserId(null);
             setLoading(false);
             return;
         }
@@ -58,6 +60,7 @@ export const SubscriptionProvider = ({ children }) => {
             });
             setSubscriptions(subMap);
             setCredits({ balance: creditRes?.balance ?? 0 });
+            setFetchedUserId(user.id);
         } catch (err) {
             console.error('SubscriptionContext fetchAll error:', err);
         } finally {
@@ -66,6 +69,10 @@ export const SubscriptionProvider = ({ children }) => {
     }, [user]);
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
+
+    // Derived loading state to prevent race conditions during auth transitions
+    const isReady = !user || fetchedUserId === user.id;
+    const contextLoading = loading || !isReady;
 
     // ─── Subscription management ───
 
@@ -185,7 +192,7 @@ export const SubscriptionProvider = ({ children }) => {
     const value = useMemo(() => ({
         subscriptions,
         credits,
-        loading,
+        loading: contextLoading,
         activateSubscription,
         deactivateSubscription,
         pauseSubscription,
