@@ -1,3 +1,4 @@
+//support tickets
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Phone, Mail, MessageCircle, Bell, Loader2 } from 'lucide-react';
@@ -9,7 +10,7 @@ const categories = ['All', 'Queries', 'Complaints', 'Status', 'Feedback', 'Escal
 const SupportTickets = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    
+
     const searchParams = new URLSearchParams(location.search);
     const statusFilter = searchParams.get("status");
     const priorityFilter = searchParams.get("priority");
@@ -37,22 +38,22 @@ const SupportTickets = () => {
 
     const filteredTickets = tickets.filter(ticket => {
         const matchesFilter = activeFilter === 'All' || ticket.category === activeFilter;
-        
+
         let matchesStatus = true;
         if (statusFilter) {
             matchesStatus = ticket.status?.toLowerCase() === statusFilter.toLowerCase();
         }
-        
+
         let matchesPriority = true;
         if (priorityFilter) {
             matchesPriority = ticket.priority?.toLowerCase() === priorityFilter.toLowerCase();
         }
 
         const searchLower = searchQuery.toLowerCase();
-        
+
         // Defensive customer parsing
         const customerName = ticket.customer?.name || (typeof ticket.customer === 'string' ? ticket.customer : '');
-        
+
         const matchesSearch = customerName.toLowerCase().includes(searchLower) || ticket.id?.toString().includes(searchLower);
         return matchesFilter && matchesSearch && matchesStatus && matchesPriority;
     });
@@ -140,9 +141,9 @@ const SupportTickets = () => {
                             key={category}
                             onClick={() => setActiveFilter(category)}
                             className={
-                                activeFilter === category 
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm' 
-                                : 'border border-gray-300 text-gray-700 bg-white px-4 py-2 rounded-md text-sm hover:bg-gray-50'
+                                activeFilter === category
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm'
+                                    : 'border border-gray-300 text-gray-700 bg-white px-4 py-2 rounded-md text-sm hover:bg-gray-50'
                             }
                         >
                             {category}
@@ -171,80 +172,80 @@ const SupportTickets = () => {
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-blue-100 text-blue-800">
                             {filterBadgeLabel}
                         </span>
-                        <button 
-                            onClick={() => navigate('/support/tickets')} 
+                        <button
+                            onClick={() => navigate('/support/tickets')}
                             className="text-sm text-blue-600 hover:text-blue-800"
                         >
                             Clear Filter
                         </button>
                     </div>
                 )}
-                
+
                 <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticket ID</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Channel</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredTickets.map((ticket) => (
-                                <tr 
-                                    key={ticket.id} 
-                                    onClick={() => handleTicketClick(ticket.id)}
-                                    className="hover:bg-gray-50 cursor-pointer transition-colors text-sm text-gray-700"
-                                >
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        TCK-{ticket.id}
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        <div>
-                                            <p>{ticket.customer?.name || ticket.customer || 'Unknown Customer'}</p>
-                                            <p className="text-xs text-gray-500">{ticket.customer?.email || ticket.email || ''}</p>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        <div className="flex items-center gap-2">
-                                            {getChannelIconWithStyle(ticket.channel || 'Email')}
-                                            <span>{ticket.channel || 'Email'}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        {ticket.category}
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityStyle(ticket.priority)}`}>
-                                            {ticket.priority}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusStyle(ticket.status)}`}>
-                                            {ticket.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        {ticket.date || new Date().toLocaleDateString()}
-                                    </td>
-                                </tr>
-                            ))}
-                            {filteredTickets.length === 0 && (
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-8 text-center text-sm text-gray-500">
-                                        No tickets found.
-                                    </td>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticket ID</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Channel</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {filteredTickets.map((ticket) => (
+                                    <tr
+                                        key={ticket.id}
+                                        onClick={() => handleTicketClick(ticket.id)}
+                                        className="hover:bg-gray-50 cursor-pointer transition-colors text-sm text-gray-700"
+                                    >
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            TCK-{ticket.id}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <div>
+                                                <p>{ticket.customer?.name || ticket.customer || 'Unknown Customer'}</p>
+                                                <p className="text-xs text-gray-500">{ticket.customer?.email || ticket.email || ''}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <div className="flex items-center gap-2">
+                                                {getChannelIconWithStyle(ticket.channel || 'Email')}
+                                                <span>{ticket.channel || 'Email'}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            {ticket.category}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityStyle(ticket.priority)}`}>
+                                                {ticket.priority}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusStyle(ticket.status)}`}>
+                                                {ticket.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            {ticket.date || new Date().toLocaleDateString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredTickets.length === 0 && (
+                                    <tr>
+                                        <td colSpan="7" className="px-6 py-8 text-center text-sm text-gray-500">
+                                            No tickets found.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
             </div>
         </div>
     );
