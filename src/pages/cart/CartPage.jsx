@@ -593,9 +593,11 @@ const CartPage = () => {
                                         });
 
                                         // Clear cart and redirect
+                                        // Pass purchased items so PurchaseSuccess can navigate to the right module
+                                        const purchasedItems = [...cart];
                                         clearCart();
                                         clearCartAfterPurchase();
-                                        navigate('/purchase-success');
+                                        navigate('/purchase-success', { state: { purchasedItems } });
                                     } catch (error) {
                                         console.error('Payment failed:', error);
                                         showToast({

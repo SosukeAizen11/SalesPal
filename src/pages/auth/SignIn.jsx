@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscription } from '../../commerce/SubscriptionContext';
+import { getDefaultModuleRoute } from '../../utils/navigationUtils';
 import Button from '../../components/ui/Button';
 import { ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
@@ -15,16 +17,26 @@ const SignIn = () => {
     const [signUpSuccess, setSignUpSuccess] = useState(false);
 
     const { login, loginWithGoogle, signup, isAuthenticated } = useAuth();
+    const { subscriptions, loading: subLoading } = useSubscription();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const from = location.state?.from?.pathname || '/marketing';
+    const from = location.state?.from?.pathname;
 
     React.useEffect(() => {
-        if (isAuthenticated) {
-            navigate(from, { replace: true });
+        if (isAuthenticated && !subLoading) {
+            if (from) {
+                console.log('SignIn useEffect navigating to explicit from path:', from);
+                navigate(from, { replace: true });
+                return;
+            }
+
+            // Navigate to highest-priority active module
+            const defaultRoute = getDefaultModuleRoute(subscriptions);
+            console.log('SignIn useEffect navigating to:', defaultRoute);
+            navigate(defaultRoute, { replace: true });
         }
-    }, [isAuthenticated, navigate, from]);
+    }, [isAuthenticated, subLoading, subscriptions, navigate, from]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import useReducedMotion from '../../hooks/useReducedMotion';
 import AuthModal from '../auth/AuthModal';
 import { useCart } from '../../commerce/CartContext';
+import { useSubscription } from '../../commerce/SubscriptionContext';
 import { ShoppingCart } from 'lucide-react';
 import NavbarUserMenu from './NavbarUserMenu';
 
@@ -17,7 +18,24 @@ const Navbar = () => {
     const [activeSection, setActiveSection] = useState('');
     const [isScrolled, setIsScrolled] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [pendingNavigation, setPendingNavigation] = useState(false);
     const { cart, openMiniCart } = useCart();
+    const { subscriptions, loading: subLoading } = useSubscription();
+
+    const getDashboardRoute = () => {
+        if (!subscriptions) return '/marketing';
+        const activeModules = Object.keys(subscriptions).filter(key => subscriptions[key]?.active);
+        
+        let route = '/marketing';
+        if (activeModules.includes('salespal-360')) route = '/marketing';
+        else if (activeModules.includes('marketing')) route = '/marketing';
+        else if (activeModules.includes('sales')) route = '/sales';
+        else if (activeModules.includes('postSale')) route = '/post-sales';
+        else if (activeModules.includes('support')) route = '/support';
+        
+        console.log('Navbar computed dashboard route:', route, 'Active modules:', activeModules);
+        return route;
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -63,6 +81,15 @@ const Navbar = () => {
             window.history.replaceState({}, document.title);
         }
     }, [location, isAuthenticated]);
+
+    useEffect(() => {
+        if (pendingNavigation && isAuthenticated && !subLoading) {
+            const route = getDashboardRoute();
+            console.log('Navbar pendingNavigation navigating to:', route);
+            navigate(route);
+            setPendingNavigation(false);
+        }
+    }, [pendingNavigation, isAuthenticated, subLoading, subscriptions, navigate]);
 
     const scrollToSection = (id) => {
         if (location.pathname !== '/') {
@@ -172,7 +199,7 @@ const Navbar = () => {
                     {isAuthenticated ? (
                         <>
                             <Link
-                                to="/marketing"
+                                to={getDashboardRoute()}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                             >
                                 My Workspace
@@ -199,7 +226,7 @@ const Navbar = () => {
                 isOpen={showAuthModal}
                 onClose={() => setShowAuthModal(false)}
                 onSuccess={() => {
-                    navigate('/marketing');
+                    setPendingNavigation(true);
                     setShowAuthModal(false);
                 }}
             />

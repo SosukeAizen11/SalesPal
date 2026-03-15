@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Check, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscription } from '../../commerce/SubscriptionContext';
+import { getDefaultModuleRoute, getModuleRoute } from '../../utils/navigationUtils';
 
 const PurchaseSuccess = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { isAuthenticated, loading } = useAuth();
+    const { subscriptions } = useSubscription();
     const [isNavigating, setIsNavigating] = useState(false);
 
     // Redirect if not authenticated
@@ -54,11 +58,32 @@ const PurchaseSuccess = () => {
 
     }, []);
 
+    /**
+     * Determine the route for the just-purchased module.
+     * Priority: purchased item from cart state → fallback to highest-priority active module.
+     */
+    const getPurchasedModuleRoute = () => {
+        const purchasedItems = location.state?.purchasedItems;
+        if (purchasedItems && purchasedItems.length > 0) {
+            // If a bundle was purchased, go to /marketing (primary dashboard)
+            const hasBundle = purchasedItems.some(item => item.type === 'bundle' || item.moduleId === 'bundle');
+            if (hasBundle) return '/marketing';
+
+            // Find the first subscription item and navigate to that module
+            const subItem = purchasedItems.find(item => item.type === 'subscription');
+            if (subItem?.moduleId) {
+                return getModuleRoute(subItem.moduleId);
+            }
+        }
+        // Fallback: use highest-priority active module
+        return getDefaultModuleRoute(subscriptions);
+    };
+
     const handleDashboardNavigation = () => {
         setIsNavigating(true);
         // Simulate a brief loading state for better UX
         setTimeout(() => {
-            navigate('/marketing');
+            navigate(getPurchasedModuleRoute());
         }, 800);
     };
 
