@@ -19,6 +19,7 @@ const analyticsRoutes = require('./routes/analytics');
 const billingRoutes = require('./routes/billing');
 const projectsRoutes = require('./routes/projects');
 const aiRoutes = require('./routes/ai');
+const postSalesRoutes = require('./routes/post-sales');
 
 const app = express();
 
@@ -70,6 +71,7 @@ app.use('/analytics', authMiddleware, analyticsRoutes);
 app.use('/billing', authMiddleware, billingRoutes);
 app.use('/projects', authMiddleware, projectsRoutes);
 app.use('/ai', authMiddleware, aiRoutes);
+app.use('/post-sales', authMiddleware, postSalesRoutes);
 
 // ─── 404 Handler ────────────────────────────────────────────────────────────
 app.use((req, res) => {

@@ -1,93 +1,246 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api from '../lib/api';
+import { useAuth } from './AuthContext';
 
 const PostSalesContext = createContext();
 
-const pad = (n) => String(n).padStart(2, '0');
-const today = new Date();
-const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-
-const nextWeek = new Date(today);
-nextWeek.setDate(nextWeek.getDate() + 4);
-const nextWeekStr = `${nextWeek.getFullYear()}-${pad(nextWeek.getMonth() + 1)}-${pad(nextWeek.getDate())}`;
-
 export const PostSalesProvider = ({ children }) => {
-    const loadState = (key, defaultState) => {
+    const { user } = useAuth();
+
+    const [customers, setCustomers] = useState([]);
+    const [payments, setPayments] = useState([]);
+    const [automations, setAutomations] = useState([]);
+    const [followUps, setFollowUps] = useState([]);
+    const [documents, setDocuments] = useState([]);
+    const [onboardingFlows, setOnboardingFlows] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // ─── Fetch all data on mount ─────────────────────────────────────────────
+    const fetchAll = useCallback(async () => {
+        if (!user) { setLoading(false); return; }
+        setLoading(true);
         try {
-            const stored = localStorage.getItem(key);
-            return stored ? JSON.parse(stored) : defaultState;
-        } catch (e) {
-            console.warn(`Error loading ${key} from localStorage`, e);
-            return defaultState;
+            const [c, p, a, f, d, o] = await Promise.all([
+                api.get('/post-sales/customers'),
+                api.get('/post-sales/payments'),
+                api.get('/post-sales/automations'),
+                api.get('/post-sales/followups'),
+                api.get('/post-sales/documents'),
+                api.get('/post-sales/onboarding'),
+            ]);
+            setCustomers(c || []);
+            setPayments(p || []);
+            setAutomations(a || []);
+            setFollowUps(f || []);
+            setDocuments(d || []);
+            setOnboardingFlows(o || []);
+        } catch (err) {
+            console.error('PostSales fetch error:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
+
+    useEffect(() => { fetchAll(); }, [fetchAll]);
+
+    // ─── CUSTOMERS ───────────────────────────────────────────────────────────
+    const addCustomer = async (customer) => {
+        try {
+            const created = await api.post('/post-sales/customers', {
+                name: customer.name,
+                phone: customer.phone || null,
+                email: customer.email || null,
+                company: customer.company || null,
+                totalDue: customer.totalDue || customer.total_due || 0,
+                amountPaid: customer.amountPaid || customer.amount_paid || 0,
+                dueDate: customer.dueDate || customer.due_date || null,
+                status: customer.status || 'active',
+            });
+            setCustomers(prev => [created, ...prev]);
+            return created;
+        } catch (err) {
+            console.error('Error adding customer:', err);
+            return null;
         }
     };
 
-    const saveState = (key, value) => {
+    const updateCustomer = async (id, updates) => {
         try {
-            localStorage.setItem(key, JSON.stringify(value));
-        } catch (e) {
-            console.warn(`Error saving ${key} to localStorage`, e);
+            const updated = await api.put(`/post-sales/customers/${id}`, updates);
+            setCustomers(prev => prev.map(c => c.id === id ? updated : c));
+            return updated;
+        } catch (err) {
+            console.error('Error updating customer:', err);
         }
     };
 
-    const [customers, setCustomersState] = useState(() => loadState('salespal_postsales_customers', []));
-    const [automations, setAutomationsState] = useState(() => loadState('salespal_postsales_automations', []));
-    const [payments, setPaymentsState] = useState(() => loadState('salespal_postsales_payments', []));
-    const [followUps, setFollowUpsState] = useState(() => loadState('salespal_postsales_followups', []));
-
-    // Adding missing state variables to prevent crashes on Analytics and Onboarding pages
-    const [documents, setDocumentsState] = useState(() => loadState('salespal_postsales_documents', []));
-    const [onboardingFlows, setOnboardingFlowsState] = useState(() => loadState('salespal_postsales_onboarding', {}));
-
-    useEffect(() => saveState('salespal_postsales_customers', customers), [customers]);
-    useEffect(() => saveState('salespal_postsales_automations', automations), [automations]);
-    useEffect(() => saveState('salespal_postsales_payments', payments), [payments]);
-    useEffect(() => saveState('salespal_postsales_followups', followUps), [followUps]);
-    useEffect(() => saveState('salespal_postsales_documents', documents), [documents]);
-    useEffect(() => saveState('salespal_postsales_onboarding', onboardingFlows), [onboardingFlows]);
-
-    const addCustomer = (customer) => {
-        setCustomersState(prev => [{ ...customer, id: `c-${Date.now()}`, lastContact: new Date().toISOString().split('T')[0] }, ...prev]);
-    };
-
-    const updateCustomer = (id, updates) => {
-        setCustomersState(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
-    };
-
-    const deleteCustomer = (id) => {
-        setCustomersState(prev => prev.filter(c => c.id !== id));
+    const deleteCustomer = async (id) => {
+        try {
+            await api.delete(`/post-sales/customers/${id}`);
+            setCustomers(prev => prev.filter(c => c.id !== id));
+            setPayments(prev => prev.filter(p => p.customer_id !== id));
+            setFollowUps(prev => prev.filter(f => f.customer_id !== id));
+            setDocuments(prev => prev.filter(d => d.customer_id !== id));
+        } catch (err) {
+            console.error('Error deleting customer:', err);
+        }
     };
 
     const getCustomer = (id) => customers.find(c => c.id === id);
 
-    const toggleAutomation = (id) => {
-        setAutomationsState(prev => prev.map(a => a.id === id ? { ...a, active: !a.active } : a));
+    // ─── PAYMENTS ────────────────────────────────────────────────────────────
+    const addPayment = async (payment) => {
+        try {
+            const created = await api.post('/post-sales/payments', {
+                customerId: payment.customerId || payment.customer_id,
+                amount: payment.amount,
+                currency: payment.currency || 'INR',
+                status: payment.status || 'pending',
+                dueDate: payment.dueDate || payment.due_date || null,
+                paymentMethod: payment.paymentMethod || null,
+                notes: payment.notes || null,
+            });
+            setPayments(prev => [created, ...prev]);
+            return created;
+        } catch (err) {
+            console.error('Error adding payment:', err);
+            return null;
+        }
     };
 
-    const addAutomation = (automation) => {
-        setAutomationsState(prev => [{ ...automation, id: `auto-${Date.now()}`, active: true }, ...prev]);
+    const updatePaymentStatus = async (id, status) => {
+        try {
+            const updated = await api.patch(`/post-sales/payments/${id}/status`, { status });
+            setPayments(prev => prev.map(p => p.id === id ? updated : p));
+            return updated;
+        } catch (err) {
+            console.error('Error updating payment status:', err);
+        }
     };
 
-    const updateAutomation = (id, updates) => {
-        setAutomationsState(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+    // ─── AUTOMATIONS ─────────────────────────────────────────────────────────
+    const addAutomation = async (automation) => {
+        try {
+            const created = await api.post('/post-sales/automations', {
+                name: automation.name,
+                trigger: automation.trigger,
+                action: automation.action,
+                customerId: automation.customerId || automation.customer_id || null,
+            });
+            setAutomations(prev => [created, ...prev]);
+            return created;
+        } catch (err) {
+            console.error('Error adding automation:', err);
+            return null;
+        }
     };
 
-    const getCustomerAutomations = (customerId) => automations.filter(a => a.customerId === customerId);
-
-    const addPayment = (payment) => {
-        setPaymentsState(prev => [{ ...payment, id: `p-${Date.now()}` }, ...prev]);
+    const toggleAutomation = async (id) => {
+        try {
+            const updated = await api.patch(`/post-sales/automations/${id}/toggle`, {});
+            setAutomations(prev => prev.map(a => a.id === id ? updated : a));
+        } catch (err) {
+            console.error('Error toggling automation:', err);
+        }
     };
 
-    const addFollowUp = (followUp) => {
-        setFollowUpsState(prev => [{ ...followUp, id: `f-${Date.now()}` }, ...prev]);
+    const updateAutomation = async (id, updates) => {
+        setAutomations(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
     };
+
+    const getCustomerAutomations = (customerId) => automations.filter(a => a.customer_id === customerId);
+
+    const deleteAutomation = async (id) => {
+        try {
+            await api.delete(`/post-sales/automations/${id}`);
+            setAutomations(prev => prev.filter(a => a.id !== id));
+        } catch (err) {
+            console.error('Error deleting automation:', err);
+        }
+    };
+
+    // ─── FOLLOW-UPS ──────────────────────────────────────────────────────────
+    const addFollowUp = async (followUp) => {
+        try {
+            const created = await api.post('/post-sales/followups', {
+                customerId: followUp.customerId || followUp.customer_id,
+                task: followUp.task,
+                dueAt: followUp.dueAt || followUp.due_at || null,
+                notes: followUp.notes || null,
+            });
+            setFollowUps(prev => [created, ...prev]);
+            return created;
+        } catch (err) {
+            console.error('Error adding follow-up:', err);
+            return null;
+        }
+    };
+
+    const updateFollowUpStatus = async (id, status) => {
+        try {
+            const updated = await api.patch(`/post-sales/followups/${id}/status`, { status });
+            setFollowUps(prev => prev.map(f => f.id === id ? updated : f));
+        } catch (err) {
+            console.error('Error updating follow-up:', err);
+        }
+    };
+
+    // ─── DOCUMENTS ───────────────────────────────────────────────────────────
+    const addDocument = async (doc) => {
+        try {
+            const created = await api.post('/post-sales/documents', {
+                customerId: doc.customerId || doc.customer_id,
+                name: doc.name,
+                type: doc.type || null,
+                fileUrl: doc.fileUrl || null,
+                status: doc.status || 'pending',
+            });
+            setDocuments(prev => [created, ...prev]);
+            return created;
+        } catch (err) {
+            console.error('Error adding document:', err);
+            return null;
+        }
+    };
+
+    // ─── ONBOARDING ──────────────────────────────────────────────────────────
+    const upsertOnboardingStep = async (customerId, stepName, stepOrder, status, notes) => {
+        try {
+            const updated = await api.post('/post-sales/onboarding', { customerId, stepName, stepOrder, status, notes });
+            setOnboardingFlows(prev => {
+                const existing = prev.findIndex(o => o.customer_id === customerId && o.step_name === stepName);
+                if (existing >= 0) {
+                    const next = [...prev];
+                    next[existing] = updated;
+                    return next;
+                }
+                return [...prev, updated];
+            });
+            return updated;
+        } catch (err) {
+            console.error('Error upserting onboarding step:', err);
+        }
+    };
+
+    const getCustomerOnboarding = (customerId) => onboardingFlows.filter(o => o.customer_id === customerId);
 
     return (
         <PostSalesContext.Provider value={{
+            loading,
+            // customers
             customers, addCustomer, updateCustomer, deleteCustomer, getCustomer,
-            automations, toggleAutomation, addAutomation, updateAutomation, getCustomerAutomations,
-            payments, addPayment,
-            followUps, addFollowUp,
-            documents, onboardingFlows
+            // payments
+            payments, addPayment, updatePaymentStatus,
+            // automations
+            automations, addAutomation, toggleAutomation, updateAutomation, deleteAutomation, getCustomerAutomations,
+            // follow-ups
+            followUps, addFollowUp, updateFollowUpStatus,
+            // documents
+            documents, addDocument,
+            // onboarding
+            onboardingFlows, upsertOnboardingStep, getCustomerOnboarding,
+            // refresh
+            refetch: fetchAll,
         }}>
             {children}
         </PostSalesContext.Provider>
@@ -96,8 +249,6 @@ export const PostSalesProvider = ({ children }) => {
 
 export const usePostSales = () => {
     const context = useContext(PostSalesContext);
-    if (!context) {
-        throw new Error("usePostSales must be used within a PostSalesProvider");
-    }
+    if (!context) throw new Error('usePostSales must be used within a PostSalesProvider');
     return context;
 };

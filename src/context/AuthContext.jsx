@@ -32,6 +32,15 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    const refreshUser = async () => {
+        try {
+            const data = await api.get('/users/me');
+            setUser(data.user || data);
+        } catch (e) {
+            // silently ignore
+        }
+    };
+
     const login = async (email, password) => {
         try {
             const data = await api.post('/auth/login', { email, password });
@@ -90,6 +99,7 @@ export const AuthProvider = ({ children }) => {
         signup,
         logout,
         loading,
+        refreshUser,
     }), [isAuthenticated, user, session, loading]);
 
     return (

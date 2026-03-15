@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     Megaphone,
-    DollarSign,
-    RefreshCw,
+    Phone,
+    UserCheck,
     Headphones,
     CreditCard,
     Settings,
@@ -64,7 +64,7 @@ const AppLayout = () => {
         {
             label: 'Sales',
             path: '/sales',
-            icon: DollarSign,
+            icon: Phone,
             children: [
                 { label: 'Dashboard', path: '/sales', icon: LayoutDashboard, end: true },
                 { label: 'Leads', path: '/sales/leads', icon: Users },
@@ -74,7 +74,7 @@ const AppLayout = () => {
         {
             label: 'Post Sales',
             path: '/post-sales',
-            icon: RefreshCw,
+            icon: UserCheck,
             children: [
                 { label: 'Dashboard', path: '/post-sales', icon: LayoutDashboard, end: true },
                 { label: 'Customers', path: '/post-sales/customers', icon: Users },
