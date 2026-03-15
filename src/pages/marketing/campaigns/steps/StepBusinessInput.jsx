@@ -59,7 +59,7 @@ const StepBusinessInput = ({ onComplete, onUpdate, data }) => {
         }
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (!isTabValid()) {
             setShowError(true);
             alert("Please fill in the mandatory fields to proceed."); // "Pop up" as requested

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     Megaphone,
-    DollarSign,
-    RefreshCw,
+    Phone,
+    UserCheck,
     Headphones,
     CreditCard,
     Settings,
@@ -13,7 +13,9 @@ import {
     FolderKanban,
     Share2,
     Users,
-    Activity
+    Activity,
+    Ticket,
+    BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SidebarUserMenu from './SidebarUserMenu';
@@ -32,6 +34,12 @@ const AppLayout = () => {
         }
         if (location.pathname.startsWith('/sales')) {
             setExpandedMenus(prev => ({ ...prev, '/sales': true }));
+        }
+        if (location.pathname.startsWith('/post-sales')) {
+            setExpandedMenus(prev => ({ ...prev, '/post-sales': true }));
+        }
+        if (location.pathname.startsWith('/support')) {
+            setExpandedMenus(prev => ({ ...prev, '/support': true }));
         }
     }, [location.pathname]); // Update dependencies so it runs on path change
 
@@ -56,15 +64,33 @@ const AppLayout = () => {
         {
             label: 'Sales',
             path: '/sales',
-            icon: DollarSign,
+            icon: Phone,
             children: [
                 { label: 'Dashboard', path: '/sales', icon: LayoutDashboard, end: true },
                 { label: 'Leads', path: '/sales/leads', icon: Users },
                 { label: 'Interactions', path: '/sales/interactions', icon: Activity },
             ]
         },
-        { label: 'Post Sales', path: '/post-sales', icon: RefreshCw },
-        { label: 'Support', path: '/support', icon: Headphones },
+        {
+            label: 'Post Sales',
+            path: '/post-sales',
+            icon: UserCheck,
+            children: [
+                { label: 'Dashboard', path: '/post-sales', icon: LayoutDashboard, end: true },
+                { label: 'Customers', path: '/post-sales/customers', icon: Users },
+                { label: 'Automations', path: '/post-sales/automations', icon: Settings }
+            ]
+        },
+        {
+            label: 'Support',
+            path: '/support',
+            icon: Headphones,
+            children: [
+                { label: 'Dashboard', path: '/support', icon: LayoutDashboard, end: true },
+                { label: 'Tickets', path: '/support/tickets', icon: Ticket },
+                { label: 'Analytics', path: '/support/analytics', icon: BarChart3 }
+            ]
+        },
         { label: 'Subscription', path: '/subscription', icon: CreditCard },
         { label: 'Settings', path: '/settings', icon: Settings },
     ];

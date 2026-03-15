@@ -60,6 +60,25 @@ import SalesLeadWorkspace from '../pages/sales/SalesLeadWorkspace';
 import SalesCallLogs from '../pages/sales/SalesCallLogs';
 import SalesWhatsAppHistory from '../pages/sales/SalesWhatsAppHistory';
 
+import PostSalesLayout from '../layouts/PostSalesLayout';
+import PostSalesDashboard from '../pages/post-sales/PostSalesDashboard';
+import AddCustomer from '../pages/post-sales/AddCustomer';
+import Customers from '../pages/post-sales/Customers';
+import CustomerDetails from '../pages/post-sales/CustomerDetails';
+import Onboarding from '../pages/post-sales/Onboarding';
+import Documents from '../pages/post-sales/Documents';
+import Payments from '../pages/post-sales/Payments';
+import Automations from '../pages/post-sales/Automations';
+import Analytics from '../pages/post-sales/Analytics';
+import PostSalesCustomers from '../pages/post-sales/PostSalesCustomers';
+import PostSalesAutomations from '../pages/post-sales/PostSalesAutomations';
+// Support Module
+import SupportLayout from '../pages/support/SupportLayout';
+import SupportDashboard from '../pages/support/SupportDashboard';
+import SupportTickets from '../pages/support/SupportTickets';
+import SupportTicketDetails from '../pages/support/SupportTicketDetails';
+import SupportAnalytics from '../pages/support/SupportAnalytics';
+
 import MarketingSettingsLayout from '../pages/marketing/settings/MarketingSettingsLayout';
 import MarketingSettingsIntegrations from '../pages/marketing/settings/MarketingSettingsIntegrations';
 import MetaIntegration from '../pages/marketing/settings/MetaIntegration';

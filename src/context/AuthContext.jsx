@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const token = getAccessToken();
+
         if (token) {
             api.get('/users/me')
                 .then(data => {
@@ -30,6 +31,15 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         }
     }, []);
+
+    const refreshUser = async () => {
+        try {
+            const data = await api.get('/users/me');
+            setUser(data.user || data);
+        } catch (e) {
+            // silently ignore
+        }
+    };
 
     const login = async (email, password) => {
         try {
@@ -89,6 +99,7 @@ export const AuthProvider = ({ children }) => {
         signup,
         logout,
         loading,
+        refreshUser,
     }), [isAuthenticated, user, session, loading]);
 
     return (

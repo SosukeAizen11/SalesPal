@@ -21,9 +21,9 @@ const SidebarUserMenu = () => {
         return name.substring(0, 2).toUpperCase();
     };
 
-    const initials = getInitials(user?.name || 'Demo User');
-    const userName = user?.name || 'Demo User';
-    const userEmail = user?.email || 'demo@salespal.ai';
+    const initials = getInitials(user?.full_name || user?.name || 'U');
+    const userName = user?.full_name || user?.name || 'My Account';
+    const userEmail = user?.email || '';
 
     // Handle click outside to close dropdown
     useEffect(() => {
@@ -100,9 +100,17 @@ const SidebarUserMenu = () => {
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 transition-all duration-200 group"
             >
                 {/* Avatar */}
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-sm">
-                    {initials}
-                </div>
+                {user?.avatar_url ? (
+                    <img
+                        src={user.avatar_url}
+                        alt={userName}
+                        className="w-9 h-9 rounded-full object-cover shrink-0 shadow-sm border border-gray-200"
+                    />
+                ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-sm">
+                        {initials}
+                    </div>
+                )}
 
                 {/* User Info */}
                 <div className="flex-1 text-left min-w-0">

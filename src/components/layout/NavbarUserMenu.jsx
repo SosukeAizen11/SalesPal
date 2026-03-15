@@ -21,9 +21,9 @@ const NavbarUserMenu = () => {
         return name.substring(0, 2).toUpperCase();
     };
 
-    const initials = getInitials(user?.name || 'Demo User');
-    const userName = user?.name || 'Demo User';
-    const userEmail = user?.email || 'demo@salespal.ai';
+    const initials = getInitials(user?.full_name || user?.name || 'U');
+    const userName = user?.full_name || user?.name || 'My Account';
+    const userEmail = user?.email || '';
 
     // Handle click outside to close dropdown
     useEffect(() => {
@@ -73,9 +73,17 @@ const NavbarUserMenu = () => {
                 className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors duration-200 group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
                 {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-xs shrink-0 shadow-sm ring-2 ring-white">
-                    {initials}
-                </div>
+                {user?.avatar_url ? (
+                    <img
+                        src={user.avatar_url}
+                        alt={userName}
+                        className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm ring-2 ring-white border border-gray-200"
+                    />
+                ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-xs shrink-0 shadow-sm ring-2 ring-white">
+                        {initials}
+                    </div>
+                )}
 
                 {/* User Info - Hidden on mobile, visible on medium screens and up */}
                 <div className="hidden md:flex flex-col items-start text-left min-w-0">
